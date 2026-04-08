@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
+import { User, Phone, MapPin, Package, CreditCard, Calendar, Clock, Globe } from 'lucide-react';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -95,7 +96,7 @@ const ProfilePage = () => {
               <form onSubmit={handleSave} className="profile-card">
                 <div className="form-grid">
                   <div className="profile-field full-width">
-                    <label>👤 Nombre completo</label>
+                    <label><User size={14} /> Nombre completo</label>
                     <input
                       className="profile-input"
                       type="text"
@@ -106,7 +107,7 @@ const ProfilePage = () => {
                   </div>
 
                   <div className="profile-field">
-                    <label>📞 Teléfono (Ecuador)</label>
+                    <label><Phone size={14} /> Teléfono (Ecuador)</label>
                     <div className="phone-input-group">
                       <input
                         className="profile-input"
@@ -127,7 +128,7 @@ const ProfilePage = () => {
                   </div>
 
                   <div className="profile-field">
-                    <label>🏙️ Ciudad</label>
+                    <label><Globe size={14} /> Ciudad</label>
                     <input
                       className="profile-input"
                       type="text"
@@ -138,7 +139,7 @@ const ProfilePage = () => {
                   </div>
 
                   <div className="profile-field full-width">
-                    <label>📍 Dirección principal</label>
+                    <label><MapPin size={14} /> Dirección principal</label>
                     <input
                       className="profile-input"
                       type="text"
@@ -213,9 +214,9 @@ const ProfilePage = () => {
                         </span>
                       </div>
                       <div className="order-meta">
-                        <span>💰 ${order.total.toLocaleString()}</span>
-                        <span>📅 {new Date(order.created_at).toLocaleDateString()}</span>
-                        <span>📦 {order.order_items?.length || 0} productos</span>
+                        <span><CreditCard size={14} /> ${order.total.toLocaleString()}</span>
+                        <span><Calendar size={14} /> {new Date(order.created_at).toLocaleDateString()}</span>
+                        <span><Package size={14} /> {order.order_items?.length || 0} productos</span>
                       </div>
                     </div>
                     <div className="order-action">

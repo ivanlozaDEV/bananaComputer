@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import Logo from '../components/Logo';
 import ProductGrid from '../components/ProductGrid';
 import { useStore } from '../context/StoreContext';
+import { ShieldCheck, Award, Truck, Lock, CheckCircle, Headphones, Package, Zap } from 'lucide-react';
 import './StorePage.css';
 
 const StorePage = () => {
@@ -43,18 +44,23 @@ const StorePage = () => {
           {/* Stats */}
           <div className="hero-stats">
             <div className="stat">
-              <span className="stat-value">2026</span>
-              <span className="stat-label">Nueva Era</span>
+              <span className="stat-icon"><ShieldCheck size={28} /></span>
+              <span className="stat-label">Equipos originales</span>
             </div>
             <div className="stat-divider"></div>
             <div className="stat">
-              <span className="stat-value">100%</span>
-              <span className="stat-label">Original</span>
+              <span className="stat-icon"><Award size={28} /></span>
+              <span className="stat-label">Garantía real</span>
             </div>
             <div className="stat-divider"></div>
             <div className="stat">
-              <span className="stat-value">EC</span>
-              <span className="stat-label">Garantia Local</span>
+              <span className="stat-icon"><Truck size={28} /></span>
+              <span className="stat-label">Entrega gratis</span>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat">
+              <span className="stat-icon"><Lock size={28} /></span>
+              <span className="stat-label">Pago seguro</span>
             </div>
           </div>
         </div>
@@ -149,8 +155,8 @@ const StorePage = () => {
             <Logo size="small" animated={false} />
           </div>
           <p className="footer-text">
-            <span>Banana Computer</span> &copy; 2026. 
-            Calidad, Confianza y Garantia Local.
+            <span>Banana Computer</span> &copy; {new Date().getFullYear()}. 
+            Nueva Era en Tecnología.
           </p>
           <div className="footer-links">
             <a href="#privacidad">Privacidad</a>

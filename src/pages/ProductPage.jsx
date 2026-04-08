@@ -4,16 +4,46 @@ import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useCart } from '../context/CartContext';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  ChevronDown, ChevronUp, ShieldCheck, Truck, 
+  Cpu, MemoryStick, HardDrive, Monitor, Battery, 
+  Scale, Wifi, Camera, Layers, Zap, Scan, Settings,
+  Palette, Film
+} from 'lucide-react';
 import './ProductPage.css';
 
-// Maps Lucide icon names (stored in DB) → emoji for display
+// Maps icon names/emojis (stored in DB) → Lucide Components
 const ICON_MAP = {
-  'memory-stick': '🧠', 'hard-drive': '💾', 'cpu': '⚡', 'monitor': '🖥️',
-  'battery': '🔋', 'scale': '⚖️', 'wifi': '📶', 'camera': '📷',
-  'layers': '🎮', 'zap': '⚡', 'scan': '🌈', 'default': '⚙️',
+  '🧠': MemoryStick,
+  '💾': HardDrive,
+  '⚡': Cpu,
+  '🖥️': Monitor,
+  '🔋': Battery,
+  '⚖️': Scale,
+  '📶': Wifi,
+  '📷': Camera,
+  '🎮': Layers,
+  '🎨': Palette,
+  '🌈': Scan,
+  '🎬': Film,
+  'memory-stick': MemoryStick,
+  'hard-drive': HardDrive,
+  'cpu': Cpu,
+  'monitor': Monitor,
+  'battery': Battery,
+  'scale': Scale,
+  'wifi': Wifi,
+  'camera': Camera,
+  'layers': Layers,
+  'zap': Zap,
+  'scan': Scan,
+  'default': Settings,
 };
-const getIcon = (name) => ICON_MAP[name] || name || ICON_MAP.default;
+
+const getIcon = (name, size = 18) => {
+  const IconComp = ICON_MAP[name] || ICON_MAP.default;
+  return <IconComp size={size} />;
+};
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -166,7 +196,7 @@ const ProductPage = () => {
               <div className="pp-quick-specs">
                 {attrs.slice(0, 6).map((a, i) => (
                   <div key={i} className="pp-quick-spec-item">
-                    <span className="pp-qs-icon">{getIcon(a.attribute_definitions?.icon)}</span>
+                    <span className="pp-qs-icon">{getIcon(a.attribute_definitions?.icon, 20)}</span>
                     <div className="pp-qs-text">
                       <span className="pp-qs-label">{a.attribute_definitions?.name}</span>
                       <span className="pp-qs-val">{a.value}{a.attribute_definitions?.unit ? ` ${a.attribute_definitions.unit}` : ''}</span>
@@ -184,8 +214,8 @@ const ProductPage = () => {
               </button>
               
               <div className="pp-trust-badges">
-                <span>🛡️ Garantía Local 1 Año</span>
-                <span>🚚 Envío Seguro a Todo Ecuador</span>
+                <span><ShieldCheck size={16} /> Garantía Local 1 Año</span>
+                <span><Truck size={16} /> Envío Seguro a Todo Ecuador</span>
               </div>
               <p className="pp-sku">SKU: {product.sku}</p>
             </div>

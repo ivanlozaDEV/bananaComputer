@@ -1,7 +1,45 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
+import { 
+  Cpu, MemoryStick, HardDrive, Monitor, Battery, 
+  Scale, Wifi, Camera, Layers, Zap, Scan, Settings,
+  Palette, Film
+} from 'lucide-react';
 import './ProductGrid.css';
+
+// Maps icon names/emojis (stored in DB) → Lucide Components
+const ICON_MAP = {
+  '🧠': MemoryStick,
+  '💾': HardDrive,
+  '⚡': Cpu,
+  '🖥️': Monitor,
+  '🔋': Battery,
+  '⚖️': Scale,
+  '📶': Wifi,
+  '📷': Camera,
+  '🎮': Layers,
+  '🎨': Palette,
+  '🌈': Scan,
+  '🎬': Film,
+  'memory-stick': MemoryStick,
+  'hard-drive': HardDrive,
+  'cpu': Cpu,
+  'monitor': Monitor,
+  'battery': Battery,
+  'scale': Scale,
+  'wifi': Wifi,
+  'camera': Camera,
+  'layers': Layers,
+  'zap': Zap,
+  'scan': Scan,
+  'default': Settings,
+};
+
+const getIcon = (name, size = 16) => {
+  const IconComp = ICON_MAP[name] || ICON_MAP.default;
+  return <IconComp size={size} />;
+};
 
 const ProductCard = ({ product, addedIds, handleAddToCart }) => {
   const [imgIndex, setImgIndex] = useState(0);
@@ -78,7 +116,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart }) => {
         <div className="product-specs-grid">
           {product.specs.map((spec, index) => (
             <div key={index} className="spec-pill">
-              <span className="spec-icon">{spec.icon}</span>
+              <span className="spec-icon">{getIcon(spec.icon, 14)}</span>
               <div className="spec-details">
                 <span className="spec-value">{spec.value}{spec.unit}</span>
                 <span className="spec-label">{spec.label}</span>

@@ -7,7 +7,7 @@ export const useStore = () => useContext(StoreContext);
 
 const INITIAL_HERO = {
   title: 'BANANA COMPUTER',
-  subtitle: 'El futuro de la computación. Redefinido.',
+  subtitle: 'Computadoras potentes al mejor precio en Ecuador.',
   primary_cta: 'Explorar Sistemas',
   secondary_cta: 'Más información',
   image_url: null,

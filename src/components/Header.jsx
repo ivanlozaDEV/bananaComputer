@@ -3,6 +3,7 @@ import Logo from './Logo';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { ShoppingCart } from 'lucide-react';
 import './Header.css';
 
 const Header = () => {
@@ -76,7 +77,7 @@ const Header = () => {
             )}
             
             <button className="btn-nav cart-btn" onClick={() => setCartOpen(true)}>
-              <span className="btn-icon">🛒</span>
+              <span className="btn-icon"><ShoppingCart size={18} /></span>
               Carrito
               {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
             </button>
