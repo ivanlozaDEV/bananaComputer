@@ -4,8 +4,10 @@ import { supabase } from '../lib/supabase';
 const emptyProduct = {
   sku: '', name: '', tagline: '', marketing_subtitle: '',
   marketing_body: '', description: '', price: '', stock: '0',
-  category_id: '', subcategory_id: '', image_url: '',
+  category_id: '', subcategory_id: '', image_url: '', // keep for compat
+  images: [], subcategory_ids: [],
   is_featured: false, is_active: true,
+  banana_review: null,
 };
 
 export function useProductForm(categories, onSaveSuccess) {
@@ -23,10 +25,13 @@ export function useProductForm(categories, onSaveSuccess) {
     const cat = categories.find(c => c.id === form.category_id);
     if (!cat) { setAttrDefs([]); return; }
     const baseAttrs = (cat.attribute_definitions || []).filter(a => !a.subcategory_id);
-    const sub = cat.subcategories?.find(s => s.id === form.subcategory_id);
+    
+    // For attributes, we'll use the "primary" subcategory if any
+    const primarySubId = form.subcategory_ids?.[0] || form.subcategory_id;
+    const sub = cat.subcategories?.find(s => s.id === primarySubId);
     const subAttrs = (sub?.attribute_definitions || []);
     setAttrDefs([...baseAttrs, ...subAttrs]);
-  }, [form.category_id, form.subcategory_id, categories]);
+  }, [form.category_id, form.subcategory_ids, form.subcategory_id, categories]);
 
   const openNew = useCallback(() => {
     setForm(emptyProduct);
@@ -37,7 +42,18 @@ export function useProductForm(categories, onSaveSuccess) {
   }, []);
 
   const openEdit = useCallback(async (product) => {
-    setForm({ ...emptyProduct, ...product, price: String(product.price), stock: String(product.stock) });
+    // Fetch associated subcategories
+    const { data: subs } = await supabase.from('product_subcategories').select('subcategory_id').eq('product_id', product.id);
+    const subIds = (subs || []).map(s => s.subcategory_id);
+
+    setForm({ 
+      ...emptyProduct, 
+      ...product, 
+      price: String(product.price), 
+      stock: String(product.stock),
+      images: product.images || (product.image_url ? [product.image_url] : []),
+      subcategory_ids: subIds.length > 0 ? subIds : (product.subcategory_id ? [product.subcategory_id] : [])
+    });
     setDatasheetRaw(product.datasheet ? Object.entries(product.datasheet).map(([k,v]) => `${k}\t${v}`).join('\n') : '');
     setDatasheetParsed(product.datasheet || null);
     
@@ -61,9 +77,17 @@ export function useProductForm(categories, onSaveSuccess) {
       throw error;
     } else {
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
-      setForm(f => ({ ...f, image_url: publicUrl }));
+      setForm(f => ({ 
+        ...f, 
+        images: [...(f.images || []), publicUrl],
+        image_url: f.image_url || publicUrl // update legacy
+      }));
     }
     setUploading(false);
+  };
+
+  const removeImage = (url) => {
+    setForm(f => ({ ...f, images: (f.images || []).filter(i => i !== url) }));
   };
 
   const handleSave = async (e) => {
@@ -73,9 +97,13 @@ export function useProductForm(categories, onSaveSuccess) {
       sku: form.sku, name: form.name, tagline: form.tagline,
       marketing_subtitle: form.marketing_subtitle, marketing_body: form.marketing_body,
       description: form.description, price: parseFloat(form.price),
-      stock: parseInt(form.stock), category_id: form.category_id || null,
-      subcategory_id: form.subcategory_id || null, image_url: form.image_url || null,
+      stock: parseInt(form.stock), 
+      category_id: form.category_id || null,
+      subcategory_id: form.subcategory_ids?.[0] || form.subcategory_id || null, 
+      image_url: form.images?.[0] || form.image_url || null,
+      images: form.images || [],
       datasheet: datasheetParsed, is_featured: form.is_featured, is_active: form.is_active,
+      banana_review: form.banana_review,
     };
 
     let productId;
@@ -86,12 +114,25 @@ export function useProductForm(categories, onSaveSuccess) {
       } else {
         await supabase.from('products').update(payload).eq('id', modal.id);
         productId = modal.id;
-        await supabase.from('product_attributes').delete().eq('product_id', productId);
+        // Cleanup old relations
+        await Promise.all([
+          supabase.from('product_attributes').delete().eq('product_id', productId),
+          supabase.from('product_subcategories').delete().eq('product_id', productId)
+        ]);
       }
 
       if (productId) {
+        // Save attributes
         const attrs = Object.entries(attrValues).filter(([,v]) => v?.trim()).map(([attribute_id, value]) => ({ product_id: productId, attribute_id, value }));
         if (attrs.length) await supabase.from('product_attributes').insert(attrs);
+
+        // Save multiple subcategories
+        try {
+          const subs = (form.subcategory_ids || []).map(sid => ({ product_id: productId, subcategory_id: sid }));
+          if (subs.length) await supabase.from('product_subcategories').insert(subs);
+        } catch (subErr) {
+          console.warn('Failed to save to product_subcategories. Ensure table exists.', subErr);
+        }
       }
 
       setModal(null);
@@ -166,6 +207,7 @@ export function useProductForm(categories, onSaveSuccess) {
     openNew,
     openEdit,
     handleImageUpload,
+    removeImage,
     handleSave,
     handleDatasheetFile,
     mapOllamaResult

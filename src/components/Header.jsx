@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Logo from './Logo';
+import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import './Header.css';
 
@@ -7,15 +8,24 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
   const { cartItems, cartCount, removeFromCart, cartTotal, cartSubtotal, cartTax } = useCart();
 
   useEffect(() => {
+    const fetchCats = async () => {
+      const { data } = await supabase.from('categories').select('id, name').order('name');
+      setCategories(data || []);
+    };
+    fetchCats();
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const whatsappLink = "https://wa.me/593991452461?text=Hola%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n%20sobre%20un%20producto.";
 
   return (
     <>
@@ -34,10 +44,10 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="header-nav">
-            <a href="#productos" className="nav-link">Productos</a>
-            <a href="#nosotros" className="nav-link">Nosotros</a>
-            <a href="#soporte" className="nav-link">Soporte</a>
-            <a href="#contacto" className="nav-link">Contacto</a>
+            {categories.map(cat => (
+              <a key={cat.id} href={`/categoria/${cat.id}`} className="nav-link">{cat.name}</a>
+            ))}
+            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="nav-link contact-nav">Contacto</a>
           </nav>
 
           {/* Cart Button */}
@@ -63,10 +73,10 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         <nav className={`mobile-nav ${menuOpen ? 'open' : ''}`}>
-          <a href="#productos" className="mobile-nav-link" onClick={() => setMenuOpen(false)}>Productos</a>
-          <a href="#nosotros" className="mobile-nav-link" onClick={() => setMenuOpen(false)}>Nosotros</a>
-          <a href="#soporte" className="mobile-nav-link" onClick={() => setMenuOpen(false)}>Soporte</a>
-          <a href="#contacto" className="mobile-nav-link" onClick={() => setMenuOpen(false)}>Contacto</a>
+          {categories.map(cat => (
+            <a key={cat.id} href={`/categoria/${cat.id}`} className="mobile-nav-link" onClick={() => setMenuOpen(false)}>{cat.name}</a>
+          ))}
+          <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="mobile-nav-link contact-nav" onClick={() => setMenuOpen(false)}>Contacto</a>
           <button className="btn-nav mobile" onClick={() => { setMenuOpen(false); setCartOpen(true); }}>
             Ver Carrito ({cartCount})
           </button>

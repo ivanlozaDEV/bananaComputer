@@ -39,6 +39,20 @@ export function useOllama() {
     }
   }, []);
 
+  const generateReview = useCallback(async (product, attrs, onComplete) => {
+    setAnalyzing(true);
+    setError('');
+    try {
+      const specsText = attrs.map(a => `${a.name}: ${a.value}`).join(', ');
+      const result = await import('../lib/ollama').then(m => m.generateBananaReview(product, specsText));
+      if (onComplete) onComplete(result);
+    } catch (err) {
+      setError(`Error generando review: ${err.message}`);
+    } finally {
+      setAnalyzing(false);
+    }
+  }, []);
+
   return {
     status,
     analyzing,
@@ -46,6 +60,7 @@ export function useOllama() {
     streamingText,
     checkStatus,
     analyze,
+    generateReview,
     setError,
     setStreamingText
   };

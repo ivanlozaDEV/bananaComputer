@@ -48,6 +48,15 @@ const ProductsPage = () => {
     );
   };
 
+  const handleGenerateReview = async () => {
+    const attrs = productForm.attrDefs.map(d => ({ name: d.name, value: productForm.attrValues[d.id] || '' }));
+    await ollama.generateReview(
+      productForm.form,
+      attrs,
+      (result) => productForm.setForm(f => ({ ...f, banana_review: result }))
+    );
+  };
+
   return (
     <div>
       <div className="admin-page-header">
@@ -81,6 +90,7 @@ const ProductsPage = () => {
         saving={productForm.saving}
         ollama={ollama}
         onOllamaAnalyze={handleOllamaAnalyze}
+        onGenerateReview={handleGenerateReview}
       />
     </div>
   );

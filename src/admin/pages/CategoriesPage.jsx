@@ -149,11 +149,32 @@ const CategoriesPage = () => {
 
               {/* Subcategories */}
               <h4 style={{ color: '#888', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', margin: '1rem 0 0.5rem' }}>Subcategorías</h4>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                 {(cat.subcategories || []).map(sub => (
-                  <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#222', borderRadius: '8px', padding: '0.3rem 0.6rem' }}>
-                    <span style={{ color: '#ccc', fontSize: '0.8rem' }}>{sub.name}</span>
-                    <button onClick={() => deleteSub(sub.id)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', lineHeight: 1 }}><Trash2 size={12} /></button>
+                  <div key={sub.id} style={{ background: '#222', borderRadius: '12px', padding: '0.75rem', border: '1px solid #333' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ color: '#ccc', fontSize: '0.85rem', fontWeight: 600 }}>{sub.name}</span>
+                      <button onClick={() => deleteSub(sub.id)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }}><Trash2 size={12} /></button>
+                    </div>
+                    <div style={{ position: 'relative', width: '100%', height: '80px', background: '#111', borderRadius: '8px', overflow: 'hidden', border: '1px dashed #444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {sub.image_url ? (
+                        <img src={sub.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '1.5rem', opacity: 0.2 }}>🖼️</span>
+                      )}
+                      <label style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px', cursor: 'pointer' }}>
+                        <Plus size={12} color="#fff" />
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          const path = `subcategories/${Date.now()}-${file.name}`;
+                          await supabase.storage.from('product-images').upload(path, file);
+                          const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
+                          await supabase.from('subcategories').update({ image_url: publicUrl }).eq('id', sub.id);
+                          fetchCategories();
+                        }} />
+                      </label>
+                    </div>
                   </div>
                 ))}
               </div>

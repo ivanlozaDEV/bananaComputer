@@ -90,3 +90,53 @@ ${rawText}`;
 
   return parseOllamaJson(accumulated);
 }
+
+// ─── Generate Banana Review (5 pillars) ────────────────────────
+export async function generateBananaReview(product, specsText) {
+  const prompt = `Critical tech review in Spanish for: ${product.name}.
+Specs: ${specsText}
+
+Provide an honest, expert assessment across 5 categories. Each score must be between 1 and 5 (integers).
+Categories:
+- Office: Suitability for heavy Excel/Docs and multitasking.
+- Gaming: Ability to run modern heavy games.
+- Design: Color accuracy, screen quality, GPU power for design.
+- Portability: Weight and battery life for travel.
+- Value: Cost-benefit ratio.
+
+Return ONLY JSON:
+{
+  "verdict": "One short punchy sentence as a summary.",
+  "scores": {
+    "office": 5,
+    "gaming": 2,
+    "design": 3,
+    "portability": 4,
+    "value": 5
+  },
+  "pros": ["point 1", "point 2"],
+  "cons": ["point 1", "point 2"],
+  "detailed_review": "2-3 paragraphs of expert critical analysis in Spanish, mention the target user."
+}
+
+Rules:
+- Be critical, don't just praise.
+- Mention specific specs from the list.
+- Return ONLY the JSON object.`;
+
+  const res = await fetch(`${OLLAMA_HOST}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      model: OLLAMA_MODEL, 
+      prompt, 
+      stream: false, 
+      format: 'json',
+      options: { temperature: 0.7 }
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
+  const data = await res.json();
+  return parseOllamaJson(data.response);
+}

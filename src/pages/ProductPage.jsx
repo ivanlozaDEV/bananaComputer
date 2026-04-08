@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { useCart } from '../context/CartContext';
 import './ProductPage.css';
 
@@ -11,7 +12,7 @@ const ICON_MAP = {
   'battery': '🔋', 'scale': '⚖️', 'wifi': '📶', 'camera': '📷',
   'layers': '🎮', 'zap': '⚡', 'scan': '🌈', 'default': '⚙️',
 };
-const icon = (name) => ICON_MAP[name] || name || ICON_MAP.default;
+const getIcon = (name) => ICON_MAP[name] || name || ICON_MAP.default;
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -22,18 +23,35 @@ const ProductPage = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('specs'); // 'specs' | 'datasheet'
   const [added, setAdded] = useState(false);
+  const [activeImg, setActiveImg] = useState(null);
 
   useEffect(() => {
     const load = async () => {
-      const { data: prod } = await supabase
+      let { data: prod, error } = await supabase
         .from('products')
-        .select('*, categories(name), subcategories(name)')
+        .select('*, categories(id, name), subcategories(id, name)')
         .eq('id', id)
         .single();
-      if (!prod) { navigate('/'); return; }
+      
+      if (error) {
+        console.warn('ProductPage query failed, attempting fallback:', error);
+        const { data: fbProd, error: fbError } = await supabase
+          .from('products')
+          .select('*, categories(id, name)')
+          .eq('id', id)
+          .single();
+        
+        if (fbError || !fbProd) {
+          console.error('Final fallback failed:', fbError);
+          navigate('/');
+          return;
+        }
+        prod = fbProd;
+      }
+      
       setProduct(prod);
+      setActiveImg(prod.images?.[0] || prod.image_url);
 
-      // Load spec card attribute values + definitions
       const { data: prodAttrs } = await supabase
         .from('product_attributes')
         .select('value, attribute_definitions(name, unit, icon, display_order)')
@@ -43,7 +61,7 @@ const ProductPage = () => {
       setLoading(false);
     };
     load();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -64,46 +82,70 @@ const ProductPage = () => {
   }
 
   const datasheetEntries = product.datasheet ? Object.entries(product.datasheet) : [];
+  const allImages = product.images?.length > 0 ? product.images : (product.image_url ? [product.image_url] : []);
+
+  const breadcrumbItems = [
+    { label: product.categories?.name || 'Categoría', path: `/categoria/${product.category_id}` },
+    { label: product.subcategories?.name || 'Subcategoría', path: `/categoria/${product.category_id}/${product.subcategory_id}` },
+    { label: product.name }
+  ];
+
+  const BananaRating = ({ score }) => {
+    return (
+      <div className="banana-rating">
+        {[1, 2, 3, 4, 5].map(i => (
+          <span key={i} className={`banana-icon ${i <= (score || 0) ? 'filled' : 'empty'}`}>🍌</span>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
       <Header />
       <div className="pp-root">
+        <Breadcrumbs items={breadcrumbItems} />
 
-        {/* ── Breadcrumb ─────────────────────────────── */}
-        <nav className="pp-breadcrumb">
-          <button onClick={() => navigate('/')}>Inicio</button>
-          <span>›</span>
-          <span>{product.categories?.name || 'Productos'}</span>
-          <span>›</span>
-          <span className="pp-breadcrumb-current">{product.name}</span>
-        </nav>
-
-        {/* ── Hero: image + buy card ─────────────────── */}
         <section className="pp-hero">
-          {/* Left: image */}
-          <div className="pp-img-wrap">
+          {/* Left: Gallery */}
+          <div className="pp-gallery">
             <div className="pp-img-frame">
-              {product.image_url
-                ? <img src={product.image_url} alt={product.name} className="pp-img" />
-                : <div className="pp-img-placeholder">🍌</div>
-              }
+              {activeImg ? (
+                <img src={activeImg} alt={product.name} className="pp-img" />
+              ) : (
+                <div className="pp-img-placeholder">🍌</div>
+              )}
             </div>
-            {/* Category badge */}
+            {allImages.length > 1 && (
+              <div className="pp-thumbnails">
+                {allImages.map((u, i) => (
+                  <button 
+                    key={i} 
+                    className={`pp-thumb ${activeImg === u ? 'pp-thumb-active' : ''}`}
+                    onClick={() => setActiveImg(u)}
+                  >
+                    <img src={u} alt="" />
+                  </button>
+                ))}
+              </div>
+            )}
             {product.subcategories?.name && (
               <span className="pp-cat-badge">{product.subcategories.name}</span>
             )}
           </div>
 
-          {/* Right: info + buy */}
+          {/* Right: Info */}
           <div className="pp-info">
-            <p className="pp-tagline">{product.tagline}</p>
+            <p className="pp-tagline">{product.tagline || 'Ecuador Tech Official'}</p>
             <h1 className="pp-name">{product.name}</h1>
-            <p className="pp-subtitle">{product.marketing_subtitle}</p>
+            <p className="pp-subtitle">{product.marketing_subtitle || product.description}</p>
+            
             <div className="pp-buy-card">
               <div className="pp-price-row">
                 <div className="pp-price-block">
-                  <span className="pp-price">${parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="pp-price">
+                    ${parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                   <span className="pp-tax-note">Incluido impuestos</span>
                 </div>
                 <div className="pp-stock-status">
@@ -112,6 +154,7 @@ const ProductPage = () => {
                   </span>
                 </div>
               </div>
+              
               <button
                 className={`pp-btn-cart ${added ? 'pp-btn-added' : ''}`}
                 onClick={handleAddToCart}
@@ -119,30 +162,101 @@ const ProductPage = () => {
               >
                 {added ? '✓ Agregado al carrito' : 'Agregar al carrito'}
               </button>
+              
+              <div className="pp-trust-badges">
+                <span>🛡️ Garantía Local 1 Año</span>
+                <span>🚚 Envío Seguro a Todo Ecuador</span>
+              </div>
               <p className="pp-sku">SKU: {product.sku}</p>
             </div>
           </div>
         </section>
 
-        {/* ── Marketing body ─────────────────────────── */}
-        {product.marketing_body && (
-          <section className="pp-marketing">
-            <p>{product.marketing_body}</p>
+        {/* ── Banana Review Section ─────────────────── */}
+        {product.banana_review ? (
+          <section className="pp-banana-review">
+            <div className="review-header">
+              <h2 className="pp-marketing-title">Banana Review Bot</h2>
+              <span className="ai-badge">AI Powered</span>
+            </div>
+
+            <div className="review-card">
+              <div className="verdict-bar">
+                <span className="verdict-label">LA SENTENCIA:</span>
+                <p className="verdict-text">{product.banana_review.verdict}</p>
+              </div>
+
+              <div className="review-dashboard">
+                <div className="scores-grid">
+                  <div className="score-item">
+                    <span>Office / Trabajo</span>
+                    <BananaRating score={product.banana_review.scores?.office} />
+                  </div>
+                  <div className="score-item">
+                    <span>Heavy Gaming</span>
+                    <BananaRating score={product.banana_review.scores?.gaming} />
+                  </div>
+                  <div className="score-item">
+                    <span>Diseño / Creatividad</span>
+                    <BananaRating score={product.banana_review.scores?.design} />
+                  </div>
+                  <div className="score-item">
+                    <span>Portabilidad</span>
+                    <BananaRating score={product.banana_review.scores?.portability} />
+                  </div>
+                  <div className="score-item">
+                    <span>Calidad / Precio</span>
+                    <BananaRating score={product.banana_review.scores?.value} />
+                  </div>
+                </div>
+
+                <div className="pros-cons">
+                  <div className="pc-box pros">
+                    <h4>Lo bueno</h4>
+                    <ul>
+                      {product.banana_review.pros?.map((p, i) => <li key={i}>✓ {p}</li>)}
+                    </ul>
+                  </div>
+                  <div className="pc-box cons">
+                    <h4>Lo no tan bueno</h4>
+                    <ul>
+                      {product.banana_review.cons?.map((c, i) => <li key={i}>✗ {c}</li>)}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detailed-analysis">
+                <h4>Análisis Crítico</h4>
+                <p className="pp-marketing-text">{product.banana_review.detailed_review}</p>
+              </div>
+            </div>
           </section>
+        ) : (
+          product.marketing_body && (
+            <section className="pp-marketing">
+              <h2 className="pp-marketing-title">Descripción Detallada</h2>
+              <p className="pp-marketing-text">{product.marketing_body}</p>
+            </section>
+          )
         )}
 
-        {/* ── Tabs: Especificaciones / Datasheet ─────── */}
+        {/* Tabs & Specs */}
         <section className="pp-tabs-section">
           <div className="pp-tabs">
             <button
               className={`pp-tab ${tab === 'specs' ? 'pp-tab-active' : ''}`}
               onClick={() => setTab('specs')}
-            >Especificaciones</button>
+            >
+              Especificaciones Destacadas
+            </button>
             {datasheetEntries.length > 0 && (
               <button
                 className={`pp-tab ${tab === 'datasheet' ? 'pp-tab-active' : ''}`}
                 onClick={() => setTab('datasheet')}
-              >Datasheet Técnico</button>
+              >
+                Ficha Técnica Completa
+              </button>
             )}
           </div>
 
@@ -150,14 +264,16 @@ const ProductPage = () => {
             <div className="pp-specs-grid">
               {attrs.length > 0 ? attrs.map((a, i) => (
                 <div key={i} className="pp-spec-row">
-                  <span className="pp-spec-row-icon">{icon(a.attribute_definitions?.icon)}</span>
-                  <span className="pp-spec-row-name">{a.attribute_definitions?.name}</span>
-                  <span className="pp-spec-row-val">
-                    {a.value}{a.attribute_definitions?.unit ? ` ${a.attribute_definitions.unit}` : ''}
-                  </span>
+                  <span className="pp-spec-row-icon">{getIcon(a.attribute_definitions?.icon)}</span>
+                  <div className="pp-spec-row-content">
+                    <span className="pp-spec-row-name">{a.attribute_definitions?.name}</span>
+                    <span className="pp-spec-row-val">
+                      {a.value}{a.attribute_definitions?.unit ? ` ${a.attribute_definitions.unit}` : ''}
+                    </span>
+                  </div>
                 </div>
               )) : (
-                <p style={{ color: '#666', padding: '1.5rem' }}>Sin especificaciones cargadas.</p>
+                <div className="pp-no-specs">Sin especificaciones cargadas.</div>
               )}
             </div>
           )}
@@ -177,7 +293,6 @@ const ProductPage = () => {
             </div>
           )}
         </section>
-
       </div>
     </>
   );
