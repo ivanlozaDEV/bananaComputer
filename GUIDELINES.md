@@ -1,33 +1,53 @@
-# BananaComputer Design Guidelines
+# BananaComputer 2026: Design & Brand Guidelines
 
 ## Philosophy
-BananaComputer combines the nostalgia of the 1980s Apple Macintosh with modern web capabilities. The result is a **Retro-Futuristic** interface that feels solid, premium, and playful.
+BananaComputer is a premium mainstream retailer for global tech brands in Ecuador. We are a **2026-era startup** focused on reliability, official local warranty, and price-match guarantees. The aesthetic is clean, professional, and high-contrast, moving away from retro-nostalgia toward a "Modern Mainstream" retail experience.
 
-## Color Palette
-Inspirada en el logo original:
-- **Banana Yellow:** `#FBDD33` (Primary Action)
-- **Sunset Orange:** `#F48C37`
-- **Raspberry Red:** `#D13B53`
-- **Deep Purple:** `#4B467B` (Backgrounds/Accents)
-- **Ocean Cyan:** `#2D8B9B`
-- **Mint Green:** `#7AB19A`
+## Digital Design System (CSS Variables)
 
-## Typography
-- **Primary:** `Inter`, system-ui, sans-serif. Use bold weights (700, 800) for headers.
-- **Retro Accents:** Use a thick, slightly rounded monospace font for product tags or system messages.
+Define these in `src/index.css` as the single source of truth:
 
-## UI Elements
-### 1. The "System" Window (Glassmorphism)
-- Background: `rgba(255, 255, 255, 0.1)`
-- Backdrop-filter: `blur(12px)`
-- Border: `1px solid rgba(255, 255, 255, 0.2)`
-- Shadow: `0 8px 32px 0 rgba(0, 0, 0, 0.37)`
+### 1. Color Palette
+- **Primary Brand (Purple):** `--color-purple: #4B467B;` (Main accent, scrolled header, featured badges).
+- **Primary Action (Yellow):** `--color-banana: #FBDD33;` (Add to Cart buttons, sale highlights).
+- **Alerts:** `--color-raspberry: #D13B53;` (Badges).
+- **Success:** `--color-mint: #7AB19A;` (Add feedback).
+- **Backgrounds:**
+  - `--bg-cream: #fbfbf9;` (Main page background)
+  - `--bg-pure: #ffffff;` (Sidebar background)
+  - `--bg-dark: #0a0a12;` (Scrolled Navbar background)
 
-### 2. Retro Buttons
-- Solid borders (2px)
-- Sharp corners or slight 4px radius.
-- "Pressed" state with a slight offset-shadow shift.
+### 2. Typography
+- **Headings:** `var(--font-pixel)` for main categories and branding only.
+- **Body:** `Inter`, 400-500 weight.
+- **CTAs:** `Inter`, 700-800 weight, uppercase.
 
-### 3. Navigation (Menu Bar)
-- Top-fixed bar mirroring the classic MacOS menu.
-- Translucent with a thin bottom border.
+## UI Components & Patterns
+
+### 1. Navigation (The Header)
+- **Top Bar:** Translucent with a thin bottom border.
+- **Scrolled State:** Shifts to solid **Purple** (`#4B467B`) with white text.
+- **Cart Button:** Dynamic badge:
+  - White Navbar -> Purple Badge (`#4B467B`).
+  - Purple/Black Navbar -> Yellow Badge (`#FBDD33`).
+
+### 2. Product Presentation (The Grid)
+- **Grouping:** Products **must** be grouped by Category name.
+- **Prioritization:** Show up to 3 **Featured** (Purple badge) and then up to 3 **New Arrivals** (Yellow badge).
+- **Pricing:** Show final price clearly. Must include the note **"Incluido impuestos"** in `0.6rem` muted text.
+
+### 3. Action Buttons
+- **Detail Buttons ("Info"):** Outline style using `--color-purple`.
+- **Cart Buttons ("+ Carrito"):** Solid Yellow (`#FBDD33`) with black text.
+- **Checkout Button:** Solid Purple (`#4B467B`) with white text, large padding (`1.25rem`).
+
+### 4. Shopping Cart Sidebar
+- **Visuals:** Slide-in from the right with blur overlay.
+- **Financial Breakdown:**
+  - Subtotal (sin IVA 15%)
+  - IVA (15%)
+  - Total (con IVA)
+- **Empty State:** Use **Banana (🍌)** emojis as the primary visual.
+
+## Global Consistency
+Every new view or component added to the system (including Admin pages) should use these CSS variables to maintain a unified identity. Avoid hardcoding HEX values.

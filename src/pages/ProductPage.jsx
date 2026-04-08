@@ -100,27 +100,17 @@ const ProductPage = () => {
             <p className="pp-tagline">{product.tagline}</p>
             <h1 className="pp-name">{product.name}</h1>
             <p className="pp-subtitle">{product.marketing_subtitle}</p>
-
-            {/* Spec pills */}
-            {attrs.length > 0 && (
-              <div className="pp-specs-row">
-                {attrs.slice(0, 5).map((a, i) => (
-                  <div key={i} className="pp-spec-pill">
-                    <span className="pp-spec-icon">{icon(a.attribute_definitions?.icon)}</span>
-                    <div>
-                      <div className="pp-spec-val">{a.value}{a.attribute_definitions?.unit ? ` ${a.attribute_definitions.unit}` : ''}</div>
-                      <div className="pp-spec-name">{a.attribute_definitions?.name}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Buy card (glassmorphism) */}
             <div className="pp-buy-card">
               <div className="pp-price-row">
-                <span className="pp-price">${parseFloat(product.price).toFixed(2)}</span>
-                <span className="pp-stock">{product.stock > 0 ? `${product.stock} en stock` : '⚠ Sin stock'}</span>
+                <div className="pp-price-block">
+                  <span className="pp-price">${parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="pp-tax-note">Incluido impuestos</span>
+                </div>
+                <div className="pp-stock-status">
+                  <span className={`pp-stock ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                    {product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}
+                  </span>
+                </div>
               </div>
               <button
                 className={`pp-btn-cart ${added ? 'pp-btn-added' : ''}`}

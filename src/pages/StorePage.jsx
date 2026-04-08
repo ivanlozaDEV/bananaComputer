@@ -1,54 +1,167 @@
-import React from 'react'
-import Header from '../components/Header'
-import ProductGrid from '../components/ProductGrid'
-import Logo from '../components/Logo'
-import { useStore } from '../context/StoreContext'
-import '../App.css'
+import React from 'react';
+import Header from '../components/Header';
+import Logo from '../components/Logo';
+import ProductGrid from '../components/ProductGrid';
+import { useStore } from '../context/StoreContext';
+import './StorePage.css';
 
-function StorePage() {
+const StorePage = () => {
   const { heroContent } = useStore();
-  const hasHeroImage = !!heroContent?.image_url;
 
   return (
-    <div className="app-container">
+    <div className="store-page">
       <Header />
-      <main>
-        <section className={`hero-section ${hasHeroImage ? 'hero-split' : ''}`}>
-          <div className="hero-content">
-            <div className="hero-logo-container">
-              <Logo size="large" />
+
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="hero-content">
+          {/* Logo */}
+          <div className="hero-logo">
+            <Logo size="large" animated={true} />
+          </div>
+
+          {/* Title */}
+          <h1 className="hero-title">
+            {heroContent?.title || 'Tu Tecnologia'} <span className="highlight">{heroContent?.title ? '' : 'Garantizada'}</span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="hero-subtitle">
+            {heroContent?.subtitle || 'Bienvenido a Banana Computer, tu aliado confiable para adquirir hardware de las mejores marcas globales con garantia oficial y soporte local en Ecuador.'}
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="hero-buttons">
+            <a href="#productos" className="btn btn-primary">
+              {heroContent?.primary_cta || 'Ver Catalogo'}
+            </a>
+            <a href="#nosotros" className="btn btn-secondary">
+              {heroContent?.secondary_cta || 'Soporte y Garantia'}
+            </a>
+          </div>
+          
+          {/* Stats */}
+          <div className="hero-stats">
+            <div className="stat">
+              <span className="stat-value">2026</span>
+              <span className="stat-label">Nueva Era</span>
             </div>
-            <h1 className="hero-title">{heroContent?.title || 'BANANA COMPUTER'}</h1>
-            <h2 className="hero-subtitle">{heroContent?.subtitle || 'El futuro de la computación. Redefinido.'}</h2>
-            <div className="hero-actions">
-              <button className="retro-button">{heroContent?.primary_cta || 'Explorar Sistemas'}</button>
-              <button className="outline-button">{heroContent?.secondary_cta || 'Más información'}</button>
+            <div className="stat-divider"></div>
+            <div className="stat">
+              <span className="stat-value">100%</span>
+              <span className="stat-label">Original</span>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat">
+              <span className="stat-value">EC</span>
+              <span className="stat-label">Garantia Local</span>
             </div>
           </div>
-          {hasHeroImage && (
-            <div className="hero-image-container">
-              <img src={heroContent.image_url} alt="Hero" className="hero-image" />
+        </div>
+      </section>
+
+      {/* Products Section */}
+      <ProductGrid />
+
+      {/* Features Section */}
+      <section id="nosotros" className="features-section">
+        <div className="section-header">
+          <span className="section-label">// Por que Banana Computer</span>
+          <h2 className="section-title">
+            Calidad y <span className="highlight">Confianza</span>
+          </h2>
+        </div>
+
+        <div className="features-grid">
+          <div className="feature-card">
+            <div className="feature-icon" style={{ color: 'var(--mint)' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
             </div>
-          )}
-        </section>
+            <h3 className="feature-title">Garantia Local</h3>
+            <p className="feature-description">
+              Todos nuestros productos cuentan con garantia valida en Ecuador, respaldada directamente por las marcas.
+            </p>
+          </div>
 
-        <section className="products-section">
-          <ProductGrid />
-        </section>
-      </main>
+          <div className="feature-card">
+            <div className="feature-icon" style={{ color: 'var(--banana)' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+            <h3 className="feature-title">Soporte Directo</h3>
+            <p className="feature-description">
+              Asistencia tecnica personalizada y soporte post-venta para asegurar el mejor funcionamiento de tu equipo.
+            </p>
+          </div>
 
-      <footer className="main-footer">
+          <div className="feature-card">
+            <div className="feature-icon" style={{ color: 'var(--sunset)' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              </svg>
+            </div>
+            <h3 className="feature-title">Marcas Lideres</h3>
+            <p className="feature-description">
+              Distribuimos hardware de las marcas mas reconocidas a nivel mundial para garantizar durabilidad y potencia.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon" style={{ color: 'var(--ocean)' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M16 8l-6 6-2-2"></path>
+              </svg>
+            </div>
+            <h3 className="feature-title">Productos Nuevos</h3>
+            <p className="feature-description">
+              Solo vendemos productos sellados de fabrica, asegurando que estrenas tecnologia de ultima generacion.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="cta-section">
+        <div className="cta-content">
+          <h2 className="cta-title">
+            Garantizamos el <span className="highlight">precio mas bajo</span>
+          </h2>
+          <p className="cta-description">
+            Si encuentras una oferta mas barata en el mercado, la igualamos. 
+            Te aseguramos hardware original con garantia oficial al mejor costo posible.
+          </p>
+          <div className="cta-buttons">
+            <button className="btn btn-primary">Ver Catalogo</button>
+            <button className="btn btn-secondary">Contactar Asesor</button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="footer">
+        <div className="rainbow-stripe"></div>
         <div className="footer-content">
-          <p>&copy; 1984 - 2026 BananaComputer Inc. Todos los derechos reservados.</p>
+          <div className="footer-logo">
+            <Logo size="small" animated={false} />
+          </div>
+          <p className="footer-text">
+            <span>Banana Computer</span> &copy; 2026. 
+            Calidad, Confianza y Garantia Local.
+          </p>
           <div className="footer-links">
-            <a href="#about">Sobre nosotros</a>
-            <a href="#support">Soporte</a>
-            <a href="#contact">Contacto</a>
+            <a href="#privacidad">Privacidad</a>
+            <a href="#terminos">Terminos</a>
+            <a href="#contacto">Contacto</a>
           </div>
         </div>
       </footer>
     </div>
-  )
-}
+  );
+};
 
-export default StorePage
+export default StorePage;
+;

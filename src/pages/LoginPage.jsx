@@ -68,7 +68,7 @@ const LoginPage = () => {
 
           {error && <p className="login-error">{error}</p>}
 
-          <button type="submit" className="retro-button login-submit" disabled={loading}>
+          <button type="submit" className="btn-brand login-submit" disabled={loading}>
             {loading ? 'Cargando...' : isSignup ? 'Crear cuenta' : 'Entrar'}
           </button>
         </form>

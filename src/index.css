@@ -12,13 +12,26 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Banana Minimalist Palette */
+  /* Brand Palette & Tokens */
+  --banana: #4B467B; /* PIVOT: Yellow shifted to Purple */
+  --purple-accent: #6C63FF;
+  
   --color-banana: #FBDD33;
   --color-sunset: #F48C37;
   --color-raspberry: #D13B53;
   --color-purple: #4B467B;
   --color-ocean: #2D8B9B;
   --color-mint: #7AB19A;
+
+  /* Typography & Theme Tokens (Light/Cream Focus) */
+  --text-primary: #121212;
+  --text-secondary: #424242;
+  --text-muted: #757575;
+  
+  --bg-dark: #fbfbf9;
+  --bg-deep: #f0f0f0;
+  --bg-card: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.08);
 
   --bg-cream: #fbfbf9;
   --bg-pure: #ffffff;
@@ -71,8 +84,8 @@ h1, h2, h3 {
   box-shadow: var(--shadow-medium);
 }
 
-.retro-button {
-  background: #000;
+.btn-brand {
+  background: var(--color-purple);
   color: #fff;
   border: none;
   padding: 1rem 2rem;
@@ -85,17 +98,17 @@ h1, h2, h3 {
   letter-spacing: 0.5px;
 }
 
-.retro-button:hover {
+.btn-brand:hover {
   transform: scale(1.05);
-  background: var(--color-purple);
+  background: #3a3660;
   box-shadow: 0 10px 20px rgba(75, 70, 123, 0.2);
 }
 
-.retro-button:active {
+.btn-brand:active {
   transform: scale(0.95);
 }
 
-.retro-button.adding {
+.btn-brand.adding {
   background: var(--color-mint);
-  color: #000;
+  color: #fff;
 }

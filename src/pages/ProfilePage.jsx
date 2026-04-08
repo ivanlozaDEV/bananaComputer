@@ -74,7 +74,7 @@ const ProfilePage = () => {
               />
             </div>
           ))}
-          <button type="submit" className="retro-button" disabled={saving}>
+          <button type="submit" className="btn-brand" disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </form>
