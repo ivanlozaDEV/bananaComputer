@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 const emptyProduct = {
-  sku: '', name: '', tagline: '', marketing_subtitle: '',
+  sku: '', name: '', model_number: '', tagline: '', marketing_subtitle: '',
   marketing_body: '', description: '', price: '', stock: '0',
   category_id: '', subcategory_id: '', image_url: '', // keep for compat
   images: [], subcategory_ids: [],
@@ -94,7 +94,7 @@ export function useProductForm(categories, onSaveSuccess) {
     if (e) e.preventDefault();
     setSaving(true);
     const payload = {
-      sku: form.sku, name: form.name, tagline: form.tagline,
+      sku: form.sku, name: form.name, model_number: form.model_number, tagline: form.tagline,
       marketing_subtitle: form.marketing_subtitle, marketing_body: form.marketing_body,
       description: form.description, price: parseFloat(form.price),
       stock: parseInt(form.stock), 
@@ -160,6 +160,7 @@ export function useProductForm(categories, onSaveSuccess) {
     setForm(f => ({
       ...f,
       name:               result.product_name      || f.name,
+      model_number:       f.model_number || result.model_number || f.model_number,
       sku:                f.sku || result.sku_suggestion || f.sku,
       tagline:            result.tagline            || f.tagline,
       marketing_subtitle: result.marketing_subtitle || f.marketing_subtitle,

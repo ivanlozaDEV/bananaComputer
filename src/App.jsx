@@ -7,6 +7,8 @@ import ProductPage from './pages/ProductPage'
 import CategoryPage from './pages/CategoryPage'
 import SubcategoryPage from './pages/SubcategoryPage'
 import AdminApp from './admin/AdminApp'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
 
@@ -18,7 +20,16 @@ function App() {
       <Route path="/categoria/:catId/:subId" element={<SubcategoryPage />} />
       <Route path="/producto/:id" element={<ProductPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/perfil" element={<ProfilePage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route 
+        path="/perfil" 
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } 
+      />
       <Route
         path="/admin/*"
         element={

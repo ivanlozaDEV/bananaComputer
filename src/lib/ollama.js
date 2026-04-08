@@ -42,6 +42,7 @@ export async function analyzeWithOllama(rawText, attrDefs, onToken) {
 JSON schema:
 {
   "product_name": "full commercial name",
+  "model_number": "official model or part number (e.g. M1502, E1504F)",
   "sku_suggestion": "SHORT-CODE-UPPERCASE",
   "specs": { "AttributeName": "value without units" },
   "datasheet": { "FieldName": "value" },
@@ -108,11 +109,11 @@ Return ONLY JSON:
 {
   "verdict": "One short punchy sentence as a summary.",
   "scores": {
-    "office": 5,
-    "gaming": 2,
+    "office": 3,
+    "gaming": 3,
     "design": 3,
-    "portability": 4,
-    "value": 5
+    "portability": 3,
+    "value": 3
   },
   "pros": ["point 1", "point 2"],
   "cons": ["point 1", "point 2"],
@@ -121,6 +122,9 @@ Return ONLY JSON:
 
 Rules:
 - Be critical, don't just praise.
+- DO NOT use the default '3' scores from the example; calculate them based on the hardware.
+- High-end (i7/Ryzen 7, 16GB+) should score 4-5 in performance.
+- Entry-level (Celeron/i3, 4GB) should score 1-2 in heavy categories.
 - Mention specific specs from the list.
 - Return ONLY the JSON object.`;
 

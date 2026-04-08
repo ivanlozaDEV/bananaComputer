@@ -77,7 +77,32 @@ const ProductModal = ({
             </div>
           </div>
 
-          {/* ... (Basic info & Marketing copy remains same) ... */}
+          {/* SKU & Model Number */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div className="admin-form-group">
+              <label>SKU (Interno)</label>
+              <input 
+                className="admin-input" 
+                value={form.sku || ''} 
+                onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
+                placeholder="Ej. BNN-001"
+              />
+            </div>
+            <div className="admin-form-group">
+              <label>Número de Modelo (Ej. M1502)</label>
+              <input 
+                className="admin-input" 
+                value={form.model_number || ''} 
+                onChange={e => setForm(f => ({ ...f, model_number: e.target.value }))}
+                placeholder="Ej. E1504F"
+              />
+            </div>
+          </div>
+
+          <div className="admin-form-group" style={{ marginBottom: '1.5rem' }}>
+            <label>Nombre del Producto</label>
+            <input className="admin-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          </div>
 
           {/* Multiple Images Management */}
           <div className="admin-form-group" style={{ marginBottom: '1.5rem' }}>

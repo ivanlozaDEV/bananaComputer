@@ -50,10 +50,12 @@
 
 .product-name {
   font-size: 1rem;
+  padding-top: 2rem;
   margin-bottom: 0.5rem;
   color: #000;
   font-weight: 800;
   letter-spacing: -0.2px;
+  text-decoration: none;
 }
 
 .product-description {
@@ -62,6 +64,7 @@
   margin-bottom: 2rem;
   flex-grow: 1;
   line-height: 1.5;
+  text-decoration: none;
 }
 
 .product-footer {

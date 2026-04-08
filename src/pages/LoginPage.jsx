@@ -5,13 +5,20 @@ import Logo from '../components/Logo';
 import './LoginPage.css';
 
 const LoginPage = () => {
-  const { signIn, signUp, isSuperAdmin } = useAuth();
+  const { user, signIn, signUp, isSuperAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // If already logged in, send them to their dashboard/profile
+  React.useEffect(() => {
+    if (user && !authLoading) {
+      navigate(isSuperAdmin ? '/admin' : '/perfil');
+    }
+  }, [user, authLoading, isSuperAdmin, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,16 +29,13 @@ const LoginPage = () => {
       ? await signUp(email, password)
       : await signIn(email, password);
 
-    setLoading(false);
-
     if (authError) {
       setError(authError.message);
+      setLoading(false);
       return;
     }
 
-    // After login, redirect superadmin to /admin, others to /
-    const role = data?.user?.app_metadata?.role;
-    navigate(role === 'superadmin' ? '/admin' : '/');
+    // Redirect happens via useEffect above when user state updates
   };
 
   return (
@@ -72,6 +76,12 @@ const LoginPage = () => {
             {loading ? 'Cargando...' : isSignup ? 'Crear cuenta' : 'Entrar'}
           </button>
         </form>
+
+        {!isSignup && (
+          <Link to="/forgot-password" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', color: '#888', fontSize: '0.85rem', textDecoration: 'none' }}>
+            ¿Olvidaste tu contraseña?
+          </Link>
+        )}
 
         <button
           className="login-toggle"

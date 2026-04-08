@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useCart } from '../context/CartContext';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import './ProductPage.css';
 
 // Maps Lucide icon names (stored in DB) → emoji for display
@@ -21,7 +22,7 @@ const ProductPage = () => {
   const [product, setProduct] = useState(null);
   const [attrs, setAttrs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('specs'); // 'specs' | 'datasheet'
+  const [dsOpen, setDsOpen] = useState(false);
   const [added, setAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(null);
 
@@ -117,16 +118,18 @@ const ProductPage = () => {
               )}
             </div>
             {allImages.length > 1 && (
-              <div className="pp-thumbnails">
-                {allImages.map((u, i) => (
-                  <button 
-                    key={i} 
-                    className={`pp-thumb ${activeImg === u ? 'pp-thumb-active' : ''}`}
-                    onClick={() => setActiveImg(u)}
-                  >
-                    <img src={u} alt="" />
-                  </button>
-                ))}
+              <div className="pp-thumbnails-card">
+                <div className="pp-thumbnails">
+                  {allImages.map((u, i) => (
+                    <button 
+                      key={i} 
+                      className={`pp-thumb ${activeImg === u ? 'pp-thumb-active' : ''}`}
+                      onClick={() => setActiveImg(u)}
+                    >
+                      <img src={u} alt="" />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {product.subcategories?.name && (
@@ -136,23 +139,40 @@ const ProductPage = () => {
 
           {/* Right: Info */}
           <div className="pp-info">
-            <p className="pp-tagline">{product.tagline || 'Ecuador Tech Official'}</p>
-            <h1 className="pp-name">{product.name}</h1>
-            <p className="pp-subtitle">{product.marketing_subtitle || product.description}</p>
+            <div className="pp-title-card">
+              <p className="pp-tagline">{product.tagline || 'Ecuador Tech Official'}</p>
+              <h1 className="pp-name">{product.name}</h1>
+              {product.model_number && (
+                <div className="pp-model-badge">
+                  <span>Modelo / Part Number:</span>
+                  <strong>{product.model_number}</strong>
+                </div>
+              )}
+              <p className="pp-subtitle">{product.marketing_subtitle || product.description}</p>
+            </div>
             
             <div className="pp-buy-card">
-              <div className="pp-price-row">
-                <div className="pp-price-block">
-                  <span className="pp-price">
-                    ${parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                  <span className="pp-tax-note">Incluido impuestos</span>
-                </div>
-                <div className="pp-stock-status">
-                  <span className={`pp-stock ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                    {product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}
-                  </span>
-                </div>
+              <div className="pp-price-section">
+                <span className={`pp-stock ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                  {product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}
+                </span>
+                <span className="pp-price">
+                  ${parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className="pp-tax-note">Incluido impuestos</span>
+              </div>
+
+              {/* Quick Specs Grid (Moved here for high visibility) */}
+              <div className="pp-quick-specs">
+                {attrs.slice(0, 6).map((a, i) => (
+                  <div key={i} className="pp-quick-spec-item">
+                    <span className="pp-qs-icon">{getIcon(a.attribute_definitions?.icon)}</span>
+                    <div className="pp-qs-text">
+                      <span className="pp-qs-label">{a.attribute_definitions?.name}</span>
+                      <span className="pp-qs-val">{a.value}{a.attribute_definitions?.unit ? ` ${a.attribute_definitions.unit}` : ''}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
               
               <button
@@ -241,58 +261,33 @@ const ProductPage = () => {
           )
         )}
 
-        {/* Tabs & Specs */}
-        <section className="pp-tabs-section">
-          <div className="pp-tabs">
-            <button
-              className={`pp-tab ${tab === 'specs' ? 'pp-tab-active' : ''}`}
-              onClick={() => setTab('specs')}
+        {/* ── Expandable Datasheet (Accordion) ─────────────────── */}
+        {datasheetEntries.length > 0 && (
+          <section className="pp-accordion-section">
+            <button 
+              className="pp-accordion-trigger"
+              onClick={() => setDsOpen(!dsOpen)}
             >
-              Especificaciones Destacadas
+              <span>Ver Ficha Técnica Completa</span>
+              {dsOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
-            {datasheetEntries.length > 0 && (
-              <button
-                className={`pp-tab ${tab === 'datasheet' ? 'pp-tab-active' : ''}`}
-                onClick={() => setTab('datasheet')}
-              >
-                Ficha Técnica Completa
-              </button>
-            )}
-          </div>
 
-          {tab === 'specs' && (
-            <div className="pp-specs-grid">
-              {attrs.length > 0 ? attrs.map((a, i) => (
-                <div key={i} className="pp-spec-row">
-                  <span className="pp-spec-row-icon">{getIcon(a.attribute_definitions?.icon)}</span>
-                  <div className="pp-spec-row-content">
-                    <span className="pp-spec-row-name">{a.attribute_definitions?.name}</span>
-                    <span className="pp-spec-row-val">
-                      {a.value}{a.attribute_definitions?.unit ? ` ${a.attribute_definitions.unit}` : ''}
-                    </span>
-                  </div>
-                </div>
-              )) : (
-                <div className="pp-no-specs">Sin especificaciones cargadas.</div>
-              )}
+            <div className={`pp-accordion-content ${dsOpen ? 'is-open' : ''}`}>
+              <div className="pp-datasheet">
+                <table className="pp-ds-table">
+                  <tbody>
+                    {datasheetEntries.map(([key, val], i) => (
+                      <tr key={i} className={i % 2 === 0 ? 'pp-ds-even' : ''}>
+                        <td className="pp-ds-key">{key}</td>
+                        <td className="pp-ds-val">{String(val)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          )}
-
-          {tab === 'datasheet' && datasheetEntries.length > 0 && (
-            <div className="pp-datasheet">
-              <table className="pp-ds-table">
-                <tbody>
-                  {datasheetEntries.map(([key, val], i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'pp-ds-even' : ''}>
-                      <td className="pp-ds-key">{key}</td>
-                      <td className="pp-ds-val">{String(val)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </>
   );

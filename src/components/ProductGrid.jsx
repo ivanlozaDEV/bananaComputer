@@ -65,7 +65,10 @@ const ProductCard = ({ product, addedIds, handleAddToCart }) => {
       <div className="product-info">
         <a href={`/producto/${product.id}`} className="product-info-link">
           <div className="product-header">
-            <h3 className="product-name">{product.name}</h3>
+            <div>
+              <h3 className="product-name">{product.name}</h3>
+              {product.model_number && <span className="product-card-model">{product.model_number}</span>}
+            </div>
             <span className="product-year">{product.year}</span>
           </div>
           <p className="product-description">{product.marketing_subtitle || product.description}</p>
@@ -91,6 +94,12 @@ const ProductCard = ({ product, addedIds, handleAddToCart }) => {
             <span className="price-tax-note">Incluido impuestos</span>
           </div>
           <div className="product-actions">
+            <a 
+              href={`/producto/${product.id}`}
+              className="btn-product btn-details"
+            >
+              + Info
+            </a>
             <button 
               onClick={(e) => handleAddToCart(e, product)}
               className={`btn-product btn-cart ${addedIds.has(product.id) ? 'added' : ''}`}

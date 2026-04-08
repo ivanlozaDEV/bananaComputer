@@ -35,10 +35,21 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = () => supabase.auth.signOut();
 
+  const resetPassword = (email) =>
+    supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+  const updatePassword = (newPassword) =>
+    supabase.auth.updateUser({ password: newPassword });
+
   const isSuperAdmin = role === 'superadmin';
 
   return (
-    <AuthContext.Provider value={{ user, role, isSuperAdmin, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, role, isSuperAdmin, loading, 
+      signIn, signUp, signOut, resetPassword, updatePassword 
+    }}>
       {children}
     </AuthContext.Provider>
   );

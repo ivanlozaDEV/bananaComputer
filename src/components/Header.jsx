@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Logo from './Logo';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import './Header.css';
 
 const Header = () => {
+  const { user, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const { cartItems, cartCount, removeFromCart, cartTotal, cartSubtotal, cartTax } = useCart();
 
@@ -50,9 +53,29 @@ const Header = () => {
             <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="nav-link contact-nav">Contacto</a>
           </nav>
 
-          {/* Cart Button */}
+          {/* Actions */}
           <div className="header-actions">
-            <button className="btn-nav" onClick={() => setCartOpen(true)}>
+            {user ? (
+              <div className="user-menu-container">
+                <button className="btn-nav profile-btn" onClick={() => setUserMenuOpen(!userMenuOpen)}>
+                  <span className="btn-icon">🍌</span>
+                  {user.email.split('@')[0]}
+                </button>
+                {userMenuOpen && (
+                  <div className="user-dropdown glass-panel">
+                    <a href="/perfil" className="dropdown-link">Mi Perfil</a>
+                    <button onClick={() => { signOut(); setUserMenuOpen(false); }} className="dropdown-link logout-btn">Cerrar Sesión</button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <a href="/login" className="btn-nav login-btn">
+                <span className="btn-icon">🍌</span>
+                Sign In
+              </a>
+            )}
+            
+            <button className="btn-nav cart-btn" onClick={() => setCartOpen(true)}>
               <span className="btn-icon">🛒</span>
               Carrito
               {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
