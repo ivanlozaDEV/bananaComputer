@@ -1,0 +1,101 @@
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: #1a1a1a;
+  background-color: #fafafa;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Banana Minimalist Palette */
+  --color-banana: #FBDD33;
+  --color-sunset: #F48C37;
+  --color-raspberry: #D13B53;
+  --color-purple: #4B467B;
+  --color-ocean: #2D8B9B;
+  --color-mint: #7AB19A;
+
+  --bg-cream: #fbfbf9;
+  --bg-pure: #ffffff;
+  
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.04);
+  --shadow-medium: 0 10px 40px rgba(0, 0, 0, 0.06);
+
+  --gradient-rainbow: linear-gradient(
+    to right, 
+    var(--color-mint), 
+    var(--color-banana), 
+    var(--color-sunset), 
+    var(--color-raspberry), 
+    var(--color-purple), 
+    var(--color-ocean)
+  );
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-content: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--bg-cream);
+  color: #1a1a1a;
+}
+
+#root {
+  width: 100%;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  box-shadow: var(--shadow-medium);
+}
+
+.retro-button {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 1rem 2rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 50px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.retro-button:hover {
+  transform: scale(1.05);
+  background: var(--color-purple);
+  box-shadow: 0 10px 20px rgba(75, 70, 123, 0.2);
+}
+
+.retro-button:active {
+  transform: scale(0.95);
+}
+
+.retro-button.adding {
+  background: var(--color-mint);
+  color: #000;
+}

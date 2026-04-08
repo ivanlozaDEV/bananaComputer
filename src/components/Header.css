@@ -1,0 +1,92 @@
+.main-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4rem;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.header-rainbow-stripes {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-rainbow-stripes .stripe {
+  height: 1px;
+  width: 100%;
+}
+
+.header-rainbow-stripes .stripe.yellow { background: var(--color-banana); }
+.header-rainbow-stripes .stripe.orange { background: var(--color-sunset); }
+.header-rainbow-stripes .stripe.red { background: var(--color-raspberry); }
+.header-rainbow-stripes .stripe.purple { background: var(--color-purple); }
+.header-rainbow-stripes .stripe.blue { background: var(--color-ocean); }
+.header-rainbow-stripes .stripe.green { background: var(--color-mint); }
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-icon {
+  font-size: 1.5rem;
+}
+
+.cart-button {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.cart-button:hover {
+  transform: scale(1.05);
+}
+
+.logo-text {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 3rem;
+}
+
+.nav-item {
+  color: #666;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: color 0.3s ease;
+}
+
+.nav-item:hover {
+  color: #000;
+}

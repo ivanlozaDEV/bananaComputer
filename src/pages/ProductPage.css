@@ -1,0 +1,320 @@
+/* ═══════════════════════════════════════════════════════════
+   ProductPage.css — Self-contained Retro-Futuristic Design
+   Works inside the light-themed site body.
+   Colors are explicit, not relying on body/global theme.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Page wrapper: forces dark context ────────────────────── */
+.pp-root {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 6rem 1.5rem 5rem; /* 6rem top for fixed header */
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1a1a1a;
+}
+
+/* ── Loading ───────────────────────────────────────────────── */
+.pp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 60vh;
+  color: #888;
+  font-size: 0.9rem;
+}
+.pp-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #FBDD33;
+  border-radius: 50%;
+  animation: pp-spin 0.8s linear infinite;
+}
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+
+/* ── Breadcrumb ────────────────────────────────────────────── */
+.pp-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+.pp-breadcrumb button {
+  background: none;
+  border: none;
+  color: #4B467B;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+.pp-breadcrumb button:hover { opacity: 0.7; }
+.pp-breadcrumb-current { color: #1a1a1a; font-weight: 600; }
+
+/* ── Hero: 2-column grid ───────────────────────────────────── */
+.pp-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-bottom: 3rem;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .pp-hero { grid-template-columns: 1fr; gap: 1.5rem; }
+}
+
+/* ── Product image ─────────────────────────────────────────── */
+.pp-img-wrap { position: relative; }
+.pp-img-frame {
+  background: #f8f8f8;
+  border: 1px solid #e8e8e8;
+  border-radius: 20px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1.5rem;
+}
+.pp-img-placeholder {
+  font-size: 5rem;
+  opacity: 0.25;
+}
+.pp-cat-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: #4B467B;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ── Product info column ───────────────────────────────────── */
+.pp-info { display: flex; flex-direction: column; gap: 0; }
+
+.pp-tagline {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #4B467B;
+  margin: 0 0 0.5rem;
+}
+.pp-name {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: #111;
+  line-height: 1.15;
+  margin: 0 0 0.6rem;
+}
+.pp-subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}
+
+/* ── Spec pills row ────────────────────────────────────────── */
+.pp-specs-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.pp-spec-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f4f3ff;
+  border: 1px solid #d8d5f5;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+.pp-spec-icon { font-size: 1rem; flex-shrink: 0; }
+.pp-spec-val {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+.pp-spec-name {
+  font-size: 0.6rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Buy card ─────────────────────────────────────────────── */
+.pp-buy-card {
+  background: #fff;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.pp-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.pp-price {
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: #111;
+}
+.pp-stock {
+  font-size: 0.75rem;
+  color: #7AB19A;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pp-btn-cart {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-family: 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+  border: 2px solid #111;
+  background: #111;
+  color: #FBDD33;
+  border-radius: 12px;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.pp-btn-cart:hover:not(:disabled) {
+  background: #FBDD33;
+  border-color: #FBDD33;
+  color: #111;
+}
+.pp-btn-cart:disabled { opacity: 0.35; cursor: not-allowed; }
+.pp-btn-added {
+  background: #7AB19A !important;
+  border-color: #7AB19A !important;
+  color: #fff !important;
+}
+.pp-sku {
+  font-size: 0.7rem;
+  color: #bbb;
+  text-align: center;
+  margin-top: 0.75rem;
+  font-family: monospace;
+}
+
+/* ── Marketing body ───────────────────────────────────────── */
+.pp-marketing {
+  background: #f4f3ff;
+  border: 1px solid #d8d5f5;
+  border-radius: 18px;
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+}
+.pp-marketing p {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #333;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────── */
+.pp-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e8e8e8;
+  margin-bottom: 1.5rem;
+}
+.pp-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0.75rem 1.25rem;
+  transition: color 0.2s, border-color 0.2s;
+}
+.pp-tab:hover { color: #555; }
+.pp-tab-active {
+  color: #4B467B;
+  border-bottom-color: #4B467B;
+}
+
+/* ── Specs grid ───────────────────────────────────────────── */
+.pp-specs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+@media (max-width: 600px) { .pp-specs-grid { grid-template-columns: 1fr; } }
+.pp-spec-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fafafa;
+  border: 1px solid #efefef;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pp-spec-row:hover { background: #f4f3ff; border-color: #d8d5f5; }
+.pp-spec-row-icon { font-size: 1.1rem; width: 24px; text-align: center; flex-shrink: 0; }
+.pp-spec-row-name {
+  flex: 1;
+  font-size: 0.78rem;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.pp-spec-row-val {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #111;
+}
+
+/* ── Datasheet table ─────────────────────────────────────── */
+.pp-datasheet { overflow-x: auto; border-radius: 12px; border: 1px solid #efefef; }
+.pp-ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.pp-ds-table td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+  line-height: 1.5;
+}
+.pp-ds-even td { background: #fafafa; }
+.pp-ds-key {
+  color: #888;
+  font-weight: 700;
+  width: 40%;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.pp-ds-val { color: #222; }
