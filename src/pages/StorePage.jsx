@@ -2,12 +2,14 @@ import React from 'react';
 import Header from '../components/Header';
 import Logo from '../components/Logo';
 import ProductGrid from '../components/ProductGrid';
+import AIAssistant from '../components/AIAssistant';
 import { useStore } from '../context/StoreContext';
-import { ShieldCheck, Award, Truck, Lock, CheckCircle, Headphones, Package, Zap } from 'lucide-react';
+import { ShieldCheck, Award, Truck, Lock, CheckCircle, Headphones, Package, Zap, Sparkles } from 'lucide-react';
 import './StorePage.css';
 
 const StorePage = () => {
   const { heroContent } = useStore();
+  const [showAI, setShowAI] = React.useState(false);
 
   return (
     <div className="store-page">
@@ -33,9 +35,17 @@ const StorePage = () => {
 
           {/* CTA Buttons */}
           <div className="hero-buttons">
-            <a href="#productos" className="btn btn-primary">
-              {heroContent?.primary_cta || 'Ver Catalogo'}
-            </a>
+            <div className="cta-ai-wrapper">
+              <div className="floating-bananas">
+                <span>🍌</span><span>🍌</span><span>🍌</span>
+              </div>
+              <button 
+                className="btn btn-primary btn-ai-trigger"
+                onClick={() => setShowAI(true)}
+              >
+                <Sparkles size={18} /> {heroContent?.primary_cta || 'Explorar Sistemas'}
+              </button>
+            </div>
             <a href="#nosotros" className="btn btn-secondary">
               {heroContent?.secondary_cta || 'Soporte y Garantia'}
             </a>
@@ -130,22 +140,7 @@ const StorePage = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="cta-section">
-        <div className="cta-content">
-          <h2 className="cta-title">
-            Garantizamos el <span className="highlight">precio mas bajo</span>
-          </h2>
-          <p className="cta-description">
-            Si encuentras una oferta mas barata en el mercado, la igualamos. 
-            Te aseguramos hardware original con garantia oficial al mejor costo posible.
-          </p>
-          <div className="cta-buttons">
-            <button className="btn btn-primary">Ver Catalogo</button>
-            <button className="btn btn-secondary">Contactar Asesor</button>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Footer */}
       <footer className="footer">
@@ -165,6 +160,8 @@ const StorePage = () => {
           </div>
         </div>
       </footer>
+
+      {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
     </div>
   );
 };

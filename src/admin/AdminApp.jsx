@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import HeroEditorPage from './pages/HeroEditorPage';
 import CategoriesPage from './pages/CategoriesPage';
 import ProductsPage from './pages/ProductsPage';
+import WaitlistPage from './pages/WaitlistPage';
 import './AdminApp.css';
 
 const NAV_ITEMS = [
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/admin/hero', icon: Image, label: 'Hero' },
   { to: '/admin/categories', icon: Tag, label: 'Categorías' },
   { to: '/admin/products', icon: Package, label: 'Productos' },
+  { to: '/admin/waitlist', icon: Package, label: 'Lista de Espera' },
 ];
 
 const AdminApp = () => {
@@ -63,6 +65,7 @@ const AdminApp = () => {
           <Route path="hero" element={<HeroEditorPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="products" element={<ProductsPage />} />
+          <Route path="waitlist" element={<WaitlistPage />} />
         </Routes>
       </main>
     </div>

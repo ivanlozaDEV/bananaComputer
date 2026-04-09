@@ -642,3 +642,46 @@
     font-size: 1rem;
   }
 }
+
+/* ── Banana Loading Screen ──────────────── */
+.pp-loading-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, #1a1730 0%, #2d2860 50%, #1a1730 100%);
+  z-index: 9999;
+}
+
+.pp-loading-banana {
+  font-size: 5rem;
+  display: block;
+  animation: banana-spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: center;
+  filter: drop-shadow(0 0 24px rgba(251, 221, 51, 0.5));
+}
+
+@keyframes banana-spin {
+  0%   { transform: rotate(0deg)   scale(1); }
+  25%  { transform: rotate(90deg)  scale(1.15); }
+  50%  { transform: rotate(180deg) scale(1); }
+  75%  { transform: rotate(270deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.pp-loading-text {
+  font-family: var(--font-pixel, monospace);
+  font-size: 1rem;
+  color: rgba(251, 221, 51, 0.9);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  animation: loading-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}

@@ -144,3 +144,43 @@ Rules:
   const data = await res.json();
   return parseOllamaJson(data.response);
 }
+// ─── Conversational AI Assistant (Discovery + Router) ───────────
+export async function chatWithOllama(messages, inventoryContext = '') {
+  const systemPrompt = `Eres Banana AI, el Experto de Banana Computer. Ayuda al cliente a elegir una computadora.
+
+### CONOCIMIENTO REAL (Stock Actual):
+${inventoryContext || 'Cargando conocimiento base...'}
+
+### REGLAS DE ORO (ESTRICTO):
+1. **PRODUCTOS**: Solo recomienda lo que aparece en el CONOCIMIENTO REAL de arriba.
+2. **VERACIDAD**: NO inventes mejoras técnicas (si el stock dice 8GB, NO digas 16GB).
+3. **SIN SUPOSICIONES**: No asumas presupuestos o preferencias que el usuario no haya mencionado explícitamente. Evita frases como "considerando tu presupuesto" si el usuario no ha dado uno.
+4. **RECOMENDACIÓN INLINE**: Deberás usar el tag [RECOMENDACION: UUID] inmediatamente después de la primera vez que menciones el nombre de una laptop.
+5. **FLUJO DE COMPRA**: Indica al usuario que puede hacer clic en la tarjeta (card) para comprar de forma segura.
+6. **BÚSQUEDA**: Si necesitas ver más opciones, emite [SEARCH: category=... max_price=...].
+
+### PROHIBICIONES:
+- PROHIBIDO solicitar datos de pago.
+- NUNCA uses la palabra "undefined".
+- NO incluyas textos meta como "(Remember rules)".`;
+
+  const payload = {
+    model: OLLAMA_MODEL,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...messages
+    ],
+    stream: false,
+    options: { temperature: 0.7 }
+  };
+
+  const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error(`Ollama Chat Error: ${res.status}`);
+  const data = await res.json();
+  return data.message.content;
+}

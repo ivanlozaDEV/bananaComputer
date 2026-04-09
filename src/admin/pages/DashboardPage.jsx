@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { updateAIBaselineInDB } from '../../lib/inventory';
+import { Package, Star, Tag, Users, Image, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 const DashboardPage = () => {
   const [stats, setStats] = useState({ products: 0, categories: 0, customers: 0, featured: 0 });
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -25,11 +29,26 @@ const DashboardPage = () => {
   }, []);
 
   const STATS = [
-    { label: 'Productos', value: stats.products, emoji: '📦' },
-    { label: 'Destacados', value: stats.featured, emoji: '⭐' },
-    { label: 'Categorías', value: stats.categories, emoji: '🏷️' },
-    { label: 'Clientes', value: stats.customers, emoji: '👥' },
+    { label: 'Productos', value: stats.products, icon: <Package size={24} color="var(--banana)" /> },
+    { label: 'Destacados', value: stats.featured, icon: <Star size={24} color="#FFD700" /> },
+    { label: 'Categorías', value: stats.categories, icon: <Tag size={24} color="var(--mint)" /> },
+    { label: 'Clientes', value: stats.customers, icon: <Users size={24} color="var(--sunset)" /> },
   ];
+
+  const handleSyncAI = async () => {
+    setSyncing(true);
+    setSyncDone(false);
+    try {
+      await updateAIBaselineInDB();
+      setSyncDone(true);
+      setTimeout(() => setSyncDone(false), 3000);
+    } catch (err) {
+      console.error('Error syncing AI:', err);
+      alert('Error en la sincronización');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <div>
@@ -38,23 +57,48 @@ const DashboardPage = () => {
       </div>
 
       <div className="admin-stat-grid">
-        {STATS.map(({ label, value, emoji }) => (
+        {STATS.map(({ label, value, icon }) => (
           <div key={label} className="admin-stat-card">
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{emoji}</div>
+            <div style={{ marginBottom: '0.5rem' }}>{icon}</div>
             <div className="admin-stat-value">{loading ? '—' : value}</div>
             <div className="admin-stat-label">{label}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: '#1a1a1a', borderRadius: '16px', padding: '1.5rem', border: '1px solid #272727' }}>
-        <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Accesos rápidos</h2>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {['hero', 'categories', 'products'].map(page => (
-            <a key={page} href={`/admin/${page}`} className="admin-btn admin-btn-ghost" style={{ textDecoration: 'none' }}>
-              {page === 'hero' ? '🖼️ Editar Hero' : page === 'categories' ? '🏷️ Categorías' : '📦 Productos'}
+      <div style={{ background: '#1a1a1a', borderRadius: '16px', padding: '1.5rem', border: '1px solid #272727', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div>
+          <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Accesos rápidos</h2>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <a href="/admin/hero" className="admin-btn admin-btn-ghost" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Image size={16} /> Editar Hero
             </a>
-          ))}
+            <a href="/admin/categories" className="admin-btn admin-btn-ghost" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Tag size={16} /> Categorías
+            </a>
+            <a href="/admin/products" className="admin-btn admin-btn-ghost" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Package size={16} /> Productos
+            </a>
+            <a href="/admin/waitlist" className="admin-btn admin-btn-ghost" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Users size={16} /> Lista de Espera
+            </a>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid #272727', paddingTop: '1.5rem' }}>
+          <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Inteligencia Artificial (Ollama)</h2>
+          <button 
+            onClick={handleSyncAI} 
+            className={`admin-btn ${syncDone ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+            disabled={syncing}
+          >
+            {syncing ? <RefreshCw size={16} className="spin" /> : syncDone ? <CheckCircle2 size={16} /> : <Sparkles size={16} />}
+            {syncing ? 'Sincronizando catálogo...' : syncDone ? 'Conocimiento IA actualizado' : 'Sincronizar conocimiento IA'}
+          </button>
+          <p style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+            Envía un resumen de precios y productos actuales a la IA para mejorar sus recomendaciones.
+          </p>
         </div>
       </div>
     </div>

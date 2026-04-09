@@ -60,9 +60,10 @@ const ProductPage = () => {
     const load = async () => {
       let { data: prod, error } = await supabase
         .from('products')
-        .select('*, categories(id, name), subcategories(id, name)')
+        .select('*, categories(id, name), subcategories!subcategory_id(id, name)')
         .eq('id', id)
         .single();
+
       
       if (error) {
         console.warn('ProductPage query failed, attempting fallback:', error);
@@ -102,13 +103,10 @@ const ProductPage = () => {
 
   if (loading) {
     return (
-      <>
-        <Header />
-        <div className="pp-loading">
-          <div className="pp-spinner" />
-          <span>Cargando producto...</span>
-        </div>
-      </>
+      <div className="pp-loading-screen">
+        <span className="pp-loading-banana">🍌</span>
+        <span className="pp-loading-text">Cargando...</span>
+      </div>
     );
   }
 

@@ -10,11 +10,15 @@ import AdminApp from './admin/AdminApp'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import BananaLoader from './components/BananaLoader'
 import './App.css'
+
 
 function App() {
   return (
-    <Routes>
+    <>
+      <BananaLoader />
+      <Routes>
       <Route path="/" element={<StorePage />} />
       <Route path="/categoria/:catId" element={<CategoryPage />} />
       <Route path="/categoria/:catId/:subId" element={<SubcategoryPage />} />
@@ -39,7 +43,9 @@ function App() {
         }
       />
     </Routes>
+    </>
   )
 }
+
 
 export default App

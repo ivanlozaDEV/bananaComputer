@@ -1,31 +1,46 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- BananaComputer — Master Migration (v1.0)
--- Complete database reset and recreation script.
--- Run entirely in: Supabase Dashboard → SQL Editor → New query → Run
+-- BananaComputer — Migración Consolidada v1.0
+-- Consolida: schema.sql + todas las migraciones en /migrations/
+--   · 20260408_product_model.sql      → ADD COLUMN model_number
+--   · 20260408_product_expansion.sql  → product_subcategories, images[], subcategory image_url
+--   · 20260408_banana_review.sql      → ADD COLUMN banana_review
+--   · 20260408_ai_baseline.sql        → tabla ai_baseline_knowledge
+--   · 20260408_waitlist.sql           → tabla waitlist
+--
+-- Cómo ejecutar:
+--   Supabase Dashboard → SQL Editor → New query → pegar → Run
+--   O bien:  supabase db push  (cuando tengas CLI configurado)
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ─────────────────────────────────────────────────────────────────
--- PART 1: DROP EVERYTHING (clean slate)
+-- PARTE 0: EXTENSIONES NECESARIAS
 -- ─────────────────────────────────────────────────────────────────
+create extension if not exists "uuid-ossp";   -- uuid_generate_v4()
 
-drop table if exists order_items          cascade;
-drop table if exists orders               cascade;
-drop table if exists product_attributes   cascade;
-drop table if exists product_images       cascade;
-drop table if exists products             cascade;
-drop table if exists attribute_definitions cascade;
-drop table if exists subcategories        cascade;
-drop table if exists categories           cascade;
-drop table if exists customers            cascade;
-drop table if exists hero_content         cascade;
+-- ─────────────────────────────────────────────────────────────────
+-- PARTE 1: DROP ALL (pizarrón limpio)
+-- ─────────────────────────────────────────────────────────────────
+drop table if exists order_items              cascade;
+drop table if exists orders                   cascade;
+drop table if exists product_attributes       cascade;
+drop table if exists product_images           cascade;
+drop table if exists product_subcategories    cascade;
+drop table if exists products                 cascade;
+drop table if exists attribute_definitions    cascade;
+drop table if exists subcategories            cascade;
+drop table if exists categories               cascade;
+drop table if exists customers                cascade;
+drop table if exists hero_content             cascade;
+drop table if exists ai_baseline_knowledge    cascade;
+drop table if exists waitlist                 cascade;
 
 drop function if exists handle_new_user() cascade;
 
 -- ─────────────────────────────────────────────────────────────────
--- PART 2: TABLES
+-- PARTE 2: TABLAS
 -- ─────────────────────────────────────────────────────────────────
 
--- 1. Hero content (editable landing page copy)
+-- 1. Hero content (copy editable de la landing)
 create table hero_content (
   id            uuid primary key default gen_random_uuid(),
   title         text not null default 'BANANA COMPUTER',
@@ -36,7 +51,7 @@ create table hero_content (
   updated_at    timestamptz default now()
 );
 
--- 2. Categories (e.g. Laptops, Monitors)
+-- 2. Categorías (Laptops, Monitores, etc.)
 create table categories (
   id          uuid primary key default gen_random_uuid(),
   name        text unique not null,
@@ -45,31 +60,32 @@ create table categories (
   created_at  timestamptz default now()
 );
 
--- 3. Subcategories — audience-based (e.g. Gaming Fuerte, Estudiantes)
+-- 3. Subcategorías — por audiencia (Gaming Fuerte, Estudiantes, etc.)
 create table subcategories (
   id          uuid primary key default gen_random_uuid(),
   category_id uuid not null references categories(id) on delete cascade,
   name        text not null,
   slug        text not null,
+  image_url   text,                          -- [product_expansion] portada de subcategoría
   created_at  timestamptz default now(),
   unique (category_id, slug)
 );
 
--- 4. Attribute definitions
---    subcategory_id = NULL  → applies to ALL products in the category
---    subcategory_id = <id>  → only shown when that subcategory is selected
+-- 4. Definiciones de atributos
+--    subcategory_id = NULL  → aplica a toda la categoría
+--    subcategory_id = <id>  → sólo visible en esa subcategoría
 create table attribute_definitions (
   id             uuid primary key default gen_random_uuid(),
   category_id    uuid not null references categories(id) on delete cascade,
   subcategory_id uuid references subcategories(id) on delete cascade,
   name           text not null,
   unit           text,
-  icon           text,           -- emoji or icon key, e.g. '💾'
-  data_type      text not null default 'text',  -- 'number' | 'text' | 'boolean'
+  icon           text,           -- emoji o clave de icono, ej. '💾'
+  data_type      text not null default 'text',   -- 'number' | 'text' | 'boolean'
   display_order  integer not null default 0
 );
 
--- 5. Products
+-- 5. Productos
 create table products (
   id                 uuid primary key default gen_random_uuid(),
   sku                text unique not null,
@@ -81,15 +97,18 @@ create table products (
   price              numeric(10,2) not null,
   stock              integer not null default 0,
   category_id        uuid references categories(id),
-  subcategory_id     uuid references subcategories(id),
+  subcategory_id     uuid references subcategories(id),   -- FK legacy (mantener compatibilidad)
   image_url          text,
-  datasheet          jsonb,           -- raw datasheet key/value pairs
+  images             text[] default '{}',                 -- [product_expansion] galería múltiple
+  datasheet          jsonb,
+  banana_review      jsonb,                               -- [banana_review] evaluación por IA
+  model_number       text,                                -- [product_model] número de modelo
   is_featured        boolean not null default false,
   is_active          boolean not null default true,
   created_at         timestamptz default now()
 );
 
--- 6. Product image gallery
+-- 6. Galería de imágenes (tabla normalizada, alternativa a products.images[])
 create table product_images (
   id            uuid primary key default gen_random_uuid(),
   product_id    uuid not null references products(id) on delete cascade,
@@ -98,7 +117,7 @@ create table product_images (
   display_order integer not null default 0
 );
 
--- 7. Product spec card values (links products to attribute_definitions)
+-- 7. Valores de especificación del producto (producto ↔ atributo)
 create table product_attributes (
   id           uuid primary key default gen_random_uuid(),
   product_id   uuid not null references products(id) on delete cascade,
@@ -107,7 +126,14 @@ create table product_attributes (
   unique (product_id, attribute_id)
 );
 
--- 8. Customers (extends Supabase auth.users)
+-- 8. Relación Producto ↔ Subcategoría (Many-to-Many) [product_expansion]
+create table product_subcategories (
+  product_id     uuid not null references products(id) on delete cascade,
+  subcategory_id uuid not null references subcategories(id) on delete cascade,
+  primary key (product_id, subcategory_id)
+);
+
+-- 9. Clientes (extiende auth.users de Supabase)
 create table customers (
   id            uuid primary key references auth.users(id) on delete cascade,
   full_name     text,
@@ -120,7 +146,7 @@ create table customers (
   updated_at    timestamptz default now()
 );
 
--- 9. Orders
+-- 10. Órdenes
 create table orders (
   id               uuid primary key default gen_random_uuid(),
   customer_id      uuid references customers(id),
@@ -130,7 +156,7 @@ create table orders (
   created_at       timestamptz default now()
 );
 
--- 10. Order items
+-- 11. Ítems de orden
 create table order_items (
   id         uuid primary key default gen_random_uuid(),
   order_id   uuid not null references orders(id) on delete cascade,
@@ -139,11 +165,26 @@ create table order_items (
   unit_price numeric(10,2) not null
 );
 
+-- 12. Conocimiento base de la IA [ai_baseline]
+create table ai_baseline_knowledge (
+  id         uuid primary key default gen_random_uuid(),
+  content    text not null,
+  updated_at timestamptz default now()
+);
+
+-- 13. Waitlist — leads de productos agotados [waitlist]
+create table public.waitlist (
+  id         uuid primary key default uuid_generate_v4(),
+  email      text not null,
+  interest   text,
+  created_at timestamptz not null default timezone('utc'::text, now())
+);
+
 -- ─────────────────────────────────────────────────────────────────
--- PART 3: TRIGGERS
+-- PARTE 3: TRIGGERS
 -- ─────────────────────────────────────────────────────────────────
 
--- Auto-create a customer row when a new user signs up
+-- Auto-crea fila en customers cuando un usuario se registra
 create or replace function handle_new_user()
 returns trigger as $$
 begin
@@ -157,7 +198,7 @@ create trigger on_auth_user_created
   for each row execute procedure handle_new_user();
 
 -- ─────────────────────────────────────────────────────────────────
--- PART 4: ROW LEVEL SECURITY (RLS)
+-- PARTE 4: ROW LEVEL SECURITY (RLS)
 -- ─────────────────────────────────────────────────────────────────
 
 alter table hero_content          enable row level security;
@@ -167,11 +208,14 @@ alter table attribute_definitions enable row level security;
 alter table products              enable row level security;
 alter table product_images        enable row level security;
 alter table product_attributes    enable row level security;
+alter table product_subcategories enable row level security;
 alter table customers             enable row level security;
 alter table orders                enable row level security;
 alter table order_items           enable row level security;
+alter table ai_baseline_knowledge enable row level security;
+alter table public.waitlist       enable row level security;
 
--- Public reads (store catalog)
+-- Lectura pública (catálogo de la tienda)
 create policy "public read hero"                  on hero_content          for select using (true);
 create policy "public read categories"            on categories            for select using (true);
 create policy "public read subcategories"         on subcategories         for select using (true);
@@ -179,25 +223,38 @@ create policy "public read attribute_definitions" on attribute_definitions for s
 create policy "public read products"              on products              for select using (is_active = true);
 create policy "public read product_images"        on product_images        for select using (true);
 create policy "public read product_attributes"    on product_attributes    for select using (true);
+create policy "public read product_subcategories" on product_subcategories for select using (true);
 
--- Admin full access (any authenticated user — your admin is the only user)
-create policy "admin full access products"      on products              for all using (auth.uid() is not null);
-create policy "admin full access attrs"         on attribute_definitions for all using (auth.uid() is not null);
-create policy "admin full access prod_attrs"    on product_attributes    for all using (auth.uid() is not null);
-create policy "admin full access prod_images"   on product_images        for all using (auth.uid() is not null);
-create policy "admin full access categories"    on categories            for all using (auth.uid() is not null);
-create policy "admin full access subcategories" on subcategories         for all using (auth.uid() is not null);
-create policy "admin full access hero"          on hero_content          for all using (auth.uid() is not null);
+-- Acceso completo para admin (único usuario autenticado)
+create policy "admin full access products"        on products              for all using (auth.uid() is not null);
+create policy "admin full access attrs"           on attribute_definitions for all using (auth.uid() is not null);
+create policy "admin full access prod_attrs"      on product_attributes    for all using (auth.uid() is not null);
+create policy "admin full access prod_images"     on product_images        for all using (auth.uid() is not null);
+create policy "admin full access categories"      on categories            for all using (auth.uid() is not null);
+create policy "admin full access subcategories"   on subcategories         for all using (auth.uid() is not null);
+create policy "admin full access hero"            on hero_content          for all using (auth.uid() is not null);
+create policy "admin full access prod_subcat"     on product_subcategories for all using (auth.uid() is not null);
 
--- Customers manage their own data
-create policy "customers own data"        on customers    for all using (auth.uid() = id);
-create policy "customers own orders"      on orders       for all using (auth.uid() = customer_id);
-create policy "customers own order_items" on order_items  for select using (
+-- Clientes gestionan sus propios datos
+create policy "customers own data"        on customers   for all using (auth.uid() = id);
+create policy "customers own orders"      on orders      for all using (auth.uid() = customer_id);
+create policy "customers own order_items" on order_items for select using (
   order_id in (select id from orders where customer_id = auth.uid())
 );
 
+-- AI Baseline — lectura pública, escritura sólo autenticados
+create policy "Allow public read access" on ai_baseline_knowledge for select using (true);
+create policy "Allow admin update"       on ai_baseline_knowledge for all   using (auth.role() = 'authenticated');
+
+-- Waitlist — inserción pública, lectura sólo admins
+create policy "Allow anyone to join waitlist" on public.waitlist
+  for insert with check (true);
+create policy "Admins can view waitlist" on public.waitlist
+  for select to authenticated
+  using ( (auth.jwt() -> 'app_metadata' ->> 'role') in ('admin', 'superadmin') );
+
 -- ─────────────────────────────────────────────────────────────────
--- PART 5: STORAGE BUCKET
+-- PARTE 5: STORAGE BUCKET
 -- ─────────────────────────────────────────────────────────────────
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -207,7 +264,7 @@ values (
 )
 on conflict (id) do update set public = true, file_size_limit = 10485760;
 
--- Drop old storage policies (safe re-run)
+-- Storage policies (drop+create para re-ejecución segura)
 drop policy if exists "Public read product images"       on storage.objects;
 drop policy if exists "Superadmin upload product images" on storage.objects;
 drop policy if exists "Superadmin update product images" on storage.objects;
@@ -222,14 +279,14 @@ create policy "Auth update product images"  on storage.objects for update using 
 create policy "Auth delete product images"  on storage.objects for delete using     (bucket_id = 'product-images' and auth.uid() is not null);
 
 -- ─────────────────────────────────────────────────────────────────
--- PART 6: SEED DATA — Hero content
+-- PARTE 6: SEED DATA — Hero content
 -- ─────────────────────────────────────────────────────────────────
 
 insert into hero_content (title, subtitle, primary_cta, secondary_cta)
 values ('BANANA COMPUTER', 'El futuro de la computación. Redefinido.', 'Explorar Sistemas', 'Más información');
 
 -- ─────────────────────────────────────────────────────────────────
--- PART 7: SEED DATA — Laptops (category, subcategories, attributes)
+-- PARTE 7: SEED DATA — Laptops (categoría, subcategorías, atributos)
 -- ─────────────────────────────────────────────────────────────────
 
 do $$
@@ -240,14 +297,12 @@ declare
   sub_edicion  uuid;
 begin
 
-  -- Category
   insert into categories (name, slug, description)
   values ('Laptops', 'laptops', 'Computadoras portátiles para todo tipo de usuario')
   on conflict (slug) do update set description = excluded.description;
 
   select id into cat_id from categories where slug = 'laptops';
 
-  -- Subcategories by audience
   insert into subcategories (category_id, name, slug) values
     (cat_id, 'Básicas',            'laptops-basicas'),
     (cat_id, 'Estudiantes',        'laptops-estudiantes'),
@@ -263,7 +318,7 @@ begin
   select id into sub_diseno   from subcategories where slug = 'laptops-diseno';
   select id into sub_edicion  from subcategories where slug = 'laptops-edicion';
 
-  -- Base attributes: all laptops
+  -- Atributos base: todos los laptops
   insert into attribute_definitions (category_id, subcategory_id, name, unit, icon, data_type, display_order) values
     (cat_id, null, 'RAM',            'GB',   '🧠', 'number', 1),
     (cat_id, null, 'Almacenamiento', 'GB',   '💾', 'number', 2),
@@ -293,7 +348,7 @@ begin
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────
--- PART 8: SEED DATA — ASUS Vivobook Go 15 OLED sample product
+-- PARTE 8: SEED DATA — ASUS Vivobook Go 15 OLED (producto de ejemplo)
 -- ─────────────────────────────────────────────────────────────────
 
 do $$
@@ -314,14 +369,14 @@ begin
   select id into cat_id from categories where slug = 'laptops';
   select id into sub_id from subcategories where slug = 'laptops-basicas' and category_id = cat_id;
 
-  select id into attr_ram    from attribute_definitions where category_id = cat_id and name = 'RAM';
-  select id into attr_ssd    from attribute_definitions where category_id = cat_id and name = 'Almacenamiento';
-  select id into attr_cpu    from attribute_definitions where category_id = cat_id and name = 'Procesador';
-  select id into attr_screen from attribute_definitions where category_id = cat_id and name = 'Pantalla';
-  select id into attr_bat    from attribute_definitions where category_id = cat_id and name = 'Batería';
-  select id into attr_weight from attribute_definitions where category_id = cat_id and name = 'Peso';
-  select id into attr_cam    from attribute_definitions where category_id = cat_id and name = 'Cámara';
-  select id into attr_wifi   from attribute_definitions where category_id = cat_id and name = 'WiFi';
+  select id into attr_ram    from attribute_definitions where category_id = cat_id and name = 'RAM'            and subcategory_id is null;
+  select id into attr_ssd    from attribute_definitions where category_id = cat_id and name = 'Almacenamiento' and subcategory_id is null;
+  select id into attr_cpu    from attribute_definitions where category_id = cat_id and name = 'Procesador'     and subcategory_id is null;
+  select id into attr_screen from attribute_definitions where category_id = cat_id and name = 'Pantalla'       and subcategory_id is null;
+  select id into attr_bat    from attribute_definitions where category_id = cat_id and name = 'Batería'        and subcategory_id is null;
+  select id into attr_weight from attribute_definitions where category_id = cat_id and name = 'Peso'           and subcategory_id is null;
+  select id into attr_cam    from attribute_definitions where category_id = cat_id and name = 'Cámara'         and subcategory_id is null;
+  select id into attr_wifi   from attribute_definitions where category_id = cat_id and name = 'WiFi'           and subcategory_id is null;
 
   insert into products (
     sku, name, tagline, marketing_subtitle, marketing_body, description,
@@ -367,16 +422,24 @@ begin
       (prod_id, attr_weight, '1.63'),
       (prod_id, attr_cam,    'HD 720p con privacidad'),
       (prod_id, attr_wifi,   'Wi-Fi 5 dual band');
+
+    -- Sincronizar fila en product_subcategories
+    insert into product_subcategories (product_id, subcategory_id)
+    values (prod_id, sub_id)
+    on conflict do nothing;
   end if;
 
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────
--- VERIFICATION (optional — shows current state after running)
+-- VERIFICACIÓN (opcional — muestra el estado final tras ejecutar)
 -- ─────────────────────────────────────────────────────────────────
-select 'hero_content'         as tabla, count(*)::text as filas from hero_content union all
-select 'categories',                    count(*)::text           from categories union all
-select 'subcategories',                 count(*)::text           from subcategories union all
-select 'attribute_definitions',         count(*)::text           from attribute_definitions union all
-select 'products',                      count(*)::text           from products union all
-select 'product_attributes',            count(*)::text           from product_attributes;
+select 'hero_content'          as tabla, count(*)::text as filas from hero_content         union all
+select 'categories',                     count(*)::text           from categories           union all
+select 'subcategories',                  count(*)::text           from subcategories        union all
+select 'attribute_definitions',          count(*)::text           from attribute_definitions union all
+select 'products',                       count(*)::text           from products             union all
+select 'product_attributes',             count(*)::text           from product_attributes   union all
+select 'product_subcategories',          count(*)::text           from product_subcategories union all
+select 'ai_baseline_knowledge',          count(*)::text           from ai_baseline_knowledge union all
+select 'waitlist',                       count(*)::text           from public.waitlist;
