@@ -1,5 +1,5 @@
-export const OLLAMA_HOST = 'http://localhost:11434';
-export const OLLAMA_MODEL = 'llama3.1:8b';
+export const OLLAMA_HOST = import.meta.env.VITE_OLLAMA_HOST || 'http://localhost:11434';
+export const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b';
 
 // ─── Check if Ollama is running ──────────────────────────────────
 export async function pingOllama() {
