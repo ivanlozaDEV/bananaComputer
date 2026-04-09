@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ProductGrid from '../components/ProductGrid';
+import Footer from '../components/Footer';
 import './SubcategoryPage.css';
 
 const SubcategoryPage = () => {
@@ -66,9 +67,7 @@ const SubcategoryPage = () => {
         <ProductGrid subcategoryId={subId} />
       </main>
 
-      <footer className="footer-simple">
-        <p>&copy; 2026 Banana Computer. Calidad y Confianza.</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

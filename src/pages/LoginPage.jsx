@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import Footer from '../components/Footer';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -92,7 +93,9 @@ const LoginPage = () => {
 
         <Link to="/" className="login-back">← Volver a la tienda</Link>
       </div>
+      <Footer />
     </div>
+
   );
 };
 

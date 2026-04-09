@@ -60,7 +60,7 @@ const Header = () => {
             {categories.map(cat => (
               <Link key={cat.id} to={`/categoria/${cat.id}`} className="nav-link">{cat.name}</Link>
             ))}
-            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="nav-link contact-nav">Contacto</a>
+            <Link to="/contacto" className="nav-link contact-nav">Contacto</Link>
           </nav>
 
           {/* Desktop Actions */}
@@ -115,10 +115,10 @@ const Header = () => {
 
           {/* Contacto — same style as categories, separated */}
           <div className="mobile-nav-section-divider" />
-          <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="mobile-nav-link" onClick={() => setMenuOpen(false)}>
+          <Link to="/contacto" className="mobile-nav-link" onClick={() => setMenuOpen(false)}>
             <Phone size={14} className="mn-chevron" />
             Contacto
-          </a>
+          </Link>
 
           {/* Auth section */}
           {user ? (

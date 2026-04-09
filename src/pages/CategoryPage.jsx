@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import Breadcrumbs from '../components/Breadcrumbs';
+import Footer from '../components/Footer';
 import './CategoryPage.css';
 
 const CategoryPage = () => {
@@ -88,9 +89,7 @@ const CategoryPage = () => {
         </div>
       </main>
 
-      <footer className="footer-simple">
-        <p>&copy; 2026 Banana Computer. Calidad y Confianza.</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

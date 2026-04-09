@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { User, Phone, MapPin, Package, CreditCard, Calendar, Clock, Globe } from 'lucide-react';
 import './ProfilePage.css';
 
@@ -229,13 +230,8 @@ const ProfilePage = () => {
           )}
           </div>
         </section>
-
-        <footer style={{ marginTop: '4rem', textAlign: 'center' }}>
-          <Link to="/" style={{ color: '#aaa', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>
-            ← Volver a la página principal
-          </Link>
-        </footer>
       </main>
+      <Footer />
     </div>
   );
 };

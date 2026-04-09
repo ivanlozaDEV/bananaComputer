@@ -6,6 +6,8 @@ import AIAssistant from '../components/AIAssistant';
 import { useStore } from '../context/StoreContext';
 import { ShieldCheck, Award, Truck, Lock, CheckCircle, Headphones, Package, Zap, Sparkles } from 'lucide-react';
 import './StorePage.css';
+import Footer from '../components/Footer';
+
 
 const StorePage = () => {
   const { heroContent } = useStore();
@@ -139,32 +141,13 @@ const StorePage = () => {
           </div>
         </div>
       </section>
-
-      
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="rainbow-stripe"></div>
-        <div className="footer-content">
-          <div className="footer-logo">
-            <Logo size="small" animated={false} />
-          </div>
-          <p className="footer-text">
-            <span>Banana Computer</span> &copy; {new Date().getFullYear()}. 
-            Nueva Era en Tecnología.
-          </p>
-          <div className="footer-links">
-            <a href="#privacidad">Privacidad</a>
-            <a href="#terminos">Terminos</a>
-            <a href="#contacto">Contacto</a>
-          </div>
-        </div>
-      </footer>
-
+      <Footer />
       {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
     </div>
+
   );
 };
+
 
 export default StorePage;
 ;

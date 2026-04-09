@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import Breadcrumbs from '../components/Breadcrumbs';
+import Footer from '../components/Footer';
 import { useCart } from '../context/CartContext';
 import { 
   ChevronDown, ChevronUp, ShieldCheck, Truck, 
@@ -317,8 +318,10 @@ const ProductPage = () => {
           </section>
         )}
       </div>
+      <Footer />
     </>
   );
 };
+
 
 export default ProductPage;

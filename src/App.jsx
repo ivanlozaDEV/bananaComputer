@@ -11,7 +11,11 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import BananaLoader from './components/BananaLoader'
+import ContactPage from './pages/ContactPage'
+import LegalPage from './pages/LegalPage'
 import './App.css'
+
+
 
 
 function App() {
@@ -23,7 +27,11 @@ function App() {
       <Route path="/categoria/:catId" element={<CategoryPage />} />
       <Route path="/categoria/:catId/:subId" element={<SubcategoryPage />} />
       <Route path="/producto/:id" element={<ProductPage />} />
+      <Route path="/contacto" element={<ContactPage />} />
+      <Route path="/legal/:section" element={<LegalPage />} />
       <Route path="/login" element={<LoginPage />} />
+
+
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route 
