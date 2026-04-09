@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useToast } from '../context/ToastContext';
 import {
   ShoppingCart, Menu, X, Phone, LogIn, LogOut, ChevronRight
 } from 'lucide-react';
@@ -11,6 +12,7 @@ import './Header.css';
 
 const Header = () => {
   const { user, signOut } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,6 +41,10 @@ const Header = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleCheckout = () => {
+    showToast('Integración de pagos próximamente.', 'info');
   };
 
   return (
@@ -200,7 +206,7 @@ const Header = () => {
               <span>Total:</span>
               <span>${cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <button className="btn-primary checkout-btn" onClick={() => alert('Próximamente: Finalizar Compra')}>
+            <button className="btn-primary checkout-btn" onClick={handleCheckout}>
               Finalizar Pedido
             </button>
             <p className="warranty-notice">✓ Envío seguro y Garantía local en Ecuador</p>
