@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import { Mail, CheckCircle, ArrowLeft } from 'lucide-react';
 import './LoginPage.css'; // Reusing login styles
 
 const ForgotPasswordPage = () => {
@@ -53,11 +54,19 @@ const ForgotPasswordPage = () => {
           </div>
 
           {error && <p className="login-error">{error}</p>}
-          {message && <p style={{ color: 'var(--color-mint)', textAlign: 'center', fontSize: '0.85rem', padding: '0.5rem', background: 'rgba(122, 177, 154, 0.1)', borderRadius: '8px' }}>{message}</p>}
+          
+          {message && (
+            <div className="signup-success-msg">
+              <CheckCircle size={20} style={{ marginBottom: '0.5rem' }} />
+              <p>{message}</p>
+            </div>
+          )}
 
-          <button type="submit" className="btn-brand login-submit" disabled={loading}>
-            {loading ? 'Enviando...' : 'Enviar enlace'}
-          </button>
+          {!message && (
+            <button type="submit" className="btn-brand login-submit" disabled={loading}>
+              {loading ? 'Enviando...' : 'Enviar enlace'}
+            </button>
+          )}
         </form>
 
         <Link to="/login" className="login-back">← Volver al inicio de sesión</Link>

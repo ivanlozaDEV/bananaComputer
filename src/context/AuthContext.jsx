@@ -34,6 +34,14 @@ export const AuthProvider = ({ children }) => {
     supabase.auth.signUp({ email, password });
 
   const signOut = () => supabase.auth.signOut();
+  
+  const signInWithGoogle = () =>
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
 
   const resetPassword = (email) =>
     supabase.auth.resetPasswordForEmail(email, {
@@ -43,12 +51,12 @@ export const AuthProvider = ({ children }) => {
   const updatePassword = (newPassword) =>
     supabase.auth.updateUser({ password: newPassword });
 
-  const isSuperAdmin = role === 'superadmin';
+  const isSuperAdmin = ['admin', 'superadmin'].includes(role);
 
   return (
     <AuthContext.Provider value={{ 
       user, role, isSuperAdmin, loading, 
-      signIn, signUp, signOut, resetPassword, updatePassword 
+      signIn, signUp, signInWithGoogle, signOut, resetPassword, updatePassword 
     }}>
       {children}
     </AuthContext.Provider>
