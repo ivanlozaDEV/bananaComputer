@@ -10,6 +10,8 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
+  const [ollamaHost, setOllamaHost] = useState('');
+  const [savingHost, setSavingHost] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -27,7 +29,12 @@ const DashboardPage = () => {
       });
       setLoading(false);
     };
+    const fetchOllamaHost = async () => {
+      const { data } = await supabase.from('site_settings').select('value').eq('key', 'ollama_host').single();
+      if (data) setOllamaHost(data.value);
+    };
     fetchStats();
+    fetchOllamaHost();
   }, []);
 
   const STATS = [
@@ -36,6 +43,23 @@ const DashboardPage = () => {
     { label: 'Categorías', value: stats.categories, icon: <Tag size={24} color="var(--mint)" /> },
     { label: 'Clientes', value: stats.customers, icon: <Users size={24} color="var(--sunset)" /> },
   ];
+
+  const handleSaveOllamaHost = async () => {
+    setSavingHost(true);
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .update({ value: ollamaHost })
+        .eq('key', 'ollama_host');
+      if (error) throw error;
+      showToast('URL de AI actualizada para todos los usuarios', 'success');
+    } catch (err) {
+      console.error('Error saving Ollama host:', err);
+      showToast('Error al guardar la URL de AI', 'error');
+    } finally {
+      setSavingHost(false);
+    }
+  };
 
   const handleSyncAI = async () => {
     setSyncing(true);
@@ -101,6 +125,38 @@ const DashboardPage = () => {
           </button>
           <p style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.5rem' }}>
             Envía un resumen de precios y productos actuales a la IA para mejorar sus recomendaciones.
+          </p>
+        </div>
+
+        <div style={{ borderTop: '1px solid #272727', paddingTop: '1.5rem' }}>
+          <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Configuración de Servidor AI</h2>
+          <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '500px' }}>
+            <input 
+              type="text" 
+              value={ollamaHost} 
+              onChange={e => setOllamaHost(e.target.value)}
+              placeholder="http://localhost:11434"
+              style={{ 
+                flex: 1, 
+                background: '#0a0a0a', 
+                border: '1px solid #333', 
+                borderRadius: '8px', 
+                padding: '0.5rem 1rem', 
+                color: '#fff',
+                fontSize: '0.9rem'
+              }}
+            />
+            <button 
+              onClick={handleSaveOllamaHost} 
+              className="admin-btn admin-btn-primary"
+              disabled={savingHost}
+            >
+              {savingHost ? 'Guardando...' : 'Guardar URL'}
+            </button>
+          </div>
+          <p style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+            Esta URL será utilizada por <strong>todos los asistentes</strong> de la página. 
+            Usa una URL de Ngrok o tu servidor permanente.
           </p>
         </div>
       </div>

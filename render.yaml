@@ -10,7 +10,7 @@ services:
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
       - key: VITE_OLLAMA_HOST
-        value: http://localhost:11434
+        sync: false
       - key: VITE_OLLAMA_MODEL
         value: llama3.1:8b
     routes:

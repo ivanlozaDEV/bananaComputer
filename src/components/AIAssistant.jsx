@@ -312,7 +312,17 @@ const AIAssistant = ({ onClose }) => {
           {!ollamaReady && (
             <div className="offline-notice">
               <AlertTriangle size={32} />
-              <p>Ollama no está respondiendo. Asegúrate de que el servidor local esté activo con <code>ollama run llama3.1:8b</code>.</p>
+              <p>Ollama no está respondiendo.</p>
+              
+              {window.location.protocol === 'https:' ? (
+                <p className="hint">
+                  <strong>Aviso de Seguridad:</strong> Estás en una conexión HTTPS. 
+                  Para conectar con tu Ollama local, necesitas usar un túnel (como <strong>Ngrok</strong>) 
+                  o configurar <code>OLLAMA_ORIGINS</code>.
+                </p>
+              ) : (
+                <p className="hint">Asegúrate de que el servidor local esté activo con <code>ollama serve</code>.</p>
+              )}
             </div>
           )}
           {messages.map((m, i) => (

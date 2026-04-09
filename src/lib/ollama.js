@@ -1,12 +1,41 @@
-export const OLLAMA_HOST = import.meta.env.VITE_OLLAMA_HOST || 'http://localhost:11434';
-export const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b';
+import { supabase } from './supabase';
+
+let cachedHost = localStorage.getItem('OLLAMA_HOST_OVERRIDE') || import.meta.env.VITE_OLLAMA_HOST || 'http://localhost:11434';
+
+export const getOllamaHost = async () => {
+  // If we have a developer override, use it immediately
+  const override = localStorage.getItem('OLLAMA_HOST_OVERRIDE');
+  if (override) return override;
+
+  try {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'ollama_host')
+      .single();
+    if (data?.value) {
+      cachedHost = data.value;
+      return data.value;
+    }
+  } catch (err) {
+    console.warn('Could not fetch ollama_host from database, using fallback:', cachedHost);
+  }
+  return cachedHost;
+};
+
+export const OLLAMA_HOST = cachedHost; // Legacy export, will be updated by callers using getOllamaHost()
+export const OLLAMA_MODEL = localStorage.getItem('OLLAMA_MODEL_OVERRIDE') || import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b';
 
 // ─── Check if Ollama is running ──────────────────────────────────
 export async function pingOllama() {
   try {
-    const res = await fetch(`${OLLAMA_HOST}/api/tags`, { signal: AbortSignal.timeout(2000) });
+    const res = await fetch(`${OLLAMA_HOST}/api/tags`, { 
+      signal: AbortSignal.timeout(2000),
+      mode: 'cors'
+    });
     return res.ok;
-  } catch {
+  } catch (err) {
+    console.error('Ollama Ping Error:', err);
     return false;
   }
 }
@@ -174,7 +203,8 @@ ${inventoryContext || 'Cargando conocimiento base...'}
     options: { temperature: 0.7 }
   };
 
-  const res = await fetch(`${OLLAMA_HOST}/api/chat`, {
+  const host = await getOllamaHost();
+  const res = await fetch(`${host}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

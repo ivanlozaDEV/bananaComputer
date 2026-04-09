@@ -395,6 +395,103 @@
   gap: 1rem;
 }
 
+.offline-notice .hint {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
+  max-width: 300px;
+  line-height: 1.4;
+}
+
+.offline-notice .hint code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.config-toggle {
+  background: none;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: #aaa;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.config-toggle:hover {
+  border-color: var(--banana);
+  color: var(--banana);
+}
+
+.config-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--banana);
+  box-shadow: 0 0 20px rgba(251, 221, 51, 0.2);
+}
+
+.debug-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--banana);
+  margin: 0 0 5px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.config-area input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.config-area input:focus {
+  border-color: var(--banana);
+}
+
+.config-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.config-btns button {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn {
+  background: var(--banana);
+  color: #000;
+  border: none;
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.save-btn:hover { filter: brightness(1.1); }
+.cancel-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
