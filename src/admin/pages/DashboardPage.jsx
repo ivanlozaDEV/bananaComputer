@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { updateAIBaselineInDB } from '../../lib/inventory';
+import { useToast } from '../../context/ToastContext';
 import { Package, Star, Tag, Users, Image, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 const DashboardPage = () => {
+  const { showToast } = useToast();
   const [stats, setStats] = useState({ products: 0, categories: 0, customers: 0, featured: 0 });
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -42,9 +44,10 @@ const DashboardPage = () => {
       await updateAIBaselineInDB();
       setSyncDone(true);
       setTimeout(() => setSyncDone(false), 3000);
+      showToast('Conocimiento IA actualizado con éxito', 'success');
     } catch (err) {
       console.error('Error syncing AI:', err);
-      alert('Error en la sincronización');
+      showToast('Error en la sincronización de IA', 'error');
     } finally {
       setSyncing(false);
     }

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import Logo from '../components/Logo';
 import { Eye, EyeOff, Check, X, Shield, Lock } from 'lucide-react';
 import './LoginPage.css'; // Reusing login styles
 
 const ResetPasswordPage = () => {
   const { updatePassword } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,7 +47,7 @@ const ResetPasswordPage = () => {
     if (resetError) {
       setError(resetError.message);
     } else {
-      alert('Contraseña actualizada con éxito.');
+      showToast('Contraseña actualizada con éxito.', 'success');
       navigate('/login');
     }
   };

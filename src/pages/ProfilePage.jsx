@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -9,6 +10,7 @@ import './ProfilePage.css';
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -52,7 +54,7 @@ const ProfilePage = () => {
     setSaving(true);
     await supabase.from('customers').update({ ...form, updated_at: new Date().toISOString() }).eq('id', user.id);
     setSaving(false);
-    alert('Perfil actualizado con éxito');
+    showToast('Perfil actualizado con éxito', 'success');
   };
 
   const handleSignOut = async () => {
