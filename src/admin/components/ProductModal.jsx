@@ -104,6 +104,33 @@ const ProductModal = ({
             <input className="admin-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
 
+          {/* Price & Stock */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div className="admin-form-group">
+              <label>Precio (USD)</label>
+              <input
+                className="admin-input"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.price}
+                onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="admin-form-group">
+              <label>Stock</label>
+              <input
+                className="admin-input"
+                type="number"
+                min="0"
+                value={form.stock}
+                onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
           {/* Multiple Images Management */}
           <div className="admin-form-group" style={{ marginBottom: '1.5rem' }}>
             <label>Galería de Imágenes</label>
