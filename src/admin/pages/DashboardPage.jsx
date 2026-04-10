@@ -113,7 +113,7 @@ const DashboardPage = () => {
         </div>
 
         <div style={{ borderTop: '1px solid #272727', paddingTop: '1.5rem' }}>
-          <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Inteligencia Artificial (Ollama)</h2>
+          <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Inteligencia Artificial (Banana AI)</h2>
           <button 
             onClick={handleSyncAI} 
             className={`admin-btn ${syncDone ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
@@ -126,81 +126,6 @@ const DashboardPage = () => {
           <p style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.5rem' }}>
             Envía un resumen de precios y productos actuales a la IA para mejorar sus recomendaciones.
           </p>
-        </div>
-
-        <div style={{ borderTop: '1px solid #272727', paddingTop: '1.5rem' }}>
-          <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Configuración de Servidor AI</h2>
-          <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '500px' }}>
-            <input 
-              type="text" 
-              value={ollamaHost} 
-              onChange={e => setOllamaHost(e.target.value)}
-              placeholder="http://localhost:11434"
-              style={{ 
-                flex: 1, 
-                background: '#0a0a0a', 
-                border: '1px solid #333', 
-                borderRadius: '8px', 
-                padding: '0.5rem 1rem', 
-                color: '#fff',
-                fontSize: '0.9rem'
-              }}
-            />
-            <button 
-              onClick={handleSaveOllamaHost} 
-              className="admin-btn admin-btn-primary"
-              disabled={savingHost}
-            >
-              {savingHost ? 'Guardando...' : 'Guardar URL Global'}
-            </button>
-          </div>
-          <p style={{ color: '#888', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-            Esta URL será utilizada por <strong>todos los asistentes</strong> de la página. 
-            Usa una URL de Ngrok o tu servidor permanente.
-          </p>
-
-          <details style={{ marginTop: '1.5rem', background: '#222', padding: '1rem', borderRadius: '8px' }}>
-            <summary style={{ color: '#aaa', fontSize: '0.8rem', cursor: 'pointer', userSelect: 'none' }}>
-              🔧 Opciones de Desarrollador (Solo este navegador)
-            </summary>
-            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <p style={{ color: '#888', fontSize: '0.75rem' }}>
-                Si quieres probar un enlace de Ngrok sin afectar a otros usuarios, puedes sobreescribirlo aquí localmente.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input 
-                  type="text" 
-                  defaultValue={localStorage.getItem('OLLAMA_HOST_OVERRIDE') || ''} 
-                  id="local-ollama-override"
-                  placeholder="https://su-ngrok.ngrok-free.app"
-                  style={{ 
-                    flex: 1, 
-                    background: '#111', 
-                    border: '1px solid #444', 
-                    borderRadius: '6px', 
-                    padding: '0.4rem 0.8rem', 
-                    color: '#fff',
-                    fontSize: '0.85rem'
-                  }}
-                />
-                <button 
-                  onClick={() => {
-                    const val = document.getElementById('local-ollama-override').value;
-                    if (val) localStorage.setItem('OLLAMA_HOST_OVERRIDE', val);
-                    else localStorage.removeItem('OLLAMA_HOST_OVERRIDE');
-                    window.location.reload();
-                  }}
-                  className="admin-btn admin-btn-ghost"
-                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
-                >
-                  Aplicar Localmente
-                </button>
-              </div>
-              <p style={{ color: 'var(--banana)', fontSize: '0.7rem' }}>
-                * Al aplicar se recargará la página para tomar el nuevo host.
-              </p>
-            </div>
-          </details>
         </div>
       </div>
     </div>

@@ -11,17 +11,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setRole(session?.user?.app_metadata?.role ?? 'customer');
-      setLoading(false);
-    });
-
-    // Listen for auth changes
+    // Listen for auth changes (fires on load too with INITIAL_SESSION event)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setRole(session?.user?.app_metadata?.role ?? 'customer');
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
