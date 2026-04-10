@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import imageCompression from 'browser-image-compression';
 import { supabase } from '../lib/supabase';
 
 const emptyProduct = {
@@ -70,18 +71,32 @@ export function useProductForm(categories, onSaveSuccess) {
     setUploading(true);
     const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const path = `products/${Date.now()}-${safeName}`;
-    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true });
     
-    if (error) {
-      console.error('Storage upload error:', error);
-      throw error;
-    } else {
-      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
-      setForm(f => ({ 
-        ...f, 
-        images: [...(f.images || []), publicUrl],
-        image_url: f.image_url || publicUrl // update legacy
-      }));
+    // Compression Options
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1200,
+      useWebWorker: true
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      const { error } = await supabase.storage.from('product-images').upload(path, compressedFile, { upsert: true });
+      
+      if (error) {
+        console.error('Storage upload error:', error);
+        throw error;
+      } else {
+        const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
+        setForm(f => ({ 
+          ...f, 
+          images: [...(f.images || []), publicUrl],
+          image_url: f.image_url || publicUrl // update legacy
+        }));
+      }
+    } catch (compressionError) {
+      console.error('Error durante la compresión/subida:', compressionError);
+      alert('Error al procesar la imagen.');
     }
     setUploading(false);
   };
@@ -93,11 +108,20 @@ export function useProductForm(categories, onSaveSuccess) {
   const handleSave = async (e) => {
     if (e) e.preventDefault();
     setSaving(true);
+    const price = parseFloat(form.price);
+    const stock = parseInt(form.stock);
+
+    if (isNaN(price) || price < 0) {
+      setSaving(false);
+      alert('Por favor ingresa un precio válido.');
+      return;
+    }
+
     const payload = {
       sku: form.sku, name: form.name, model_number: form.model_number, tagline: form.tagline,
       marketing_subtitle: form.marketing_subtitle, marketing_body: form.marketing_body,
-      description: form.description, price: parseFloat(form.price),
-      stock: parseInt(form.stock), 
+      description: form.description, price,
+      stock: isNaN(stock) ? 0 : stock, 
       category_id: form.category_id || null,
       subcategory_id: form.subcategory_ids?.[0] || form.subcategory_id || null, 
       image_url: form.images?.[0] || form.image_url || null,
@@ -109,10 +133,12 @@ export function useProductForm(categories, onSaveSuccess) {
     let productId;
     try {
       if (modal === 'new') {
-        const { data } = await supabase.from('products').insert(payload).select().single();
+        const { data, error } = await supabase.from('products').insert(payload).select().single();
+        if (error) throw error;
         productId = data?.id;
       } else {
-        await supabase.from('products').update(payload).eq('id', modal.id);
+        const { error } = await supabase.from('products').update(payload).eq('id', modal.id);
+        if (error) throw error;
         productId = modal.id;
         // Cleanup old relations
         await Promise.all([

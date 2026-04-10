@@ -29,7 +29,8 @@ export const OLLAMA_MODEL = localStorage.getItem('OLLAMA_MODEL_OVERRIDE') || imp
 // ─── Check if Ollama is running ──────────────────────────────────
 export async function pingOllama() {
   try {
-    const res = await fetch(`${OLLAMA_HOST}/api/tags`, { 
+    const host = await getOllamaHost();
+    const res = await fetch(`${host}/api/tags`, { 
       signal: AbortSignal.timeout(2000),
       mode: 'cors'
     });
@@ -90,7 +91,8 @@ Rules:
 DATASHEET:
 ${rawText}`;
 
-  const res = await fetch(`${OLLAMA_HOST}/api/generate`, {
+  const host = await getOllamaHost();
+  const res = await fetch(`${host}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: true, format: 'json' }),
@@ -157,7 +159,8 @@ Rules:
 - Mention specific specs from the list.
 - Return ONLY the JSON object.`;
 
-  const res = await fetch(`${OLLAMA_HOST}/api/generate`, {
+  const host = await getOllamaHost();
+  const res = await fetch(`${host}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 

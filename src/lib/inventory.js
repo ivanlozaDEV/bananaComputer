@@ -63,9 +63,9 @@ export async function generateAIBaseline() {
   if (error || !data) return "No hay información de inventario disponible.";
 
   const categories = [...new Set(data.map(p => p.categories?.name).filter(Boolean))];
-  const prices = data.map(p => p.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  const validPrices = data.map(p => parseFloat(p.price)).filter(p => !isNaN(p));
+  const minPrice = validPrices.length ? Math.min(...validPrices) : 0;
+  const maxPrice = validPrices.length ? Math.max(...validPrices) : 0;
   
   let productsList = "";
   if (data.length <= 100) {
@@ -74,7 +74,8 @@ export async function generateAIBaseline() {
         const specs = p.product_attributes || [];
         const ram = specs.find(s => s.attribute_definitions.name.toLowerCase().includes('ram'))?.value || 'n/a';
         const cpu = specs.find(s => s.attribute_definitions.name.toLowerCase().includes('procesador'))?.value || 'n/a';
-        return `- ${p.name} | $${p.price.toLocaleString()} | RAM: ${ram} | CPU: ${cpu} [ID: ${p.id}]`;
+        const priceLabel = p.price !== null && p.price !== undefined && !isNaN(parseFloat(p.price)) ? parseFloat(p.price).toLocaleString() : '??';
+        return `- ${p.name} | $${priceLabel} | RAM: ${ram} | CPU: ${cpu} [ID: ${p.id}]`;
       }).join('\n');
   }
 

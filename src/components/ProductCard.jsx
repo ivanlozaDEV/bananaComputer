@@ -45,7 +45,11 @@ const ProductCard = ({ product }) => {
         <h3 className="product-name">{product.name}</h3>
         <p className="product-description">{product.description || product.marketing_subtitle}</p>
         <div className="product-footer">
-          <span className="product-price">${parseFloat(product.price).toFixed(2)}</span>
+          <span className="product-price">
+            {product.price !== null && product.price !== undefined && !isNaN(parseFloat(product.price)) 
+              ? `$${parseFloat(product.price).toFixed(2)}` 
+              : 'Consultar'}
+          </span>
           <button
             className={`retro-button ${isAdding ? 'adding' : ''}`}
             onClick={handleAdd}

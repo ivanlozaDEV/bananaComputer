@@ -21,7 +21,7 @@ const ProductTable = ({ products, onEdit, onDelete }) => {
             </td>
             <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{p.sku}</td>
             <td>{p.categories?.name || '—'}</td>
-            <td>${parseFloat(p.price).toFixed(2)}</td>
+            <td>{p.price !== null && p.price !== undefined && !isNaN(parseFloat(p.price)) ? `$${parseFloat(p.price).toFixed(2)}` : '—'}</td>
             <td>{p.stock}</td>
             <td><span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: p.is_active ? '#4ade80' : '#555' }} /></td>
             <td>

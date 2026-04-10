@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../context/StoreContext';
+import imageCompression from 'browser-image-compression';
 import { supabase } from '../../lib/supabase';
 import { Save, Upload } from 'lucide-react';
 
@@ -39,10 +40,27 @@ const HeroEditorPage = () => {
     setUploading(true);
     const ext = file.name.split('.').pop();
     const path = `hero-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('hero-images').upload(path, file, { upsert: true });
-    if (!error) {
-      const { data: { publicUrl } } = supabase.storage.from('hero-images').getPublicUrl(path);
-      setForm(f => ({ ...f, image_url: publicUrl }));
+
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1800, // Hero images can be wider
+      useWebWorker: true
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      const { data: uploadData, error } = await supabase.storage.from('hero-images').upload(path, compressedFile, { upsert: true });
+      
+      if (error) {
+        console.error('Error subiendo imagen de hero:', error);
+        alert('Error al subir la imagen. Asegúrate de que el bucket "hero-images" existe.');
+      } else {
+        const { data: { publicUrl } } = supabase.storage.from('hero-images').getPublicUrl(path);
+        setForm(f => ({ ...f, image_url: publicUrl }));
+      }
+    } catch (compressionError) {
+      console.error('Error comprimiendo imagen de hero:', compressionError);
+      alert('Error al procesar la imagen.');
     }
     setUploading(false);
   };

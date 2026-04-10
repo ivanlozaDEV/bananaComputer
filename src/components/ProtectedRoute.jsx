@@ -13,8 +13,8 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false }) => {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
-  if (requireSuperAdmin && !isSuperAdmin) return <Navigate to="/" replace />;
+  if (!user && !loading) return <Navigate to="/login" replace />;
+  if (requireSuperAdmin && !isSuperAdmin && !loading) return <Navigate to="/" replace />;
 
   return children;
 };

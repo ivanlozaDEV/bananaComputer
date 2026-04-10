@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import imageCompression from 'browser-image-compression';
 import { Plus, Trash2, ChevronDown } from 'lucide-react';
 
 // ─── Predefined options ──────────────────────────────────────────
@@ -168,10 +169,28 @@ const CategoriesPage = () => {
                           const file = e.target.files[0];
                           if (!file) return;
                           const path = `subcategories/${Date.now()}-${file.name}`;
-                          await supabase.storage.from('product-images').upload(path, file);
-                          const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
-                          await supabase.from('subcategories').update({ image_url: publicUrl }).eq('id', sub.id);
-                          fetchCategories();
+                          
+                          const options = {
+                            maxSizeMB: 0.5, // Subcategory icons can be smaller
+                            maxWidthOrHeight: 800,
+                            useWebWorker: true
+                          };
+
+                          try {
+                            const compressedFile = await imageCompression(file, options);
+                            const { data: uploadData, error } = await supabase.storage.from('product-images').upload(path, compressedFile);
+                            if (error) {
+                              console.error('Error subiendo imagen de categoría:', error);
+                              alert('No se pudo subir la imagen. Verifica el bucket "product-images".');
+                            } else {
+                              const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
+                              await supabase.from('subcategories').update({ image_url: publicUrl }).eq('id', sub.id);
+                              fetchCategories();
+                            }
+                          } catch (compErr) {
+                            console.error('Error comprimiendo subcategoría:', compErr);
+                            alert('Error al procesar la imagen.');
+                          }
                         }} />
                       </label>
                     </div>
