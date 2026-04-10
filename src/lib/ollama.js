@@ -35,10 +35,7 @@ export async function pingOllama() {
     console.log('--- Pinging Ollama at:', host);
     const res = await fetch(`${host}/api/tags`, { 
       signal: AbortSignal.timeout(2500),
-      mode: 'cors',
-      headers: {
-        'ngrok-skip-browser-warning': '1'
-      }
+      mode: 'cors'
     });
     return res.ok;
   } catch (err) {
@@ -101,8 +98,7 @@ ${rawText}`;
   const res = await fetch(`${host}/api/generate`, {
     method: 'POST',
     headers: { 
-      'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': 'true'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: true, format: 'json' }),
   });
@@ -172,8 +168,7 @@ Rules:
   const res = await fetch(`${host}/api/generate`, {
     method: 'POST',
     headers: { 
-      'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': 'true'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({ 
       model: OLLAMA_MODEL, 
@@ -222,8 +217,7 @@ ${inventoryContext || 'Cargando conocimiento base...'}
   const res = await fetch(`${host}/api/chat`, {
     method: 'POST',
     headers: { 
-      'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': 'true'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload),
   });
