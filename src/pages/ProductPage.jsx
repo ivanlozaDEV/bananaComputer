@@ -83,7 +83,9 @@ const ProductPage = () => {
       }
       
       setProduct(prod);
-      setActiveImg(prod.images?.[0] || prod.image_url);
+      if (prod) {
+        setActiveImg(prod.images?.[0] || prod.image_url);
+      }
 
       const { data: prodAttrs } = await supabase
         .from('product_attributes')
@@ -107,6 +109,16 @@ const ProductPage = () => {
       <div className="pp-loading-screen">
         <span className="pp-loading-banana">🍌</span>
         <span className="pp-loading-text">Cargando...</span>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="pp-error-screen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a0a', color: '#fff' }}>
+        <span style={{ fontSize: '3rem' }}>🍌</span>
+        <h2>Producto no encontrado</h2>
+        <button onClick={() => navigate('/')} className="btn-secondary" style={{ marginTop: '1rem' }}>Volver a la tienda</button>
       </div>
     );
   }
