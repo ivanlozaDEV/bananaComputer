@@ -186,7 +186,7 @@ const ProductPage = () => {
                   {product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}
                 </span>
                 <span className="pp-price">
-                  ${parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${(parseFloat(product.price) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="pp-tax-note">Incluido impuestos</span>
               </div>
