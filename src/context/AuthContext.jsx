@@ -11,14 +11,27 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen for auth changes (fires on load too with INITIAL_SESSION event)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    let mounted = true;
+
+    // Resolve initial session immediately — this is the fastest and most reliable method
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setUser(session?.user ?? null);
       setRole(session?.user?.app_metadata?.role ?? 'customer');
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Keep auth state updated on sign-in / sign-out events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setUser(session?.user ?? null);
+      setRole(session?.user?.app_metadata?.role ?? 'customer');
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = (email, password) =>
