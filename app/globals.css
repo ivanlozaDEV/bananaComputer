@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-purple-brand: #4B467B;
+  --color-purple: var(--color-purple-brand);
+  --color-banana-yellow: #FBDD33;
+  --color-banana: var(--color-banana-yellow);
+  --color-raspberry: #D13B53;
+  --color-mint: #7AB19A;
+  --color-sunset: #FF8c42;
+  --color-ocean: #2B59C3;
+  --color-cream-bg: #fbfbf9;
+  --color-dark-nav: #0a0a12;
+  
+  --font-inter: "Inter", sans-serif;
+  --font-pixel: "DotGothic16", sans-serif;
+  --font-pixel-legacy: "Pixelify Sans", cursive;
+}
+
+:root {
+  --background: var(--color-cream-bg);
+  --foreground: #171717;
+}
+
+.dark {
+  --background: var(--color-dark-nav);
+  --foreground: #ededed;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+.dark .glass-panel {
+  @apply bg-black/50 backdrop-blur-md border border-white/10;
+}
+
+.rainbow-stripe {
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-banana-yellow) 0%,
+    var(--color-purple-brand) 50%,
+    var(--color-raspberry) 100%
+  );
+  width: 100%;
+}
+
+/* Design System Scaling Refinement */
+h1 { @apply text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]; }
+h2 { @apply text-3xl md:text-4xl font-black tracking-tight; }
+h3 { @apply text-xl md:text-2xl font-black; }
+
+/* Legacy Animations Parity */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes wiggle {
+  0%, 90%, 100% { transform: rotate(0); }
+  92% { transform: rotate(3deg); }
+  94% { transform: rotate(-3deg); }
+  96% { transform: rotate(2deg); }
+  98% { transform: rotate(-2deg); }
+}
+
+@keyframes ai-glow {
+  0%, 100% { box-shadow: 0 4px 15px rgba(75, 70, 123, 0.3); }
+  50% { box-shadow: 0 4px 25px rgba(251, 221, 51, 0.4); }
+}
+
+@keyframes bananaFloat {
+  0% { transform: translateY(0) rotate(0); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.animate-fade-in-scale { animation: fadeInScale 0.5s ease-out forwards; }
+.animate-wiggle { animation: wiggle 3s ease-in-out infinite; }
+.animate-ai-glow { animation: ai-glow 2s ease-in-out infinite; }
+.animate-pulse-subtle { animation: pulse 2s ease-in-out infinite; }
+ 
+.font-pixel-legacy {
+  font-family: var(--font-pixel-legacy);
+}

@@ -1,0 +1,55 @@
+.rainbowComputer {
+  perspective: 1000px;
+  display: inline-block;
+}
+
+.small { width: 40px; }
+.medium { width: 100px; }
+.large { width: 180px; }
+
+.rainbowScreen {
+  width: 100%;
+  aspect-ratio: 1.5/1;
+  background: #fff;
+  border: 2px solid #1a1a1a;
+  border-radius: 4px 4px 1px 1px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.small .rainbowScreen { border-width: 1.5px; border-radius: 3px 3px 1px 1px; }
+.large .rainbowScreen { border-width: 4px; border-radius: 12px 12px 2px 2px; }
+
+.stripe { height: 16.66%; width: 100%; }
+.stripeYellow { background: var(--color-banana-yellow); }
+.stripeOrange { background: var(--color-sunset); }
+.stripeRed { background: var(--color-raspberry); }
+.stripePurple { background: var(--color-purple-brand); }
+.stripeBlue { background: var(--color-ocean); }
+.stripeGreen { background: var(--color-mint); }
+
+.bananaSymbol {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+  line-height: 1;
+}
+
+.medium .bananaSymbol { font-size: 2.5rem; }
+.large .bananaSymbol { font-size: 4rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+.computerBase {
+  height: 2px;
+  background: #1a1a1a;
+  width: 110%;
+  margin-left: -5%;
+  border-radius: 0 0 4px 4px;
+}
+
+.small .computerBase { height: 1.5px; }
+.large .computerBase { height: 6px; border-radius: 0 0 10px 10px; }
