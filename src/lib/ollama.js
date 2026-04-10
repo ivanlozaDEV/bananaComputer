@@ -14,13 +14,15 @@ export const getOllamaHost = async () => {
       .eq('key', 'ollama_host')
       .single();
     if (data?.value) {
-      cachedHost = data.value;
-      return data.value;
+      // Sanitize: trim whitespace and trailing slashes
+      const sanitized = data.value.trim().replace(/\/+$/, '');
+      cachedHost = sanitized;
+      return sanitized;
     }
   } catch (err) {
     console.warn('Could not fetch ollama_host from database, using fallback:', cachedHost);
   }
-  return cachedHost;
+  return cachedHost.trim().replace(/\/+$/, '');
 };
 
 export const OLLAMA_HOST = cachedHost; // Legacy export, will be updated by callers using getOllamaHost()
@@ -30,9 +32,13 @@ export const OLLAMA_MODEL = localStorage.getItem('OLLAMA_MODEL_OVERRIDE') || imp
 export async function pingOllama() {
   try {
     const host = await getOllamaHost();
+    console.log('--- Pinging Ollama at:', host);
     const res = await fetch(`${host}/api/tags`, { 
-      signal: AbortSignal.timeout(2000),
-      mode: 'cors'
+      signal: AbortSignal.timeout(2500),
+      mode: 'cors',
+      headers: {
+        'ngrok-skip-browser-warning': '1'
+      }
     });
     return res.ok;
   } catch (err) {
@@ -94,7 +100,10 @@ ${rawText}`;
   const host = await getOllamaHost();
   const res = await fetch(`${host}/api/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    },
     body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: true, format: 'json' }),
   });
 
@@ -162,7 +171,10 @@ Rules:
   const host = await getOllamaHost();
   const res = await fetch(`${host}/api/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    },
     body: JSON.stringify({ 
       model: OLLAMA_MODEL, 
       prompt, 
@@ -209,7 +221,10 @@ ${inventoryContext || 'Cargando conocimiento base...'}
   const host = await getOllamaHost();
   const res = await fetch(`${host}/api/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    },
     body: JSON.stringify(payload),
   });
 
