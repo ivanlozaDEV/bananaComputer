@@ -1,56 +1,41 @@
 import { supabase } from './supabase';
 
-let cachedHost = localStorage.getItem('OLLAMA_HOST_OVERRIDE') || import.meta.env.VITE_OLLAMA_HOST || 'http://localhost:11434';
+// ─── Groq Configuration ──────────────────────────────────────────
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 
-export const getOllamaHost = async () => {
-  // If we have a developer override, use it immediately
-  const override = localStorage.getItem('OLLAMA_HOST_OVERRIDE');
-  if (override) return override;
+// ─── Legacy Ollama exports (kept for compatibility) ──────────────
+export const OLLAMA_HOST = 'https://api.groq.com';
+export const OLLAMA_MODEL = GROQ_MODEL;
 
-  try {
-    const { data } = await supabase
-      .from('site_settings')
-      .select('value')
-      .eq('key', 'ollama_host')
-      .single();
-    if (data?.value) {
-      // Sanitize: trim whitespace and trailing slashes
-      const sanitized = data.value.trim().replace(/\/+$/, '');
-      cachedHost = sanitized;
-      return sanitized;
-    }
-  } catch (err) {
-    console.warn('Could not fetch ollama_host from database, using fallback:', cachedHost);
-  }
-  return cachedHost.trim().replace(/\/+$/, '');
-};
+export const getOllamaHost = async () => GROQ_BASE_URL;
 
-export const OLLAMA_HOST = cachedHost; // Legacy export, will be updated by callers using getOllamaHost()
-export const OLLAMA_MODEL = localStorage.getItem('OLLAMA_MODEL_OVERRIDE') || import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b';
-
-// ─── Check if Ollama is running ──────────────────────────────────
+// ─── Check if Groq is reachable ──────────────────────────────────
 export async function pingOllama() {
   try {
-    const host = await getOllamaHost();
-    console.log('--- Pinging Ollama at:', host);
-    const res = await fetch(`${host}/api/tags`, { 
-      signal: AbortSignal.timeout(2500),
-      mode: 'cors'
+    if (!GROQ_API_KEY) {
+      console.warn('No GROQ_API_KEY set');
+      return false;
+    }
+    const res = await fetch(`${GROQ_BASE_URL}/models`, {
+      headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      signal: AbortSignal.timeout(4000),
     });
     return res.ok;
   } catch (err) {
-    console.error('Ollama Ping Error:', err);
+    console.error('Groq Ping Error:', err);
     return false;
   }
 }
 
-// ─── Sanitize LLM JSON (fixes trailing commas, smart quotes, etc.) ─
+// ─── Sanitize LLM JSON ───────────────────────────────────────────
 export function sanitizeJson(text) {
   return text
-    .replace(/[\u2018\u2019\u201C\u201D]/g, '"') // smart quotes → regular
-    .replace(/,\s*([}\]])/g, '$1')               // trailing commas
-    .replace(/\/\/.*$/gm, '')                    // JS-style comments
-    .replace(/\t/g, ' ')                          // tabs → spaces
+    .replace(/[\u2018\u2019\u201C\u201D]/g, '"')
+    .replace(/,\s*([}\]])/g, '$1')
+    .replace(/\/\/.*$/gm, '')
+    .replace(/\t/g, ' ')
     .trim();
 }
 
@@ -63,10 +48,37 @@ export function parseOllamaJson(text) {
     try { return JSON.parse(match[0]); } catch { }
     try { return JSON.parse(sanitizeJson(match[0])); } catch { }
   }
-  throw new Error('Ollama no devolvió JSON válido');
+  throw new Error('Groq no devolvió JSON válido');
 }
 
-// ─── Ollama analyze datasheet (streaming) ──────────────────────
+// ─── Internal Groq chat helper ───────────────────────────────────
+async function groqChat(messages, { json = false, temperature = 0.7 } = {}) {
+  const body = {
+    model: GROQ_MODEL,
+    messages,
+    temperature,
+    ...(json ? { response_format: { type: 'json_object' } } : {}),
+  };
+
+  const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Groq HTTP ${res.status}: ${errText}`);
+  }
+
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+// ─── Analyze datasheet ────────────────────────────────────────────
 export async function analyzeWithOllama(rawText, attrDefs, onToken) {
   const attrNames = attrDefs.map(a => a.unit ? `${a.name} (${a.unit})` : a.name).join(', ');
 
@@ -94,41 +106,15 @@ Rules:
 DATASHEET:
 ${rawText}`;
 
-  const host = await getOllamaHost();
-  const res = await fetch(`${host}/api/generate`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: true, format: 'json' }),
-  });
-
-  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}: ${await res.text()}`);
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let accumulated = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    for (const line of chunk.split('\n').filter(Boolean)) {
-      try {
-        const parsed = JSON.parse(line);
-        if (parsed.response) {
-          accumulated += parsed.response;
-          onToken?.(accumulated);
-        }
-        if (parsed.done) break;
-      } catch { /* partial line, ignore */ }
-    }
-  }
-
-  return parseOllamaJson(accumulated);
+  const result = await groqChat(
+    [{ role: 'user', content: prompt }],
+    { json: true }
+  );
+  onToken?.(result);
+  return parseOllamaJson(result);
 }
 
-// ─── Generate Banana Review (5 pillars) ────────────────────────
+// ─── Generate Banana Review ───────────────────────────────────────
 export async function generateBananaReview(product, specsText) {
   const prompt = `Critical tech review in Spanish for: ${product.name}.
 Specs: ${specsText}
@@ -164,26 +150,14 @@ Rules:
 - Mention specific specs from the list.
 - Return ONLY the JSON object.`;
 
-  const host = await getOllamaHost();
-  const res = await fetch(`${host}/api/generate`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ 
-      model: OLLAMA_MODEL, 
-      prompt, 
-      stream: false, 
-      format: 'json',
-      options: { temperature: 0.7 }
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
-  const data = await res.json();
-  return parseOllamaJson(data.response);
+  const result = await groqChat(
+    [{ role: 'user', content: prompt }],
+    { json: true, temperature: 0.7 }
+  );
+  return parseOllamaJson(result);
 }
-// ─── Conversational AI Assistant (Discovery + Router) ───────────
+
+// ─── Conversational AI Assistant ─────────────────────────────────
 export async function chatWithOllama(messages, inventoryContext = '') {
   const systemPrompt = `Eres Banana AI, el Experto de Banana Computer. Ayuda al cliente a elegir una computadora.
 
@@ -203,26 +177,8 @@ ${inventoryContext || 'Cargando conocimiento base...'}
 - NUNCA uses la palabra "undefined".
 - NO incluyas textos meta como "(Remember rules)".`;
 
-  const payload = {
-    model: OLLAMA_MODEL,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...messages
-    ],
-    stream: false,
-    options: { temperature: 0.7 }
-  };
-
-  const host = await getOllamaHost();
-  const res = await fetch(`${host}/api/chat`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) throw new Error(`Ollama Chat Error: ${res.status}`);
-  const data = await res.json();
-  return data.message.content;
+  return await groqChat(
+    [{ role: 'system', content: systemPrompt }, ...messages],
+    { temperature: 0.7 }
+  );
 }
