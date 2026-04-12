@@ -26,10 +26,10 @@ export default function AdminLayout({ children }) {
   if (!user || !isAdmin) return null;
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0c] text-white">
+    <div className="flex min-h-screen bg-cream-bg text-black">
       <Sidebar />
-      <main className="flex-1 p-8 md:p-12 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+        <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>

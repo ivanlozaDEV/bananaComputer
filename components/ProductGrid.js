@@ -1,13 +1,17 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useCart } from '@/context/CartContext';
 import ProductCard from './ProductCard';
+import Fuse from 'fuse.js';
+import { useSearch } from '@/context/SearchContext';
 
 const ProductGrid = ({ subcategoryId }) => {
+  const [allProducts, setAllProducts] = useState([]);
   const [categoryGroups, setCategoryGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { searchQuery } = useSearch();
   const { addToCart } = useCart();
   const [addedIds, setAddedIds] = useState(new Set());
 
@@ -29,7 +33,7 @@ const ProductGrid = ({ subcategoryId }) => {
       try {
         let query = supabase
           .from('products')
-          .select('*, categories(name, id), product_attributes(value, attribute_definitions(name, unit, icon))')
+          .select('*, categories(name, id), product_attributes(value, attribute_definitions(name, unit, icon, show_in_card, display_order))')
           .eq('is_active', true);
 
         if (subcategoryId) {
@@ -42,14 +46,14 @@ const ProductGrid = ({ subcategoryId }) => {
           // Fallback if array contains operator fails (older supabase versions or schema mismatch)
           const fallbackQuery = supabase
             .from('products')
-            .select('*, categories(name, id), product_attributes(value, attribute_definitions(name, unit, icon))')
+            .select('*, categories(name, id), product_attributes(value, attribute_definitions(name, unit, icon, show_in_card, display_order))')
             .eq('is_active', true);
           const finalQuery = subcategoryId ? fallbackQuery.eq('subcategory_id', subcategoryId) : fallbackQuery;
           const { data: fbData, error: fbError } = await finalQuery.order('created_at', { ascending: false });
           if (fbError) throw fbError;
-          processData(fbData);
+          setAllProducts(fbData || []);
         } else {
-          processData(data);
+          setAllProducts(data || []);
         }
       } catch (err) {
         console.error('Error fetching products:', err);
@@ -58,49 +62,84 @@ const ProductGrid = ({ subcategoryId }) => {
       }
     };
 
-    const processData = (data) => {
-      const groups = {};
-      (data || []).forEach(p => {
-        const catId = p.category_id || 'other';
-        const catName = p.categories?.name || 'Otros';
-        if (!groups[catId]) groups[catId] = { id: catId, name: catName, products: [] };
-        groups[catId].products.push(p);
-      });
+    fetchProducts();
+  }, [subcategoryId]);
 
-      const processedGroups = Object.keys(groups).map(key => {
-        const group = groups[key];
-        const items = group.products;
-        const featured = items.filter(p => p.is_featured);
-        const latest = items.filter(p => !p.is_featured);
-        
-        // If we are in a subcategory view, show EVERYTHING. 
-        // If on home, keep the 3+3 "preview" logic.
-        const combined = subcategoryId 
-          ? [...featured.map(p => ({ ...p, badgeType: 'featured' })), ...latest.map(p => ({ ...p, badgeType: 'new' }))]
-          : [...featured.slice(0, 3).map(p => ({ ...p, badgeType: 'featured' })), ...latest.slice(0, 3).map(p => ({ ...p, badgeType: 'new' }))];
+  // Memoized fuzzy search logic
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return allProducts;
 
-        return {
-          id: group.id,
-          name: group.name,
-          products: combined.map(p => {
-            const year = new Date(p.created_at).getFullYear().toString();
-            const specs = (p.product_attributes || []).slice(0, 3).map(a => ({
+    const fuse = new Fuse(allProducts, {
+      keys: [
+        { name: 'name', weight: 2 },
+        { name: 'tagline', weight: 1 },
+        { name: 'description', weight: 1 },
+        { name: 'categories.name', weight: 1.5 },
+        { name: 'product_attributes.value', weight: 1 }
+      ],
+      threshold: 0.4,
+      distance: 100,
+    });
+
+    return fuse.search(searchQuery).map(result => result.item);
+  }, [allProducts, searchQuery]);
+
+  // Process data for grouping and mapping
+  useEffect(() => {
+    const groups = {};
+    (filteredProducts || []).forEach(p => {
+      const catId = p.category_id || 'other';
+      const catName = p.categories?.name || 'Otros';
+      if (!groups[catId]) groups[catId] = { id: catId, name: catName, products: [] };
+      groups[catId].products.push(p);
+    });
+
+    const processedGroups = Object.keys(groups).map(key => {
+      const group = groups[key];
+      const items = group.products;
+      const featured = items.filter(p => p.is_featured);
+      const latest = items.filter(p => !p.is_featured);
+
+      // If searching or in subcategory, show ALL matches
+      const combined = (subcategoryId || searchQuery.trim())
+        ? [...featured.map(p => ({ ...p, badgeType: 'featured' })), ...latest.map(p => ({ ...p, badgeType: 'new' }))]
+        : [...featured.slice(0, 3).map(p => ({ ...p, badgeType: 'featured' })), ...latest.slice(0, 3).map(p => ({ ...p, badgeType: 'new' }))];
+
+      return {
+        id: group.id,
+        name: group.name,
+        products: combined.map(p => {
+          const year = new Date(p.created_at).getFullYear().toString();
+          
+          let specs = (p.product_attributes || [])
+            .filter(a => a.attribute_definitions?.show_in_card)
+            .map(a => ({
+              label: a.attribute_definitions?.name,
+              value: a.value,
+              unit: a.attribute_definitions?.unit || '',
+              icon: a.attribute_definitions?.icon || '•',
+              order: a.attribute_definitions?.display_order || 0
+            }))
+            .sort((a, b) => a.order - b.order)
+            .slice(0, 6);
+
+          if (specs.length === 0) {
+            specs = (p.product_attributes || []).slice(0, 3).map(a => ({
               label: a.attribute_definitions?.name,
               value: a.value,
               unit: a.attribute_definitions?.unit || '',
               icon: a.attribute_definitions?.icon || '•'
             }));
-            return { ...p, year, specs };
-          }),
-          showTitle: !subcategoryId
-        };
-      }).filter(g => g.products.length > 0);
+          }
 
-      setCategoryGroups(processedGroups);
-    };
+          return { ...p, year, specs };
+        }),
+        showTitle: !subcategoryId
+      };
+    }).filter(g => g.products.length > 0);
 
-    fetchProducts();
-  }, [subcategoryId]);
+    setCategoryGroups(processedGroups);
+  }, [filteredProducts, subcategoryId, searchQuery]);
 
   if (loading) {
     return (
@@ -113,31 +152,46 @@ const ProductGrid = ({ subcategoryId }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-0">
-      {categoryGroups.map((group) => (
-        <section key={group.name} id={group.name.toLowerCase()} className="mb-20 last:mb-0">
-          {group.showTitle && (
-            <div className="mb-10 flex flex-col items-center">
-              <Link href={`/categoria/${group.id}`} className="group inline-flex flex-col items-center">
-                <h2 className="text-3xl md:text-4xl font-black tracking-tight text-center group-hover:text-purple-brand transition-colors">
-                  {group.name}
-                </h2>
-                <div className="h-1 bg-banana-yellow w-16 group-hover:w-full transition-all duration-500 mt-2"></div>
-              </Link>
-            </div>
-          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {group.products.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                addedIds={addedIds} 
-                handleAddToCart={handleAddToCart} 
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+      {categoryGroups.length > 0 ? (
+        categoryGroups.map((group) => (
+          <section key={group.name} id={group.name.toLowerCase()} className="mb-20 last:mb-0 animate-in fade-in duration-700">
+            {group.showTitle && (
+              <div className="mb-10 flex flex-col items-center">
+                <Link href={`/categoria/${group.id}`} className="group inline-flex flex-col items-center">
+                  <h2 className="text-3xl md:text-4xl font-black tracking-tight text-center group-hover:text-purple-brand transition-colors">
+                    {group.name}
+                  </h2>
+                  <div className="h-1 bg-banana-yellow w-16 group-hover:w-full transition-all duration-500 mt-2"></div>
+                </Link>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {group.products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  addedIds={addedIds}
+                  handleAddToCart={handleAddToCart}
+                />
+              ))}
+            </div>
+          </section>
+        ))
+      ) : searchQuery && (
+        <div className="py-20 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4">
+          <span className="text-6xl mb-6">🍌🔍</span>
+          <h3 className="text-2xl font-black mb-2">No encontramos coincidencias</h3>
+          <p className="text-gray-400 font-medium max-w-sm">No hay productos que coincidan con "<span className="text-purple-brand">{searchQuery}</span>". Intenta con otros términos.</p>
+          <button 
+            onClick={() => setSearchQuery('')}
+            className="mt-8 px-8 py-3 bg-purple-brand text-white rounded-xl font-black text-xs uppercase tracking-widest"
+          >
+            Ver Todo el Catálogo
+          </button>
+        </div>
+      )}
     </div>
   );
 };

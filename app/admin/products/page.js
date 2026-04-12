@@ -90,50 +90,50 @@ export default function ProductsAdminPage() {
   );
 
   return (
-    <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="flex flex-col gap-4">
-        <Link href="/admin" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors w-fit">
-          <ArrowLeft size={14} /> Volver al Dashboard
+        <Link href="/admin" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black transition-colors w-fit">
+          <ArrowLeft size={12} /> Volver al Dashboard
         </Link>
         <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-4xl font-black tracking-tight">Catálogo de Productos</h1>
-            <p className="text-gray-500 font-medium">Gestiona el inventario, precios y especificaciones IA.</p>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-black tracking-tight">Catálogo de Productos</h1>
+            <p className="text-gray-400 text-sm font-medium">Gestiona el inventario, precios y especificaciones IA.</p>
           </div>
           <button 
             onClick={productForm.openNew}
-            className="px-8 py-4 bg-banana-yellow text-black rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-banana-yellow/20 flex items-center gap-2"
+            className="px-6 py-3.5 bg-banana-yellow text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-banana-yellow/10 flex items-center gap-2"
           >
-            <Plus size={20} /> NUEVO PRODUCTO
+            <Plus size={18} /> NUEVO PRODUCTO
           </button>
         </div>
       </header>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white/5 border border-white/5 rounded-3xl p-4">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white border border-black/5 rounded-3xl p-3 shadow-sm">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
           <input 
-            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 py-4 text-sm font-medium focus:outline-none focus:border-purple-brand/50"
+            className="w-full bg-gray-50 border border-black/5 rounded-2xl pl-14 pr-6 py-3.5 text-sm font-bold focus:outline-none focus:border-purple-brand/30 transition-all"
             placeholder="Buscar por nombre o SKU..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
         <div className="flex gap-2 shrink-0">
-          <button onClick={fetchAll} className="p-4 bg-white/5 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-all">
-            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+          <button onClick={fetchAll} className="p-3.5 bg-gray-50 border border-black/5 rounded-2xl text-gray-400 hover:text-black transition-all">
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
-          <div className="flex items-center gap-2 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-500">
-            <Filter size={16} /> Filtros
+          <div className="flex items-center gap-2 px-5 py-3.5 bg-gray-50 border border-black/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400">
+            <Filter size={14} /> Filtros
           </div>
         </div>
       </div>
 
       {loading && products.length === 0 ? (
-        <div className="py-20 flex flex-col items-center justify-center opacity-40">
-           <div className="w-10 h-10 border-4 border-white/10 border-t-banana-yellow rounded-full animate-spin mb-4"></div>
-           <span className="text-[10px] font-black uppercase tracking-[0.3em]">Sincronizando inventario...</span>
+        <div className="py-20 flex flex-col items-center justify-center">
+           <div className="w-10 h-10 border-4 border-black/5 border-t-banana-yellow rounded-full animate-spin mb-4"></div>
+           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Sincronizando inventario...</span>
         </div>
       ) : (
         <ProductTable 

@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Cpu, MemoryStick, HardDrive, Monitor, Battery, 
+import {
+  Cpu, MemoryStick, HardDrive, Monitor, Battery,
   Scale, Wifi, Camera, Layers, Zap, Scan, Settings,
   Palette, Film, ChevronLeft, ChevronRight, ShoppingCart
 } from 'lucide-react';
@@ -39,16 +39,16 @@ const getIcon = (name, size = 14) => {
   return <IconComp size={size} />;
 };
 
-const ProductCard = ({ product, addedIds, handleAddToCart }) => {
+const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) => {
   const [imgIndex, setImgIndex] = useState(0);
   const images = product.images?.length > 0 ? product.images : (product.image_url ? [product.image_url] : []);
-  
+
   const nextImg = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setImgIndex((imgIndex + 1) % images.length);
   };
-  
+
   const prevImg = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -57,8 +57,100 @@ const ProductCard = ({ product, addedIds, handleAddToCart }) => {
 
   const isAdded = addedIds?.has(product.id);
 
+  if (variant === 'list') {
+    return (
+      <article className="group relative bg-white dark:bg-dark-nav rounded-2xl border border-black/5 dark:border-white/5 overflow-hidden transition-all duration-500 hover:shadow-xl flex flex-col sm:flex-row h-full sm:min-h-[220px]">
+        {/* Image - Left */}
+        <div className="relative w-full sm:w-[200px] min-h-[180px] sm:min-h-0 bg-gray-50 dark:bg-black/20 flex items-center justify-center overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-black/5">
+           <Link href={`/producto/${product.id}`} className="w-full h-full flex items-center justify-center">
+            {images.length > 0 ? (
+              <img
+                src={images[imgIndex]}
+                alt={product.name}
+                className="object-contain w-full h-full p-8 transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <div className="text-4xl grayscale opacity-20">🍌</div>
+            )}
+          </Link>
+          
+          {/* Badge */}
+          <div className="absolute top-3 left-3 z-10">
+            <span className={`px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md ${product.badgeType === 'featured' ? 'bg-purple-brand text-white' : 'bg-banana-yellow text-black'}`}>
+               {product.badgeType === 'featured' ? 'D' : 'N'}
+            </span>
+          </div>
+        </div>
+
+        {/* Info - Middle */}
+        <div className="flex-1 p-5 flex flex-col gap-3 min-w-0">
+          <div className="flex-1">
+            <Link href={`/producto/${product.id}`} className="block">
+              <div className="flex justify-between items-start gap-2 mb-1">
+                <h3 className="text-base font-black leading-tight group-hover:text-purple-brand transition-colors line-clamp-2">{product.name}</h3>
+                <span className="text-[9px] font-bold py-0.5 px-2 bg-black/5 rounded-full">{product.year}</span>
+              </div>
+              {product.model_number && (
+                <span className="inline-block px-2 py-0.5 bg-purple-brand/5 text-purple-brand text-[9px] font-black tracking-widest uppercase rounded mb-2">
+                  {product.model_number}
+                </span>
+              )}
+              <p className="text-[11px] text-gray-500 font-medium line-clamp-2 leading-relaxed">
+                {product.marketing_subtitle || product.description}
+              </p>
+            </Link>
+          </div>
+
+          {/* Specs Mini View */}
+          <div className="flex flex-wrap gap-2 mt-auto">
+            {product.specs?.slice(0, 6).map((spec, index) => (
+              <div key={index} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-black/5">
+                <span className="text-purple-brand opacity-60 scale-75 shrink-0">{getIcon(spec.icon, 12)}</span>
+                <span className="text-[8px] font-black whitespace-nowrap">{spec.value}{spec.unit}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action Pane - Right */}
+        <div className="w-full sm:w-[180px] p-5 bg-gray-50/50 border-t sm:border-t-0 sm:border-l border-black/5 flex flex-col justify-center items-center gap-4 shrink-0">
+          <div className="text-center">
+            <span className="block text-xl font-black text-purple-brand">
+              ${(parseFloat(product.price) || 0).toLocaleString()}
+            </span>
+            <span className="text-[0.55rem] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">Incluido Impuestos</span>
+          </div>
+
+          <div className="flex flex-col w-full gap-2">
+            <button
+              onClick={(e) => handleAddToCart(e, product)}
+              className={`
+                w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all
+                ${isAdded ? 'bg-mint-success text-white' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-md shadow-banana-yellow/10'}
+              `}
+            >
+              {isAdded ? '✓ LISTO' : (
+                <>
+                  <ShoppingCart size={14} fill="currentColor" />
+                  AGREGAR
+                </>
+              )}
+            </button>
+            <Link
+              href={`/producto/${product.id}`}
+              className="w-full py-2.5 bg-white border border-black/5 text-center rounded-xl font-black text-[10px] uppercase tracking-widest text-gray-400 hover:text-purple-brand transition-all hover:bg-white"
+            >
+              VER DETALLES
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  // Default Grid layout
   return (
-    <article className="group relative bg-white dark:bg-dark-nav rounded-2xl border border-black/5 dark:border-white/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] flex flex-col">
+    <article className="group relative bg-white dark:bg-dark-nav rounded-2xl border border-black/5 dark:border-white/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] flex flex-col h-full">
       {/* Badge */}
       <div className="absolute top-4 left-4 z-10">
         {product.badgeType === 'featured' ? (
@@ -76,16 +168,16 @@ const ProductCard = ({ product, addedIds, handleAddToCart }) => {
       <div className="relative aspect-[4/3] bg-gray-50 dark:bg-black/20 flex items-center justify-center overflow-hidden">
         <Link href={`/producto/${product.id}`} className="w-full h-full flex items-center justify-center">
           {images.length > 0 ? (
-            <img 
-              src={images[imgIndex]} 
-              alt={product.name} 
+            <img
+              src={images[imgIndex]}
+              alt={product.name}
               className="object-contain w-full h-full p-6 transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
             <div className="text-5xl grayscale opacity-20">🍌</div>
           )}
         </Link>
-        
+
         {images.length > 1 && (
           <>
             <button className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white" onClick={prevImg}>
@@ -141,16 +233,16 @@ const ProductCard = ({ product, addedIds, handleAddToCart }) => {
             </span>
             <span className="text-[0.55rem] font-bold text-gray-400 uppercase tracking-widest mt-1">Incluido impuestos</span>
           </div>
-          
+
           <div className="flex gap-2">
-            <Link 
+            <Link
               href={`/producto/${product.id}`}
               className="p-3 rounded-xl bg-purple-brand/5 text-purple-brand hover:bg-purple-brand/10 transition-colors"
               title="Ver detalles"
             >
               <Zap size={18} fill="currentColor" />
             </Link>
-            <button 
+            <button
               onClick={(e) => handleAddToCart(e, product)}
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-xl font-black text-xs transition-all

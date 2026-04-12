@@ -8,12 +8,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import {
-  ShoppingCart, Menu, X, Phone, LogIn, LogOut, ChevronRight
+  ShoppingCart, Menu, X, Phone, LogIn, LogOut, ChevronRight, Search
 } from 'lucide-react';
+import { useSearch } from '@/context/SearchContext';
 
 const Header = () => {
   const { user, signOut } = useAuth();
   const { showToast } = useToast();
+  const { searchQuery, setSearchQuery, isSearchOpen, toggleSearch, closeSearch } = useSearch();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -63,17 +65,26 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-6 text-[11px]">
             {categories.map(cat => (
-              <Link key={cat.id} href={`/categoria/${cat.id}`} className="text-xs font-bold uppercase tracking-widest hover:text-banana-yellow transition-colors opacity-80 hover:opacity-100">
+              <Link key={cat.id} href={`/categoria/${cat.id}`} className="font-bold uppercase tracking-widest hover:text-banana-yellow transition-colors opacity-80 hover:opacity-100">
                 {cat.name}
               </Link>
             ))}
-            <Link href="/contacto" className="text-xs font-bold uppercase tracking-widest hover:text-banana-yellow transition-colors opacity-80 hover:opacity-100">Contacto</Link>
+            <Link href="/contacto" className="font-bold uppercase tracking-widest hover:text-banana-yellow transition-colors opacity-80 hover:opacity-100">Contacto</Link>
           </nav>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
+            {/* Search Toggle */}
+            <button 
+              onClick={toggleSearch}
+              className={`p-2.5 rounded-full transition-all ${scrolled ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
+              title="Buscar productos"
+            >
+              <Search size={20} className={isSearchOpen ? 'text-banana-yellow' : ''} />
+            </button>
+
             {user ? (
               <div className="relative">
                 <button 
@@ -108,10 +119,42 @@ const Header = () => {
             </button>
           </div>
 
-          {/* Mobile hamburger */}
-          <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile hamburger & search */}
+          <div className="md:hidden flex items-center gap-2">
+            <button onClick={toggleSearch} className="p-2">
+              <Search size={24} />
+            </button>
+            <button className="p-2" onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar Inline Expandable */}
+        <div className={`
+          overflow-hidden transition-all duration-500 ease-in-out bg-white border-t border-black/5
+          ${isSearchOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}
+        `}>
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+             <Search size={20} className="text-purple-brand animate-pulse" />
+             <input 
+               autoFocus
+               type="text"
+               placeholder="Buscar laptops, componentes, accesorios..."
+               className="flex-1 bg-transparent border-none py-2 text-lg font-black focus:outline-none placeholder:text-gray-300 text-gray-900"
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               onKeyDown={(e) => {
+                 if (e.key === 'Enter') {
+                   closeSearch();
+                   router.push(`/buscar?q=${searchQuery}`);
+                 }
+               }}
+             />
+             <button onClick={closeSearch} className="p-2 text-gray-400 hover:text-black transition-colors">
+               <X size={24} />
+             </button>
+          </div>
         </div>
 
         {/* Mobile Navigation Dropdown (Legacy Parity) */}

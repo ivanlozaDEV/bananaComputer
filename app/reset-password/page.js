@@ -56,16 +56,16 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-cream-bg flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute bottom-[-20%] left-[-20%] w-[60%] h-[60%] bg-purple-brand/10 blur-[150px] rounded-full"></div>
 
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-3xl border border-black/5 relative z-10 animate-in fade-in zoom-in-95 duration-500">
-        <div className="flex flex-col items-center mb-10">
+      <div className="w-full max-w-[400px] bg-white rounded-[2rem] p-8 shadow-3xl border border-black/5 relative z-10 animate-in fade-in zoom-in-95 duration-500">
+        <div className="flex flex-col items-center mb-8">
           <Link href="/login" className="mb-4 hover:scale-110 transition-transform">
             <Logo size="small" />
           </Link>
-          <h1 className="text-3xl font-black tracking-tight">Nueva Identidad</h1>
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight">Nueva Identidad</h1>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Establece tu nueva contraseña de acceso</p>
         </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+ 
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nueva Contraseña</label>
             <div className="relative">
@@ -74,7 +74,7 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                className="w-full bg-gray-50 border border-black/5 rounded-2xl px-5 py-3.5 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
                 required
               />
               <button 
@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
               </div>
             </div>
           </div>
-
+ 
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Confirmar Nueva Contraseña</label>
             <input
@@ -103,23 +103,23 @@ export default function ResetPasswordPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+              className="w-full bg-gray-50 border border-black/5 rounded-2xl px-5 py-3.5 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
               required
             />
           </div>
-
-          {error && <p className="p-4 bg-raspberry/5 text-raspberry text-xs font-bold rounded-xl border border-raspberry/10">{error}</p>}
-
+ 
+          {error && <p className="p-4 bg-raspberry/5 text-raspberry text-[10px] font-bold rounded-xl border border-raspberry/10">{error}</p>}
+ 
           <button 
             type="submit" 
-            className="w-full py-5 bg-purple-brand text-white rounded-2xl font-black text-lg hover:scale-102 active:scale-95 transition-all shadow-xl shadow-purple-brand/20 disabled:opacity-50"
+            className="w-full py-3.5 bg-purple-brand text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-102 active:scale-95 transition-all shadow-xl shadow-purple-brand/20 disabled:opacity-50"
             disabled={loading}
           >
             {loading ? 'Restaurando...' : 'Establecer Contraseña'}
           </button>
         </form>
-
-        <Link href="/login" className="mt-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-300 hover:text-black transition-colors">
+ 
+        <Link href="/login" className="mt-8 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-300 hover:text-black transition-colors">
           <ArrowLeft size={12} /> Cancelar y Volver
         </Link>
       </div>

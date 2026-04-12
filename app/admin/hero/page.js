@@ -84,25 +84,25 @@ export default function HeroEditorPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="flex flex-col gap-4">
-        <Link href="/admin" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors w-fit">
-          <ArrowLeft size={14} /> Volver al Dashboard
+        <Link href="/admin" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black transition-colors w-fit">
+          <ArrowLeft size={12} /> Volver al Dashboard
         </Link>
         <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-4xl font-black tracking-tight">Editor del Hero</h1>
-            <p className="text-gray-500 font-medium">Gestiona el Banner principal y los llamados a la acción.</p>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-black tracking-tight">Editor del Hero</h1>
+            <p className="text-gray-400 text-sm font-medium">Gestiona el Banner principal y los llamados a la acción.</p>
           </div>
           <button 
             className={`
-              px-8 py-4 rounded-2xl font-black flex items-center gap-2 transition-all shadow-xl
-              ${saved ? 'bg-mint-success text-white' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95'}
+              px-8 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-xl
+              ${saved ? 'bg-mint-success text-white shadow-mint-success/20' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-banana-yellow/20'}
             `}
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></div> : <Save size={20} />}
+            {saving ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div> : <Save size={16} />}
             {saved ? 'GUARDADO' : saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
           </button>
         </div>
@@ -110,20 +110,20 @@ export default function HeroEditorPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 items-start">
         {/* Form Panel */}
-        <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 md:p-10 flex flex-col gap-8">
+        <div className="bg-white border border-black/5 rounded-[2.5rem] p-8 md:p-10 flex flex-col gap-8 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-purple-brand/10 rounded-xl text-purple-brand">
-              <ImageIcon size={20} />
+            <div className="p-2 bg-purple-brand/5 rounded-xl text-purple-brand">
+              <ImageIcon size={18} />
             </div>
-            <h2 className="text-xl font-black">Contenido Visual</h2>
+            <h2 className="text-xl font-black text-gray-800">Contenido Visual</h2>
           </div>
 
           <form className="flex flex-col gap-6" onSubmit={handleSave}>
             {FIELDS.map(({ key, label, placeholder }) => (
               <div key={key} className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">{label}</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{label}</label>
                 <input
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:border-purple-brand/50 focus:bg-white/10 transition-all"
+                  className="w-full bg-gray-50 border border-black/5 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:border-purple-brand/30 transition-all text-gray-700"
                   value={form[key]}
                   placeholder={placeholder}
                   onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))}
@@ -132,16 +132,16 @@ export default function HeroEditorPage() {
             ))}
 
             <div className="flex flex-col gap-2 pt-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Imagen de Fondo (URL o Subida)</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Imagen de Fondo (URL o Subida)</label>
               <div className="flex gap-2">
                 <input
-                  className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:border-purple-brand/50 focus:bg-white/10 transition-all"
+                  className="flex-1 bg-gray-50 border border-black/5 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:border-purple-brand/30 transition-all text-gray-700"
                   value={form.image_url}
                   placeholder="https://..."
                   onChange={(e) => setForm(f => ({ ...f, image_url: e.target.value }))}
                 />
-                <label className="shrink-0 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 cursor-pointer transition-all flex items-center justify-center text-gray-400 hover:text-white">
-                  {uploading ? <div className="w-5 h-5 border-2 border-white/10 border-t-white rounded-full animate-spin"></div> : <Upload size={20} />}
+                <label className="shrink-0 p-4 bg-gray-50 border border-black/5 rounded-2xl hover:bg-gray-100 cursor-pointer transition-all flex items-center justify-center text-gray-400 hover:text-black shadow-sm">
+                  {uploading ? <div className="w-5 h-5 border-2 border-black/10 border-t-purple-brand rounded-full animate-spin"></div> : <Upload size={20} />}
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 </label>
               </div>
@@ -152,10 +152,10 @@ export default function HeroEditorPage() {
         {/* Preview Panel */}
         <div className="flex flex-col gap-6 sticky top-8">
           <div className="flex items-center justify-between px-4">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
               <Monitor size={14} /> Vista Previa Directa
             </div>
-            <span className="px-2 py-0.5 bg-mint-success/10 text-mint-success text-[8px] font-black rounded uppercase">Live</span>
+            <span className="px-2 py-0.5 bg-mint-success/5 text-mint-success text-[8px] font-black rounded uppercase border border-mint-success/10">Live</span>
           </div>
 
           <div className="relative aspect-video rounded-[2.5rem] bg-cream-bg overflow-hidden border border-black/5 shadow-2xl flex flex-col items-center justify-center p-8 text-center text-black">
@@ -188,11 +188,11 @@ export default function HeroEditorPage() {
             </div>
           </div>
           
-          <div className="p-6 rounded-3xl bg-banana-yellow/10 border border-banana-yellow/20 flex gap-4 items-center">
-            <div className="p-3 bg-banana-yellow text-black rounded-2xl">
+          <div className="p-6 rounded-3xl bg-purple-brand/5 border border-purple-brand/10 flex gap-4 items-center">
+            <div className="p-3 bg-purple-brand text-white rounded-2xl shadow-lg shadow-purple-brand/10">
               <Sparkles size={20} />
             </div>
-            <p className="text-xs font-bold text-banana-yellow italic leading-relaxed">
+            <p className="text-[10px] font-black uppercase tracking-widest text-purple-brand/40 italic leading-relaxed">
               Recuerda: El logo y las animaciones de carga se aplican automáticamente según la configuración global de la marca.
             </p>
           </div>
