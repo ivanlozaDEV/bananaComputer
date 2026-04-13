@@ -68,7 +68,8 @@ export default function ProductsAdminPage() {
       (result) => {
         productForm.mapOllamaResult(result);
         showToast('IA analizó el datasheet con éxito', 'success');
-      }
+      },
+      productForm.form.price
     );
   };
 

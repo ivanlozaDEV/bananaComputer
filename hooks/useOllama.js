@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { pingOllama, analyzeWithOllama, generateBananaReview } from '@/lib/ollama';
 
 /**
@@ -10,7 +10,7 @@ export function useOllama() {
   const [analyzing, setAnalyzing] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [error, setError] = useState('');
-  const [abortController, setAbortController] = useState(null);
+  const activeController = useRef(null);
 
   const checkStatus = useCallback(async () => {
     const ok = await pingOllama();
@@ -18,7 +18,7 @@ export function useOllama() {
     return ok;
   }, []);
 
-  const analyze = useCallback(async (datasheetRaw, attrDefs, onComplete) => {
+  const analyze = useCallback(async (datasheetRaw, attrDefs, onComplete, price = null) => {
     if (!datasheetRaw.trim()) {
       setError('Primero sube o pega el datasheet del producto.');
       return;
@@ -29,55 +29,60 @@ export function useOllama() {
     setStreamingText('');
 
     const ctrl = new AbortController();
-    setAbortController(ctrl);
+    activeController.current = ctrl;
 
     try {
       const result = await analyzeWithOllama(datasheetRaw, attrDefs, (text) => {
         setStreamingText(text);
-      }, ctrl.signal);
+      }, ctrl.signal, price);
       
-      if (onComplete) {
-        onComplete(result);
+      if (activeController.current === ctrl) {
+        if (onComplete) onComplete(result);
+        setStreamingText('');
       }
-      setStreamingText('');
     } catch (err) {
       if (err.name === 'AbortError') return;
-      setError(`Error de Ollama: ${err.message}. ¿Está Ollama corriendo? (ollama serve)`);
+      setError(`Error de AI: ${err.message}.`);
     } finally {
-      if (ctrl === abortController) {
+      if (activeController.current === ctrl) {
         setAnalyzing(false);
-        setAbortController(null);
+        activeController.current = null;
       }
     }
-  }, [abortController]);
+  }, []);
 
   const cancel = useCallback(() => {
-    if (abortController) {
-      abortController.abort();
-      setAbortController(null);
+    if (activeController.current) {
+      activeController.current.abort();
+      activeController.current = null;
       setAnalyzing(false);
     }
-  }, [abortController]);
+  }, []);
 
   const generateReview = useCallback(async (product, attrs, onComplete) => {
     setAnalyzing(true);
     setError('');
+    
     const ctrl = new AbortController();
-    setAbortController(ctrl);
+    activeController.current = ctrl;
+
     try {
       const specsText = attrs.map(a => `${a.name}: ${a.value}`).join(', ');
       const result = await generateBananaReview(product, specsText, ctrl.signal);
-      if (onComplete) onComplete(result);
+      
+      if (activeController.current === ctrl) {
+        if (onComplete) onComplete(result);
+      }
     } catch (err) {
       if (err.name === 'AbortError') return;
       setError(`Error generando review: ${err.message}`);
     } finally {
-      if (ctrl === abortController) {
+      if (activeController.current === ctrl) {
         setAnalyzing(false);
-        setAbortController(null);
+        activeController.current = null;
       }
     }
-  }, [abortController]);
+  }, []);
 
   return {
     status,

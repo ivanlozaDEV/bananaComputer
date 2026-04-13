@@ -194,6 +194,7 @@ export function useProductForm(categories, onSaveSuccess) {
       marketing_subtitle: result.marketing_subtitle || f.marketing_subtitle,
       marketing_body:     result.marketing_body     || f.marketing_body,
       description:        result.description        || f.description,
+      banana_review:      result.banana_review      || f.banana_review,
     }));
 
     const rawSpecs = result.specs || result.featured_specs;
