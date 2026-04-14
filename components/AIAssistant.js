@@ -1,16 +1,19 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { Bot, User, Send, X, Terminal, Cpu, Sparkles, AlertTriangle, Package, RefreshCw, ArrowRight } from 'lucide-react';
 import { chatWithOllama, pingOllama } from '@/lib/ollama';
 import { searchInventoryForAI, formatInventoryForAI, fetchAIBaseline, addToWaitlist } from '@/lib/inventory';
 import { supabase } from '@/lib/supabase';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TAG_REGEX = /\[(RECOMENDACI[OÓ]N|COMPARE|WAITLIST_PROMPT|SEARCH):?\s*(.*?)\]/gi;
+const getTagRegex = () => new RegExp(TAG_REGEX.source, TAG_REGEX.flags);
+
 const AIAssistant = ({ onClose }) => {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: '¡Hola! Soy Banana AI. Estoy aquí para ayudarte a encontrar la computadora perfecta. ¿Para qué planeas usar tu nuevo equipo principalmente? (Ej. Gaming, Oficina, Edición de video)' }
   ]);
-  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [inventoryContext, setInventoryContext] = useState('');
   const [baselineKnowledge, setBaselineKnowledge] = useState('');
@@ -33,35 +36,61 @@ const AIAssistant = ({ onClose }) => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleQuickReply = (text) => {
-    setInput(text);
-    // Auto-send if needed, or just fill input
-  };
+  const processAndAddResponse = useCallback((responseText, results = null) => {
+    const rawTags = (responseText.match(getTagRegex()) || []);
+    
+    const stripTags = (text) => text
+      .replace(/\*\*\[.*?\]\*\*/gi, '') 
+      .replace(getTagRegex(), '')
+      .replace(/(RECOMENDACI[OÓ]N|COMPARE|WAITLIST_PROMPT|SEARCH):/gi, '')
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
+      .replace(/ID:\s*/gi, '')
+      .replace(/\| \$.*?\|.*?\|.*?\|.*?\|/g, '')
+      .replace(/\[\s*\]/g, '') // Remove empty brackets [ ] or []
+      .replace(/\s+/g, ' ')
+      .trim();
 
-  const handleSend = async (e) => {
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault();
+    if (responseText.toLowerCase().includes('cvv') || responseText.toLowerCase().includes('numero de tarjeta')) {
+      const safetyWarning = "⚠️ **Aviso de Seguridad**: No compartas datos de pago. Por favor, usa el carrito de compras oficial. 🍌🛡️";
+      setMessages(prev => [...prev, { role: 'assistant', content: safetyWarning }]);
+      return; 
     }
-    const messageContent = typeof e === 'string' ? e : input;
-    if (!messageContent.trim() || loading) return;
 
-    const userMessage = { role: 'user', content: messageContent };
+    let cleanResponse = stripTags(responseText);
+    cleanResponse += "\n\n" + rawTags.join('\n');
+
+    setMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: cleanResponse, 
+      results,
+      showGadgets: false
+    }]);
+
+    setTimeout(() => {
+      setMessages(prev => prev.map((m, i) => 
+        i === prev.length - 1 ? { ...m, showGadgets: true } : m
+      ));
+    }, 1000);
+  }, []);
+
+  const handleSend = async (text) => {
+    if (!text.trim() || loading) return;
+
+    const userMessage = { role: 'user', content: text };
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
     setLoading(true);
 
     try {
       let aiResponseText = await chatWithOllama([...messages, userMessage], inventoryContext || baselineKnowledge);
-      const searchMatch = aiResponseText.match(/\[SEARCH:\s*(.*?)\]/);
+      const searchMatch = aiResponseText.match(/\[SEARCH:\s*(.*?)\]/i);
 
       if (searchMatch) {
-        setLoading(true);
         const params = searchMatch[1];
-        const categoryMatch = params.match(/category=(.*?)(?:\s|$)/);
-        const priceMatch = params.match(/max_price=(.*?)(?:\s|$)/);
+        const categoryMatch = params.match(/category=([^ \s,\]]+)/i);
+        const priceMatch = params.match(/max_price=(\d+)/i);
 
         const filters = {
-          category: categoryMatch ? categoryMatch[1].replace(/,$/, '') : null,
+          category: categoryMatch ? categoryMatch[1].trim() : null,
           maxPrice: priceMatch ? parseInt(priceMatch[1]) : null
         };
 
@@ -86,147 +115,9 @@ const AIAssistant = ({ onClose }) => {
     }
   };
 
-  const processAndAddResponse = (responseText, results = null) => {
-    // --- 1. EXTRACT TAGS ---
-    const regexTags = /\[(RECOMENDACION|COMPARE|WAITLIST_PROMPT):?\s*(.*?)\]/gi;
-    const rawTags = responseText.match(regexTags) || [];
-    
-    // --- 2. SECURITY FILTER ---
-    const lowerResRaw = responseText.toLowerCase();
-    if (lowerResRaw.includes('cvv') || lowerResRaw.includes('numero de tarjeta')) {
-      const safetyWarning = "⚠️ **Aviso de Seguridad**: No compartas datos de pago. Por favor, usa el carrito de compras oficial. 🍌🛡️";
-      setMessages(prev => [...prev, { role: 'assistant', content: safetyWarning }]);
-      return; 
-    }
-
-    // --- 3. AGGRESSIVE TEXT CLEANUP (Removing Leaks) ---
-    let cleanResponse = responseText
-      .replace(/\*\*\[.*?\]\*\*/gi, '') // Remove bolded tags from text
-      .replace(/\[(RECOMENDACION|COMPARE|WAITLIST_PROMPT):.*?\]/gi, '') // Remove raw tags from text
-      .replace(/(RECOMENDACIÓN|COMPARE|WAITLIST_PROMPT|SEARCH):/gi, '') // Remove labels
-      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '') // Remove UUIDs
-      .replace(/ID:\s*/gi, '')
-      .replace(/\| \$.*?\|.*?\|.*?\|.*?\|/g, '') // Remove inventory rows
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    // Re-attach tags for processing (without bold)
-    cleanResponse += "\n\n" + rawTags.join('\n');
-
-    // --- SAFETY MATCHER (Scoring Logic) ---
-    try {
-      const lines = baselineKnowledge.split('\n');
-      const products = [];
-      lines.forEach(line => {
-        // Match name, optional model, price, and specs
-        const match = line.match(/- (.*?) (?:\[Modelo: (.*?)\] )?\| \$(.*?) \| CPU: (.*?) \| RAM: (.*?) \| SSD: (.*?) \| Pantalla: (.*?) \|/);
-        const idMatch = line.match(/\[ID: (.*?)\]/);
-        
-        if (match && idMatch) {
-          products.push({ 
-            name: match[1].trim(), 
-            model: match[2]?.trim() || '',
-            price: match[3].trim(), 
-            cpu: match[4].trim(), 
-            ram: match[5].trim(), 
-            ssd: match[6].trim(),
-            screen: match[7].trim(),
-            id: idMatch[1].trim()
-          });
-        }
-      });
-
-      const matchedIds = new Set();
-      
-      // Phase 1: Match by Model (High Precision)
-      products.forEach(p => {
-        if (p.model) {
-          const modelBase = p.model.split(/[- ]/)[0].toLowerCase(); // e.g. "E1504FA" -> "e1504fa" or partial
-          const textLower = cleanResponse.toLowerCase();
-          
-          if (textLower.includes(p.model.toLowerCase()) || 
-              (modelBase.length > 3 && textLower.includes(modelBase)) ||
-              (textLower.includes(p.model.split('-')[0].toLowerCase()))) {
-            matchedIds.add(p.id);
-            // Add tag if not already present
-            if (!cleanResponse.includes(`[RECOMENDACION: ${p.id}]`)) {
-              cleanResponse += ` [RECOMENDACION: ${p.id}]`;
-            }
-          }
-        }
-      });
-
-      // Phase 2: Match by Name (Fallback / Scoring) + Partial Match
-      const uniqueNames = [...new Set(products.map(p => p.name))];
-      for (const fullName of uniqueNames) {
-        // Create variations: full name and name without brand (e.g., "ASUS Vivobook" -> ["ASUS Vivobook", "Vivobook"])
-        const parts = fullName.split(' ');
-        const variations = [fullName];
-        if (parts.length > 1 && parts[0].length <= 5) variations.push(parts.slice(1).join(' ')); // e.g. "ASUS Vivobook" -> "Vivobook"
-
-        for (const name of variations) {
-          const regex = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-          let m;
-          while ((m = regex.exec(cleanResponse)) !== null) {
-            const startPos = m.index;
-            const endPos = startPos + m[0].length;
-            
-            // Skip if a tag is directly after
-            if (cleanResponse.slice(endPos, endPos + 100).includes('[RECOMENDACION:')) continue;
-
-          const context = cleanResponse.slice(Math.max(0, startPos - 100), Math.min(cleanResponse.length, endPos + 100)).toLowerCase();
-          const candidates = products.filter(p => p.name.toLowerCase() === name.toLowerCase());
-          let bestCand = null; let bestScore = -1;
-
-          for (const cand of candidates) {
-            let score = 0;
-            const priceNum = cand.price.replace(/[$,]/g, '').split('.')[0];
-            const ssdNum = cand.ssd.match(/\d+/)?.[0];
-            
-            if (context.includes(cand.price.toLowerCase())) score += 80;
-            if (priceNum && context.includes(priceNum)) score += 60;
-            if (ssdNum && context.includes(ssdNum)) score += 70;
-            if (cand.ram !== 'n/a' && context.includes(cand.ram.toLowerCase())) score += 30;
-            if (cand.cpu !== 'n/a' && context.includes(cand.cpu.toLowerCase().split(' ')[0])) score += 30;
-            
-            if (score > bestScore) { bestScore = score; bestCand = cand; }
-          }
-            if (bestCand && bestCand.id) {
-              matchedIds.add(bestCand.id);
-              const tag = ` [RECOMENDACION: ${bestCand.id}]`;
-              cleanResponse = cleanResponse.slice(0, endPos) + tag + cleanResponse.slice(endPos);
-              regex.lastIndex += tag.length;
-            }
-          }
-        }
-      }
-
-      // AUTO-COMPARE FEATURE: Trigger if 2 or 3 unique products were matched
-      if (matchedIds.size >= 2 && matchedIds.size <= 3 && !cleanResponse.toLowerCase().includes('[compare:')) {
-        const ids = Array.from(matchedIds);
-        cleanResponse += `\n\n[COMPARE: ${ids.join(', ')}]`;
-      }
-    } catch (e) { console.error('Safety Matcher Error:', e); }
-
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: cleanResponse, 
-      results,
-      showGadgets: false // Initially false for delayed rendering
-    }]);
-
-    // Delay gadgets for better reading flow
-    setTimeout(() => {
-      setMessages(prev => prev.map((m, i) => 
-        i === prev.length - 1 ? { ...m, showGadgets: true } : m
-      ));
-    }, 1000); // 1s delay after text appears
-  };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="w-full md:max-w-2xl h-full md:h-[85vh] bg-white/20 backdrop-blur-xl rounded-none md:rounded-[2.5rem] shadow-3xl flex flex-col overflow-hidden relative border-none md:border md:border-white/20">
-        {/* Header */}
         <header className="p-6 bg-purple-brand/80 backdrop-blur-md text-white flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`p-2 bg-white/10 rounded-xl ${ollamaReady ? 'animate-pulse' : ''}`}>
@@ -245,7 +136,6 @@ const AIAssistant = ({ onClose }) => {
           </button>
         </header>
 
-        {/* Messages area */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-white/10 dark:bg-black/10">
           {!ollamaReady && (
             <div className="p-6 bg-raspberry/10 border border-raspberry/20 rounded-3xl flex flex-col items-center text-center gap-3">
@@ -255,81 +145,106 @@ const AIAssistant = ({ onClose }) => {
             </div>
           )}
 
-          {messages.map((m, i) => (
-            <div key={i} className={`flex gap-4 ${m.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${m.role === 'assistant' ? 'bg-purple-brand text-white' : 'bg-banana-yellow text-black'}`}>
-                {m.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
-              </div>
-              <div className={`max-w-[85%] rounded-[1.5rem] p-4 text-sm font-medium leading-relaxed shadow-sm ${m.role === 'assistant' ? 'bg-white/40 backdrop-blur-md text-black border border-white/20' : 'bg-purple-brand/80 text-white'}`}>
-                <MessageContent content={m.content} showGadgets={m.role === 'assistant' ? m.showGadgets : true} />
-                {m.role === 'assistant' && m.results && m.results.length > 0 && m.showGadgets && (
-                  <div className="flex flex-col gap-3 mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {m.results.filter(p => !m.content.includes(p.id)).map(prod => (
-                      <RecommendedProduct key={prod.id} id={prod.id} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-purple-brand text-white flex items-center justify-center animate-bounce">
-                <Bot size={16} />
-              </div>
-              <div className="bg-white/30 backdrop-blur-md p-4 rounded-3xl flex gap-1 items-center">
-                <span className="w-1 h-1 bg-purple-brand rounded-full animate-bounce"></span>
-                <span className="w-1 h-1 bg-purple-brand rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span className="w-1 h-1 bg-purple-brand rounded-full animate-bounce [animation-delay:0.4s]"></span>
-              </div>
-            </div>
-          )}
+          <MessageList messages={messages} loading={loading} />
           <div ref={endOfMessagesRef} />
         </div>
 
-        {/* Input area with Quick Replies */}
-        <div className="bg-white/20 dark:bg-dark-nav border-t border-white/10 backdrop-blur-xl p-6 flex flex-col gap-4">
-          {messages.length < 3 && (
-            <div className="flex flex-wrap gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
-              {quickReplies.map((text, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSend(text)}
-                  className="px-4 py-2 bg-white/40 hover:bg-white/60 dark:bg-black/20 dark:hover:bg-black/40 border border-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
-                >
-                  {text}
-                </button>
-              ))}
-            </div>
-          )}
-          
-          <form onSubmit={handleSend} className="flex gap-4">
-            <input
-              type="text"
-              placeholder="Escribe tu mensaje aquí..."
-              className="flex-1 bg-white/30 dark:bg-black/20 border border-white/20 rounded-2xl px-6 py-4 text-sm outline-none focus:bg-white/50 transition-all font-medium placeholder-gray-500"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading || !ollamaReady}
-            />
-            <button
-              type="submit"
-              className="p-4 bg-purple-brand text-white rounded-2xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-purple-brand/20"
-              disabled={loading || !ollamaReady}
-            >
-              <Send size={20} />
-            </button>
-          </form>
-        </div>
+        <ChatInput onSend={handleSend} disabled={loading || !ollamaReady} quickReplies={messages.length < 3 ? quickReplies : []} />
       </div>
     </div>
   );
 };
 
-const RecommendedProduct = ({ id }) => {
+const MessageList = memo(({ messages, loading }) => {
+  return (
+    <>
+      {messages.map((m, i) => (
+        <div key={i} className={`flex gap-4 ${m.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'} animate-in fade-in duration-500`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${m.role === 'assistant' ? 'bg-purple-brand text-white' : 'bg-banana-yellow text-black'}`}>
+            {m.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
+          </div>
+          <div className={`max-w-[85%] rounded-[1.5rem] p-4 text-sm font-medium leading-relaxed shadow-sm ${m.role === 'assistant' ? 'bg-white/40 backdrop-blur-md text-black border border-white/20' : 'bg-purple-brand/80 text-white'}`}>
+            <MessageContent 
+              content={m.content} 
+              showGadgets={m.role === 'assistant' ? m.showGadgets : true} 
+            />
+            {m.role === 'assistant' && m.results && m.results.length > 0 && m.showGadgets && (
+              <div className="flex flex-col gap-3 mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                {m.results.filter(p => !m.content.includes(p.id)).map(prod => (
+                  <RecommendedProduct key={prod.id} id={prod.id} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+      {loading && (
+        <div className="flex gap-4">
+          <div className="w-8 h-8 rounded-full bg-purple-brand text-white flex items-center justify-center animate-bounce">
+            <Bot size={16} />
+          </div>
+          <div className="bg-white/30 backdrop-blur-md p-4 rounded-3xl flex gap-1 items-center">
+            <span className="w-1 h-1 bg-purple-brand rounded-full animate-bounce"></span>
+            <span className="w-1 h-1 bg-purple-brand rounded-full animate-bounce [animation-delay:0.2s]"></span>
+            <span className="w-1 h-1 bg-purple-brand rounded-full animate-bounce [animation-delay:0.4s]"></span>
+          </div>
+        </div>
+      )}
+    </>
+  );
+});
+
+const ChatInput = ({ onSend, disabled, quickReplies }) => {
+  const [input, setInput] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!input.trim() || disabled) return;
+    onSend(input.trim());
+    setInput('');
+  };
+
+  return (
+    <div className="bg-white/20 dark:bg-dark-nav border-t border-white/10 backdrop-blur-xl p-6 flex flex-col gap-4">
+      {quickReplies.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
+          {quickReplies.map((text, i) => (
+            <button
+              key={i}
+              onClick={() => onSend(text)}
+              className="px-4 py-2 bg-white/40 hover:bg-white/60 dark:bg-black/20 dark:hover:bg-black/40 border border-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="flex gap-4">
+        <input
+          type="text"
+          placeholder="Escribe tu mensaje aquí..."
+          className="flex-1 bg-white/30 dark:bg-black/20 border border-white/20 rounded-2xl px-6 py-4 text-sm outline-none focus:bg-white/50 transition-all font-medium placeholder-gray-500"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          disabled={disabled}
+        />
+        <button
+          type="submit"
+          className="p-4 bg-purple-brand text-white rounded-2xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-purple-brand/20"
+          disabled={disabled || !input.trim()}
+        >
+          <Send size={20} />
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const RecommendedProduct = memo(({ id }) => {
   const [prod, setProd] = useState(null);
   useEffect(() => {
-    if (!id || id === 'undefined') return;
+    if (!id || id === 'undefined' || !UUID_RE.test(id)) return;
     supabase.from('products').select('*, product_attributes(value, attribute_definitions(name, unit))').eq('id', id).single().then(({ data }) => setProd(data));
   }, [id]);
 
@@ -366,9 +281,9 @@ const RecommendedProduct = ({ id }) => {
       </div>
     </Link>
   );
-};
+});
 
-const WaitlistForm = ({ interest }) => {
+const WaitlistForm = memo(({ interest }) => {
   const [email, setEmail] = useState('');
   const [joined, setJoined] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -415,16 +330,19 @@ const WaitlistForm = ({ interest }) => {
       </div>
     </form>
   );
-};
+});
 
-const ComparisonTable = ({ ids }) => {
+const ComparisonTable = memo(({ ids }) => {
   const [products, setProducts] = useState([]);
   const idArray = ids ? ids.split(',').map(s => s.trim()) : [];
 
   useEffect(() => {
     if (idArray.length === 0) return;
+    const validIds = idArray.filter(id => UUID_RE.test(id));
+    if (validIds.length === 0) return;
+
     Promise.all(
-      idArray.map(id => 
+      validIds.map(id => 
         supabase.from('products')
           .select('*, product_attributes(value, attribute_definitions(name, unit))')
           .eq('id', id)
@@ -486,29 +404,33 @@ const ComparisonTable = ({ ids }) => {
       </div>
     </div>
   );
-};
+});
 
-const MessageContent = ({ content, showGadgets = true }) => {
-  // Now we ONLY render text here, and strip tags from visible output
-  const cleanText = content
-    .replace(/\[(RECOMENDACION|WAITLIST_PROMPT|COMPARE):?\s*.*?\]/gi, '')
+const MessageContent = memo(({ content, showGadgets = true }) => {
+  const cleanText = useMemo(() => content
+    .replace(getTagRegex(), '')
     .replace(/\[TAGS\]/gi, '')
-    .trim();
+    .trim(), [content]);
 
-  const regexGadgets = /\[(RECOMENDACION|WAITLIST_PROMPT|COMPARE):?\s*.*?\]/gi;
-  const gadgetsRaw = content.match(regexGadgets) || [];
+  const gadgetsRaw = useMemo(() => content.match(getTagRegex()) || [], [content]);
   
-  // Deduplicate and filter gadgets
-  const seenIds = new Set();
-  const gadgets = gadgetsRaw.filter(gadget => {
-    const recMatch = gadget.match(/\[RECOMENDACION:?\s*(.*?)\]/i);
-    if (recMatch) {
-      const id = recMatch[1].trim();
-      if (seenIds.has(id)) return false;
-      seenIds.add(id);
-    }
-    return true;
-  });
+  const gadgets = useMemo(() => {
+    const seenIds = new Set();
+    return gadgetsRaw.filter(gadget => {
+      const recMatch = gadget.match(/RECOMENDACI[OÓ]N:?\s*(.*?)\]/i);
+      const waitMatch = gadget.match(/WAITLIST_PROMPT:?\s*(.*?)\]/i);
+      
+      if (recMatch) {
+        const id = recMatch[1].trim();
+        if (!UUID_RE.test(id) || seenIds.has(id)) return false;
+        seenIds.add(id);
+      }
+      
+      if (waitMatch && seenIds.size > 0) return false;
+      
+      return true;
+    });
+  }, [gadgetsRaw]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -536,6 +458,6 @@ const MessageContent = ({ content, showGadgets = true }) => {
       )}
     </div>
   );
-};
+});
 
 export default AIAssistant;
