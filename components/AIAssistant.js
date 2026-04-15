@@ -27,6 +27,11 @@ const AIAssistant = ({ onClose }) => {
     '¿Qué laptops recomiendas?'
   ]);
 
+  const retryPing = useCallback(() => {
+    setOllamaReady(true); // optimistic — clear error banner
+    pingOllama().then(setOllamaReady);
+  }, []);
+
   useEffect(() => {
     pingOllama().then(setOllamaReady);
     fetchAIBaseline().then(setBaselineKnowledge);
@@ -37,6 +42,7 @@ const AIAssistant = ({ onClose }) => {
   }, [messages]);
 
   const processAndAddResponse = useCallback((responseText, results = null) => {
+    // Fix #7: store tags separately, never re-inject into content string
     const rawTags = (responseText.match(getTagRegex()) || []);
     
     const stripTags = (text) => text
@@ -46,7 +52,7 @@ const AIAssistant = ({ onClose }) => {
       .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
       .replace(/ID:\s*/gi, '')
       .replace(/\| \$.*?\|.*?\|.*?\|.*?\|/g, '')
-      .replace(/\[\s*\]/g, '') // Remove empty brackets [ ] or []
+      .replace(/\[\s*\]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 
@@ -56,12 +62,13 @@ const AIAssistant = ({ onClose }) => {
       return; 
     }
 
-    let cleanResponse = stripTags(responseText);
-    cleanResponse += "\n\n" + rawTags.join('\n');
+    // Fix #7: content is clean text only; gadgetTags holds the raw tag strings
+    const cleanResponse = stripTags(responseText);
 
     setMessages(prev => [...prev, { 
       role: 'assistant', 
-      content: cleanResponse, 
+      content: cleanResponse,
+      gadgetTags: rawTags,  // separated from visible content
       results,
       showGadgets: false
     }]);
@@ -80,8 +87,36 @@ const AIAssistant = ({ onClose }) => {
     setMessages(prev => [...prev, userMessage]);
     setLoading(true);
 
+    // Fix #4: AbortController with 20s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
     try {
-      let aiResponseText = await chatWithOllama([...messages, userMessage], inventoryContext || baselineKnowledge);
+      let aiResponseText = await chatWithOllama(
+        [...messages, userMessage],
+        inventoryContext || baselineKnowledge,
+        controller.signal
+      );
+      // ── Auto-retry si el AI olvidó los tags ──────────────────────
+      // Si la respuesta hace referencia a nombres de productos del inventario
+      // pero no incluye ningún [RECOMENDACION: UUID], reenviamos con recordatorio.
+      const hasTags = /\[RECOMENDACI[OÓ]N\s*:/i.test(aiResponseText);
+      const mentionsProduct = /\b(ASUS|Lenovo|HP|Dell|MSI|ROG|TUF|Vivobook|Acer|Samsung)\b/i.test(aiResponseText);
+
+      if (mentionsProduct && !hasTags) {
+        // 1.5s pause to avoid Groq 429 rate-limit on back-to-back calls
+        await new Promise(res => setTimeout(res, 1500));
+        const retry = await chatWithOllama(
+          [...messages, userMessage,
+            { role: 'assistant', content: aiResponseText },
+            { role: 'user', content: '⚠️ SISTEMA: Olvidaste agregar los tags [RECOMENDACION: UUID]. Repite tu respuesta anterior EXACTAMENTE igual pero añade los tags al final con los UUIDs del inventario.' }
+          ],
+          inventoryContext || baselineKnowledge,
+          controller.signal
+        );
+        aiResponseText = retry;
+      }
+
       const searchMatch = aiResponseText.match(/\[SEARCH:\s*(.*?)\]/i);
 
       if (searchMatch) {
@@ -100,7 +135,8 @@ const AIAssistant = ({ onClose }) => {
 
         const finalResponse = await chatWithOllama(
           [...messages, userMessage, { role: 'assistant', content: 'Buscando en el catálogo de Banana Computer...' }],
-          context || baselineKnowledge
+          context || baselineKnowledge,
+          controller.signal
         );
 
         processAndAddResponse(finalResponse, results);
@@ -108,9 +144,14 @@ const AIAssistant = ({ onClose }) => {
         processAndAddResponse(aiResponseText);
       }
     } catch (err) {
-      console.error('Banana AI Error:', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Lo siento, tuve un pequeño mareo tecnológico. ¿Podrías repetirme eso? 🍌' }]);
+      if (err.name === 'AbortError') {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'La respuesta tardó demasiado. Por favor intenta de nuevo. 🍌⏱️' }]);
+      } else {
+        console.error('Banana AI Error:', err);
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Lo siento, tuve un pequeño mareo tecnológico. ¿Podrías repetirme eso? 🍌' }]);
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -137,11 +178,18 @@ const AIAssistant = ({ onClose }) => {
         </header>
 
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-white/10 dark:bg-black/10">
+          {/* Fix #2 + #9: retry button, no blocking, generic message */}
           {!ollamaReady && (
             <div className="p-6 bg-raspberry/10 border border-raspberry/20 rounded-3xl flex flex-col items-center text-center gap-3">
               <AlertTriangle className="text-raspberry" size={32} />
-              <p className="text-sm font-bold text-raspberry">El Motor IA está fuera de línea.</p>
-              <p className="text-[10px] opacity-60 font-medium">Asegúrate de que el servidor Ollama esté activo y accesible.</p>
+              <p className="text-sm font-bold text-raspberry">El asistente está temporalmente fuera de línea.</p>
+              <p className="text-[10px] opacity-60 font-medium">Intenta de nuevo en unos momentos.</p>
+              <button
+                onClick={retryPing}
+                className="flex items-center gap-2 px-4 py-2 bg-raspberry/20 hover:bg-raspberry/30 text-raspberry text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+              >
+                <RefreshCw size={12} /> Reintentar conexión
+              </button>
             </div>
           )}
 
@@ -149,7 +197,8 @@ const AIAssistant = ({ onClose }) => {
           <div ref={endOfMessagesRef} />
         </div>
 
-        <ChatInput onSend={handleSend} disabled={loading || !ollamaReady} quickReplies={messages.length < 3 ? quickReplies : []} />
+        {/* Fix #2: don't hard-disable input when offline — user can still try */}
+        <ChatInput onSend={handleSend} disabled={loading} quickReplies={messages.length < 3 ? quickReplies : []} />
       </div>
     </div>
   );
@@ -165,16 +214,13 @@ const MessageList = memo(({ messages, loading }) => {
           </div>
           <div className={`max-w-[85%] rounded-[1.5rem] p-4 text-sm font-medium leading-relaxed shadow-sm ${m.role === 'assistant' ? 'bg-white/40 backdrop-blur-md text-black border border-white/20' : 'bg-purple-brand/80 text-white'}`}>
             <MessageContent 
-              content={m.content} 
+              content={m.content}
+              gadgetTags={m.gadgetTags || []}
               showGadgets={m.role === 'assistant' ? m.showGadgets : true} 
             />
-            {m.role === 'assistant' && m.results && m.results.length > 0 && m.showGadgets && (
-              <div className="flex flex-col gap-3 mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {m.results.filter(p => !m.content.includes(p.id)).map(prod => (
-                  <RecommendedProduct key={prod.id} id={prod.id} />
-                ))}
-              </div>
-            )}
+            {/* Removed m.results block: gadgetTags in MessageContent is the single
+                source of truth for product cards. m.results was showing ALL search
+                results regardless of AI recommendation, causing irrelevant cards. */}
           </div>
         </div>
       ))}
@@ -259,7 +305,13 @@ const RecommendedProduct = memo(({ id }) => {
     <Link href={`/producto/${prod.id}`} className="flex flex-col gap-3 p-4 bg-white hover:bg-gray-50 rounded-[1.5rem] border border-black/5 transition-all group shadow-sm text-black">
       <div className="flex gap-4">
         <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center p-2 border border-black/5 shrink-0">
-          <img src={prod.image_url} alt={prod.name} className="object-contain w-full h-full group-hover:scale-110 transition-transform" />
+          {/* Fix #8: fallback image on broken URL */}
+          <img
+            src={prod.image_url || '/placeholder.png'}
+            alt={prod.name}
+            className="object-contain w-full h-full group-hover:scale-110 transition-transform"
+            onError={e => { e.currentTarget.src = '/placeholder.png'; }}
+          />
         </div>
         <div className="flex flex-col justify-center gap-1">
           <h6 className="text-[11px] font-black line-clamp-2 leading-tight">{prod.name}</h6>
@@ -406,17 +458,17 @@ const ComparisonTable = memo(({ ids }) => {
   );
 });
 
-const MessageContent = memo(({ content, showGadgets = true }) => {
+const MessageContent = memo(({ content, gadgetTags = [], showGadgets = true }) => {
+  // Fix #7: content is already clean; use gadgetTags for widgets
   const cleanText = useMemo(() => content
     .replace(getTagRegex(), '')
     .replace(/\[TAGS\]/gi, '')
     .trim(), [content]);
 
-  const gadgetsRaw = useMemo(() => content.match(getTagRegex()) || [], [content]);
-  
+  // Fix #7: use gadgetTags prop (separated from content) instead of re-parsing content
   const gadgets = useMemo(() => {
     const seenIds = new Set();
-    return gadgetsRaw.filter(gadget => {
+    return gadgetTags.filter(gadget => {
       const recMatch = gadget.match(/RECOMENDACI[OÓ]N:?\s*(.*?)\]/i);
       const waitMatch = gadget.match(/WAITLIST_PROMPT:?\s*(.*?)\]/i);
       
@@ -430,7 +482,7 @@ const MessageContent = memo(({ content, showGadgets = true }) => {
       
       return true;
     });
-  }, [gadgetsRaw]);
+  }, [gadgetTags]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -443,13 +495,17 @@ const MessageContent = memo(({ content, showGadgets = true }) => {
             const [type, value] = inner.split(/[:\s]+/).map(s => s.trim());
             const ids = value ? value.split(/,\s*/).map(s => s.trim()) : [];
 
-            if (type.toUpperCase() === 'RECOMENDACION') {
+            // Fix #3: normalize accented Ó before comparing
+            const normalizedType = type.toUpperCase()
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+            if (normalizedType === 'RECOMENDACION') {
               return ids.map(id => <RecommendedProduct key={id} id={id} />);
             }
-            if (type.toUpperCase() === 'WAITLIST_PROMPT') {
+            if (normalizedType === 'WAITLIST_PROMPT') {
               return <WaitlistForm key={i} interest={value} />;
             }
-            if (type.toUpperCase() === 'COMPARE') {
+            if (normalizedType === 'COMPARE') {
               return <ComparisonTable key={i} ids={value} />;
             }
             return null;

@@ -41,18 +41,47 @@ const getIcon = (name, size = 14) => {
 
 const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) => {
   const [imgIndex, setImgIndex] = useState(0);
-  const images = product.images?.length > 0 ? product.images : (product.image_url ? [product.image_url] : []);
+  const images = React.useMemo(() => {
+    let imgs = [];
+    try {
+      if (Array.isArray(product.images)) {
+        imgs = product.images;
+      } else if (typeof product.images === 'string' && product.images.length > 0) {
+        // Handle postgres array format {url1,url2} or JSON string ["url1","url2"]
+        const cleaned = product.images.startsWith('{') 
+          ? product.images.replace('{', '[').replace('}', ']') 
+          : product.images;
+        if (cleaned.startsWith('[')) {
+          imgs = JSON.parse(cleaned);
+        } else {
+          imgs = product.images.split(',').map(s => s.trim());
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing images for product:", product.id, e);
+    }
+    
+    if (imgs.length === 0 && product.image_url) {
+      imgs = [product.image_url];
+    }
+    const result = imgs.filter(img => typeof img === 'string' && img.length > 0);
+    return result;
+  }, [product.images, product.image_url]);
 
   const nextImg = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setImgIndex((imgIndex + 1) % images.length);
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setImgIndex((prev) => (prev + 1) % images.length);
   };
 
   const prevImg = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setImgIndex((imgIndex - 1 + images.length) % images.length);
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setImgIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   const isAdded = addedIds?.has(product.id);
@@ -62,7 +91,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
       <article className="group relative bg-white dark:bg-dark-nav rounded-2xl border border-black/5 dark:border-white/5 overflow-hidden transition-all duration-500 hover:shadow-xl flex flex-col sm:flex-row h-full sm:min-h-[220px]">
         {/* Image - Left */}
         <div className="relative w-full sm:w-[200px] min-h-[180px] sm:min-h-0 bg-gray-50 dark:bg-black/20 flex items-center justify-center overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-black/5">
-           <Link href={`/producto/${product.id}`} className="w-full h-full flex items-center justify-center">
+          <Link href={`/producto/${product.id}`} className="w-full h-full flex items-center justify-center">
             {images.length > 0 ? (
               <img
                 src={images[imgIndex]}
@@ -73,11 +102,11 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
               <div className="text-4xl grayscale opacity-20">🍌</div>
             )}
           </Link>
-          
+
           {/* Badge */}
           <div className="absolute top-3 left-3 z-10">
             <span className={`px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md ${product.badgeType === 'featured' ? 'bg-purple-brand text-white' : 'bg-banana-yellow text-black'}`}>
-               {product.badgeType === 'featured' ? 'D' : 'N'}
+              {product.badgeType === 'featured' ? 'D' : 'N'}
             </span>
           </div>
         </div>
@@ -166,7 +195,8 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
       {/* Image Carousel */}
       <div className="relative aspect-[4/3] bg-gray-50 dark:bg-black/20 flex items-center justify-center overflow-hidden">
-        <Link href={`/producto/${product.id}`} className="w-full h-full flex items-center justify-center">
+        {/* Link only wraps the image, NOT the buttons */}
+        <Link href={`/producto/${product.id}`} className="absolute inset-0 flex items-center justify-center z-0">
           {images.length > 0 ? (
             <img
               src={images[imgIndex]}
@@ -178,17 +208,24 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
           )}
         </Link>
 
+        {/* Carousel buttons are siblings of Link, always on top */}
         {images.length > 1 && (
           <>
-            <button className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white" onClick={prevImg}>
+            <button 
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
+              onClick={prevImg}
+            >
               <ChevronLeft size={20} />
             </button>
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white" onClick={nextImg}>
+            <button 
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
+              onClick={nextImg}
+            >
               <ChevronRight size={20} />
             </button>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 pointer-events-none">
               {images.map((_, i) => (
-                <span key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === imgIndex ? 'bg-purple-brand w-4' : 'bg-black/20'}`} />
+                <span key={i} className={`h-1.5 rounded-full transition-all ${i === imgIndex ? 'bg-purple-brand w-4' : 'bg-black/20 w-1.5'}`} />
               ))}
             </div>
           </>

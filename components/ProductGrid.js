@@ -86,60 +86,129 @@ const ProductGrid = ({ subcategoryId }) => {
 
   // Process data for grouping and mapping
   useEffect(() => {
-    const groups = {};
-    (filteredProducts || []).forEach(p => {
-      const catId = p.category_id || 'other';
-      const catName = p.categories?.name || 'Otros';
-      if (!groups[catId]) groups[catId] = { id: catId, name: catName, products: [] };
-      groups[catId].products.push(p);
-    });
+    // Helper to shuffle an array
+    const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
 
-    const processedGroups = Object.keys(groups).map(key => {
-      const group = groups[key];
-      const items = group.products;
-      const featured = items.filter(p => p.is_featured);
-      const latest = items.filter(p => !p.is_featured);
+    if (!subcategoryId && !searchQuery.trim()) {
+      // SMART HOME SELECTION LOGIC
+      const featured = allProducts.filter(p => p.is_featured);
+      const remaining = allProducts.filter(p => !p.is_featured);
 
-      // If searching or in subcategory, show ALL matches
-      const combined = (subcategoryId || searchQuery.trim())
-        ? [...featured.map(p => ({ ...p, badgeType: 'featured' })), ...latest.map(p => ({ ...p, badgeType: 'new' }))]
-        : [...featured.slice(0, 3).map(p => ({ ...p, badgeType: 'featured' })), ...latest.slice(0, 3).map(p => ({ ...p, badgeType: 'new' }))];
+      // Group remaining by category
+      const byCategory = {};
+      remaining.forEach(p => {
+        const catName = p.categories?.name || 'Otros';
+        if (!byCategory[catName]) byCategory[catName] = [];
+        byCategory[catName].push(p);
+      });
 
-      return {
-        id: group.id,
-        name: group.name,
-        products: combined.map(p => {
-          const year = new Date(p.created_at).getFullYear().toString();
-          
-          let specs = (p.product_attributes || [])
-            .filter(a => a.attribute_definitions?.show_in_card)
-            .map(a => ({
-              label: a.attribute_definitions?.name,
-              value: a.value,
-              unit: a.attribute_definitions?.unit || '',
-              icon: a.attribute_definitions?.icon || '•',
-              order: a.attribute_definitions?.display_order || 0
-            }))
-            .sort((a, b) => a.order - b.order)
-            .slice(0, 6);
+      // Shuffle products within each category
+      Object.keys(byCategory).forEach(cat => {
+        byCategory[cat] = shuffle(byCategory[cat]);
+      });
 
-          if (specs.length === 0) {
-            specs = (p.product_attributes || []).slice(0, 3).map(a => ({
-              label: a.attribute_definitions?.name,
-              value: a.value,
-              unit: a.attribute_definitions?.unit || '',
-              icon: a.attribute_definitions?.icon || '•'
-            }));
+      const mixed = [...featured];
+      const categories = Object.keys(byCategory);
+      let catIndex = 0;
+      let hasMore = true;
+
+      // Round-robin selection until at least 9 or exhausted
+      while (mixed.length < 9 && hasMore) {
+        hasMore = false;
+        for (let i = 0; i < categories.length; i++) {
+          const cat = categories[i];
+          if (byCategory[cat].length > 0) {
+            mixed.push(byCategory[cat].shift());
+            hasMore = true;
           }
+          if (mixed.length >= 24) break; // Hard limit for home performance
+        }
+      }
 
-          return { ...p, year, specs };
-        }),
-        showTitle: !subcategoryId
-      };
-    }).filter(g => g.products.length > 0);
+      // Final processing for the smart group
+      const processedProducts = mixed.map(p => {
+        const year = new Date(p.created_at).getFullYear().toString();
+        let specs = (p.product_attributes || [])
+          .filter(a => a.attribute_definitions?.show_in_card)
+          .map(a => ({
+            label: a.attribute_definitions?.name,
+            value: a.value,
+            unit: a.attribute_definitions?.unit || '',
+            icon: a.attribute_definitions?.icon || '•',
+            order: a.attribute_definitions?.display_order || 0
+          }))
+          .sort((a, b) => a.order - b.order)
+          .slice(0, 6);
 
-    setCategoryGroups(processedGroups);
-  }, [filteredProducts, subcategoryId, searchQuery]);
+        if (specs.length === 0) {
+          specs = (p.product_attributes || []).slice(0, 3).map(a => ({
+            label: a.attribute_definitions?.name,
+            value: a.value,
+            unit: a.attribute_definitions?.unit || '',
+            icon: a.attribute_definitions?.icon || '•'
+          }));
+        }
+        return { ...p, year, specs, badgeType: p.is_featured ? 'featured' : 'new' };
+      });
+
+      setCategoryGroups([{
+        id: 'smart-selection',
+        name: 'Equipos Destacados y Recomendados',
+        products: processedProducts,
+        showTitle: true
+      }]);
+    } else {
+      // LEGACY GROUPING LOGIC (For search or subcategory)
+      const groups = {};
+      (filteredProducts || []).forEach(p => {
+        const catId = p.category_id || 'other';
+        const catName = p.categories?.name || 'Otros';
+        if (!groups[catId]) groups[catId] = { id: catId, name: catName, products: [] };
+        groups[catId].products.push(p);
+      });
+
+      const processedGroups = Object.keys(groups).map(key => {
+        const group = groups[key];
+        const items = group.products;
+        const featured = items.filter(p => p.is_featured);
+        const latest = items.filter(p => !p.is_featured);
+
+        const combined = [...featured.map(p => ({ ...p, badgeType: 'featured' })), ...latest.map(p => ({ ...p, badgeType: 'new' }))];
+
+        return {
+          id: group.id,
+          name: group.name,
+          products: combined.map(p => {
+            const year = new Date(p.created_at).getFullYear().toString();
+            let specs = (p.product_attributes || [])
+              .filter(a => a.attribute_definitions?.show_in_card)
+              .map(a => ({
+                label: a.attribute_definitions?.name,
+                value: a.value,
+                unit: a.attribute_definitions?.unit || '',
+                icon: a.attribute_definitions?.icon || '•',
+                order: a.attribute_definitions?.display_order || 0
+              }))
+              .sort((a, b) => a.order - b.order)
+              .slice(0, 6);
+
+            if (specs.length === 0) {
+              specs = (p.product_attributes || []).slice(0, 3).map(a => ({
+                label: a.attribute_definitions?.name,
+                value: a.value,
+                unit: a.attribute_definitions?.unit || '',
+                icon: a.attribute_definitions?.icon || '•'
+              }));
+            }
+            return { ...p, year, specs };
+          }),
+          showTitle: !subcategoryId
+        };
+      }).filter(g => g.products.length > 0);
+
+      setCategoryGroups(processedGroups);
+    }
+  }, [filteredProducts, allProducts, subcategoryId, searchQuery]);
 
   if (loading) {
     return (
