@@ -3,7 +3,7 @@ services:
     name: bananacomputer
     env: node
     plan: free # Change if needed
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --legacy-peer-deps && npm run build
     startCommand: npm run start
     envVars:
       - key: DATABASE_URL
@@ -19,4 +19,4 @@ services:
       - key: NEXT_PUBLIC_SITE_URL
         value: https://bananacomputer.onrender.com # Update to your domain
       - key: NODE_VERSION
-        value: 18.17.0
+        value: 20.0.0
