@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -11,7 +11,7 @@ import Fuse from 'fuse.js';
 import { Search, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
   const { searchQuery, setSearchQuery, openSearch } = useSearch();
@@ -26,7 +26,7 @@ export default function SearchPage() {
     if (urlQuery && !searchQuery) {
       setSearchQuery(urlQuery);
     }
-  }, [urlQuery]);
+  }, [urlQuery, searchQuery, setSearchQuery]);
 
   const handleAddToCart = (e, product) => {
     e.preventDefault();
@@ -106,66 +106,76 @@ export default function SearchPage() {
   }, [allProducts, searchQuery, urlQuery]);
 
   return (
-    <main className="min-h-screen bg-cream-bg flex flex-col pt-24">
-      <Header />
-
-      <div className="max-w-5xl mx-auto w-full px-4 py-8 flex-1 flex flex-col">
-        {/* Breadcrumbs & Title */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div>
-            <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-purple-brand transition-colors mb-4 group">
-              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              Volver al Inicio
-            </Link>
-            <h1 className="!text-[12px] font-black tracking-[0.2em] uppercase flex items-center gap-3">
-              <span className="text-black">🍌 Resultados para</span>
-              <span className="text-purple-brand font-black">"{searchQuery || urlQuery}"</span>
-              <span className="text-[10px] font-black bg-purple-brand text-white px-2 py-0.5 rounded tracking-normal block">
-                {results.length} coincidencias
-              </span>
-            </h1>
-          </div>
-
-          <button
-            onClick={openSearch}
-            className="flex items-center gap-2 px-6 py-3 bg-white border border-black/5 rounded-2xl shadow-sm hover:shadow-md transition-all text-sm font-black uppercase tracking-widest"
-          >
-            <Search size={18} className="text-purple-brand" />
-            Nueva Búsqueda
-          </button>
+    <div className="max-w-5xl mx-auto w-full px-4 py-8 flex-1 flex flex-col">
+      {/* Breadcrumbs & Title */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div>
+          <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-purple-brand transition-colors mb-4 group">
+            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+            Volver al Inicio
+          </Link>
+          <h1 className="!text-[12px] font-black tracking-[0.2em] uppercase flex items-center gap-3">
+            <span className="text-black">🍌 Resultados para</span>
+            <span className="text-purple-brand font-black">"{searchQuery || urlQuery}"</span>
+            <span className="text-[10px] font-black bg-purple-brand text-white px-2 py-0.5 rounded tracking-normal block">
+              {results.length} coincidencias
+            </span>
+          </h1>
         </div>
 
-        {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 py-20">
-            <div className="w-12 h-12 border-4 border-banana-yellow border-t-purple-brand rounded-full animate-spin"></div>
-            <p className="text-xs font-black uppercase tracking-widest text-gray-400">Escaneando Inventario...</p>
-          </div>
-        ) : results.length > 0 ? (
-          <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {results.map(product => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                variant="list"
-                addedIds={addedIds}
-                handleAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
-            <span className="text-8xl mb-8">🔍🍌</span>
-            <h2 className="text-3xl font-black mb-4">No encontramos lo que buscas</h2>
-            <p className="text-gray-400 font-medium max-w-sm mb-10 leading-relaxed">
-              Intenta con otros términos o explora nuestras categorías principales para encontrar tu equipo ideal.
-            </p>
-            <Link href="/" className="px-10 py-5 bg-purple-brand text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-purple-brand/20">
-              Explorar Todo el Catálogo
-            </Link>
-          </div>
-        )}
+        <button
+          onClick={openSearch}
+          className="flex items-center gap-2 px-6 py-3 bg-white border border-black/5 rounded-2xl shadow-sm hover:shadow-md transition-all text-sm font-black uppercase tracking-widest"
+        >
+          <Search size={18} className="text-purple-brand" />
+          Nueva Búsqueda
+        </button>
       </div>
 
+      {loading ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 py-20">
+          <div className="w-12 h-12 border-4 border-banana-yellow border-t-purple-brand rounded-full animate-spin"></div>
+          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Escaneando Inventario...</p>
+        </div>
+      ) : results.length > 0 ? (
+        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {results.map(product => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              variant="list"
+              addedIds={addedIds}
+              handleAddToCart={handleAddToCart}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
+          <span className="text-8xl mb-8">🔍🍌</span>
+          <h2 className="text-3xl font-black mb-4">No encontramos lo que buscas</h2>
+          <p className="text-gray-400 font-medium max-w-sm mb-10 leading-relaxed">
+            Intenta con otros términos o explora nuestras categorías principales para encontrar tu equipo ideal.
+          </p>
+          <Link href="/" className="px-10 py-5 bg-purple-brand text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-purple-brand/20">
+            Explorar Todo el Catálogo
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <main className="min-h-screen bg-cream-bg flex flex-col pt-24">
+      <Header />
+      <Suspense fallback={
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 py-20">
+          <div className="w-12 h-12 border-4 border-banana-yellow border-t-purple-brand rounded-full animate-spin"></div>
+        </div>
+      }>
+        <SearchContent />
+      </Suspense>
       <Footer />
     </main>
   );
