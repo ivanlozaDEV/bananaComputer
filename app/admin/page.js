@@ -108,6 +108,7 @@ export default function AdminDashboardPage() {
             <QuickLink href="/admin/hero" icon={<Image size={18} />} label="Editar Hero" />
             <QuickLink href="/admin/categories" icon={<Tag size={18} />} label="Categorías" />
             <QuickLink href="/admin/products" icon={<Package size={18} />} label="Productos" />
+            <QuickLink href="/admin/promotions" icon={<Sparkles size={18} />} label="Banners Promo" />
             <QuickLink href="/admin/waitlist" icon={<Users size={18} />} label="Lista de Espera" />
           </div>
         </div>

@@ -1,22 +1,90 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Logo from '@/components/Logo';
 import ProductGrid from '@/components/ProductGrid';
 import AIAssistant from '@/components/AIAssistant';
+import HeroBanner from '@/components/HeroBanner';
 import { useStore } from '@/context/StoreContext';
-import { 
-  ShieldCheck, Award, Truck, Lock, Sparkles, 
-  ChevronDown, ArrowRight 
+import { supabase } from '@/lib/supabase';
+import {
+  ShieldCheck, Award, Truck, Lock, Sparkles,
+  ChevronDown, ArrowRight
 } from 'lucide-react';
-
 import FeatureCard from '@/components/FeatureCard';
 import BrandText from '@/components/BrandText';
 
+// ─── Timing constants (ms) ────────────────────────────────────────
+const HERO_DISPLAY_MS = 2200;  // how long hero stays before first exit
+const HERO_RETURN_MS = 2000;  // how long hero shows on its return
+const BANNER_DISPLAY_MS = 5000;  // how long banner stays visible
+const TRANSITION_MS = 700;   // must match CSS transition duration in HeroBanner
+
+/**
+ * Phase state machine:
+ *   hero-in → (2.2s) → hero-out → (0.7s) → banner-in → (5s) → banner-out → (0.7s) → hero-in → ...
+ */
 export default function HomePage() {
   const { heroContent } = useStore();
   const [showAI, setShowAI] = useState(false);
+  const [promotions, setPromotions] = useState([]);
+  const [promoIndex, setPromoIndex] = useState(0);
+  const [phase, setPhase] = useState('hero'); // 'hero' | 'hero-out' | 'banner-in' | 'banner' | 'banner-out'
+
+  // Fetch active promotions once on mount
+  useEffect(() => {
+    supabase
+      .from('promotions')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) setPromotions(data);
+      });
+  }, []);
+
+  // Run the hero ↔ banner cycle only when promotions are available
+  useEffect(() => {
+    if (promotions.length === 0) return; // no promotions → stay on hero forever
+
+    let t;
+
+    if (phase === 'hero') {
+      t = setTimeout(() => setPhase('hero-out'), HERO_DISPLAY_MS);
+
+    } else if (phase === 'hero-out') {
+      t = setTimeout(() => setPhase('banner-in'), TRANSITION_MS);
+
+    } else if (phase === 'banner-in') {
+      t = setTimeout(() => setPhase('banner'), TRANSITION_MS);
+
+    } else if (phase === 'banner') {
+      t = setTimeout(() => setPhase('banner-out'), BANNER_DISPLAY_MS);
+
+    } else if (phase === 'banner-out') {
+      t = setTimeout(() => {
+        // Advance to next promo for the next cycle
+        setPromoIndex(i => (i + 1) % promotions.length);
+        setPhase('hero');
+      }, TRANSITION_MS);
+    }
+
+    return () => clearTimeout(t);
+  }, [phase, promotions]);
+
+  // ── Derived values for animations ─────────────────────────────
+  // Hero fades out while banner is showing — opacity only, no translate
+  const heroOpacity =
+    phase === 'hero' || phase === 'banner-out' ? 1 : 0;
+
+  const bannerVisible = phase === 'banner-in' || phase === 'banner' || phase === 'banner-out';
+  const bannerPhase =
+    phase === 'banner-in' ? 'entering' :
+      phase === 'banner' ? 'visible' :
+    /* banner-out */         'exiting';
+
+  const currentPromo = promotions[promoIndex] ?? null;
 
   return (
     <main className="flex-1">
@@ -29,17 +97,21 @@ export default function HomePage() {
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-banana-yellow/20 blur-[120px] rounded-full animate-pulse"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-brand/10 blur-[120px] rounded-full"></div>
         </div>
- 
-        <div className="max-w-4xl w-full flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
+
+        {/* ── HERO CONTENT (fades out while banner shows) ── */}
+        <div
+          className="max-w-4xl w-full flex flex-col items-center text-center transition-opacity duration-700 ease-in-out"
+          style={{ opacity: heroOpacity }}
+        >
           {/* Logo large */}
           <div className="mb-8 md:mb-10 hover:scale-110 transition-transform duration-700 cursor-none transform-gpu">
             <Logo size="large" animated={true} />
           </div>
- 
+
           <h1 className="mb-4 md:mb-6 text-3xl md:text-5xl lg:text-7xl px-4 uppercase font-black">
             <BrandText text={heroContent?.title || 'Tu Tecnologia Garantizada'} brandClassName="font-pixel-legacy text-black" />
           </h1>
- 
+
           <p className="text-sm md:text-lg text-gray-400 font-medium max-w-2xl mb-6 md:mb-8 px-6 leading-relaxed">
             <BrandText text={heroContent?.subtitle || 'Bienvenido a Banana Computer, tu aliado confiable para hardware global con garantía oficial.'} secondary={true} />
           </p>
@@ -47,13 +119,13 @@ export default function HomePage() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 items-center">
             <div className="relative group/cta">
-              {/* Floating Bananas Effect (Always Visible) */}
+              {/* Floating Bananas Effect */}
               <div className="absolute inset-0 pointer-events-none -z-10 opacity-100 transition-opacity">
                 <span className="absolute -top-8 -left-8 text-2xl animate-[bananaFloat_4s_linear_infinite] delay-0">🍌</span>
                 <span className="absolute -top-12 left-1/2 text-2xl animate-[bananaFloat_3.5s_linear_infinite] delay-500">🍌</span>
                 <span className="absolute -top-8 -right-8 text-2xl animate-[bananaFloat_4.5s_linear_infinite] delay-1000">🍌</span>
               </div>
-              <button 
+              <button
                 className="group relative px-8 py-4 bg-purple-brand text-white rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-purple-brand/20 flex items-center gap-3 overflow-hidden animate-wiggle animate-ai-glow"
                 onClick={() => setShowAI(true)}
               >
@@ -62,8 +134,8 @@ export default function HomePage() {
                 {heroContent?.primary_cta || 'Explorar Sistemas'}
               </button>
             </div>
-            <a 
-              href="#catalogo" 
+            <a
+              href="#catalogo"
               className="px-8 py-4 bg-white border border-black/5 rounded-2xl font-black text-lg hover:bg-gray-50 transition-all flex items-center gap-2"
             >
               {heroContent?.secondary_cta || 'Ver Catálogo'}
@@ -92,7 +164,11 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-6 animate-bounce">
+        {/* ── BANNER (fixed overlay, positioned below navbar) ── */}
+        {bannerVisible && <HeroBanner promotion={currentPromo} phase={bannerPhase} />}
+
+        {/* Scroll indicator — hide when banner is showing */}
+        <div className={`absolute bottom-6 animate-bounce transition-opacity duration-500 ${bannerVisible ? 'opacity-0' : 'opacity-100'}`}>
           <ChevronDown className="text-gray-300" size={32} />
         </div>
       </section>
@@ -105,10 +181,10 @@ export default function HomePage() {
         <ProductGrid />
       </section>
 
-      {/* Features Section - Refined Light Version */}
+      {/* Features Section */}
       <section className="pt-12 pb-20 bg-cream-bg relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full -z-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
-        
+
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="flex flex-col items-center text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <span className="text-purple-brand opacity-60 font-pixel text-[10px] uppercase tracking-[0.4em] mb-4">// DISTINCIÓN BANANA COMPUTER</span>
@@ -117,25 +193,25 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard 
+            <FeatureCard
               icon={<ShieldCheck size={32} />}
               title="Garantía Local"
               desc="Respaldo directo de las marcas en Ecuador, sin complicaciones."
               color="bg-purple-brand text-banana-yellow"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Sparkles size={32} />}
               title="Soporte Directo"
               desc="Asistencia técnica de expertos para configurar tu equipo ideal."
               color="bg-purple-brand text-banana-yellow"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Award size={32} />}
               title="Marcas Líderes"
               desc="Distribuidores oficiales de ASUS, Lenovo, HP y Apple en el país."
               color="bg-purple-brand text-banana-yellow"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Lock size={32} />}
               title="Productos Nuevos"
               desc="Equipos 100% sellados de fábrica con trazabilidad garantizada."
@@ -150,4 +226,3 @@ export default function HomePage() {
     </main>
   );
 }
-
