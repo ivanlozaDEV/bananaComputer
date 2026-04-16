@@ -88,9 +88,9 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
   if (variant === 'list') {
     return (
-      <article className="group relative bg-white dark:bg-dark-nav rounded-2xl border border-black/5 dark:border-white/5 overflow-hidden transition-all duration-500 hover:shadow-xl flex flex-col sm:flex-row h-full sm:min-h-[220px]">
+      <article className="group relative bg-white rounded-2xl border border-black/5 overflow-hidden transition-all duration-500 hover:shadow-xl flex flex-col sm:flex-row h-full sm:min-h-[220px]">
         {/* Image - Left */}
-        <div className="relative w-full sm:w-[200px] min-h-[180px] sm:min-h-0 bg-gray-50 dark:bg-black/20 flex items-center justify-center overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-black/5">
+        <div className="relative w-full sm:w-[200px] min-h-[180px] sm:min-h-0 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-black/5">
           <Link href={`/producto/${product.id}`} className="w-full h-full flex items-center justify-center">
             {images.length > 0 ? (
               <img
@@ -179,7 +179,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
   // Default Grid layout
   return (
-    <article className="group relative bg-white dark:bg-dark-nav rounded-2xl border border-black/5 dark:border-white/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] flex flex-col h-full">
+    <article className="group relative bg-white rounded-2xl border border-black/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] flex flex-col h-full">
       {/* Badge */}
       <div className="absolute top-4 left-4 z-10">
         {product.badgeType === 'featured' ? (
@@ -194,7 +194,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
       </div>
 
       {/* Image Carousel */}
-      <div className="relative aspect-[4/3] bg-gray-50 dark:bg-black/20 flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden">
         {/* Link only wraps the image, NOT the buttons */}
         <Link href={`/producto/${product.id}`} className="absolute inset-0 flex items-center justify-center z-0">
           {images.length > 0 ? (

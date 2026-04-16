@@ -215,7 +215,7 @@ const Header = () => {
 
       {/* Cart Sidebar */}
       <aside className={`
-        fixed top-0 right-0 h-full w-full max-w-sm bg-white dark:bg-dark-nav z-[70] p-8 shadow-3xl transition-transform duration-500 transform
+        fixed top-0 right-0 h-full w-full max-w-sm bg-white z-[70] p-8 shadow-3xl transition-transform duration-500 transform
         ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
         <div className="flex items-center justify-between mb-8">

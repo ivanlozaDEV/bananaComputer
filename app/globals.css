@@ -20,11 +20,7 @@
 :root {
   --background: var(--color-cream-bg);
   --foreground: #171717;
-}
-
-.dark {
-  --background: var(--color-dark-nav);
-  --foreground: #ededed;
+  color-scheme: light;
 }
 
 body {
@@ -37,10 +33,6 @@ body {
 /* Glassmorphism Utilities */
 .glass-panel {
   @apply bg-white/70 backdrop-blur-md border border-white/20;
-}
-
-.dark .glass-panel {
-  @apply bg-black/50 backdrop-blur-md border border-white/10;
 }
 
 .rainbow-stripe {

@@ -177,7 +177,7 @@ const AIAssistant = ({ onClose }) => {
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-white/10 dark:bg-black/10">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-white/10">
           {/* Fix #2 + #9: retry button, no blocking, generic message */}
           {!ollamaReady && (
             <div className="p-6 bg-raspberry/10 border border-raspberry/20 rounded-3xl flex flex-col items-center text-center gap-3">
@@ -251,14 +251,14 @@ const ChatInput = ({ onSend, disabled, quickReplies }) => {
   };
 
   return (
-    <div className="bg-white/20 dark:bg-dark-nav border-t border-white/10 backdrop-blur-xl p-6 flex flex-col gap-4">
+    <div className="bg-white/20 border-t border-white/10 backdrop-blur-xl p-6 flex flex-col gap-4">
       {quickReplies.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
           {quickReplies.map((text, i) => (
             <button
               key={i}
               onClick={() => onSend(text)}
-              className="px-4 py-2 bg-white/40 hover:bg-white/60 dark:bg-black/20 dark:hover:bg-black/40 border border-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+              className="px-4 py-2 bg-white/40 hover:bg-white/60 border border-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
             >
               {text}
             </button>
@@ -270,7 +270,7 @@ const ChatInput = ({ onSend, disabled, quickReplies }) => {
         <input
           type="text"
           placeholder="Escribe tu mensaje aquí..."
-          className="flex-1 bg-white/30 dark:bg-black/20 border border-white/20 rounded-2xl px-6 py-4 text-sm outline-none focus:bg-white/50 transition-all font-medium placeholder-gray-500"
+          className="flex-1 bg-white/30 border border-white/20 rounded-2xl px-6 py-4 text-sm outline-none focus:bg-white/50 transition-all font-medium placeholder-gray-500"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={disabled}
