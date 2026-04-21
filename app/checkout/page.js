@@ -38,6 +38,14 @@ function CheckoutContent() {
   });
   const [sameAsBilling, setSameAsBilling] = useState(true);
 
+  // Address Management State
+  const [selectedBillingId, setSelectedBillingId] = useState(null);
+  const [selectedShippingId, setSelectedShippingId] = useState(null);
+  const [billingModified, setBillingModified] = useState(false);
+  const [shippingModified, setShippingModified] = useState(false);
+  const [saveAsNewBilling, setSaveAsNewBilling] = useState(false);
+  const [saveAsNewShipping, setSaveAsNewShipping] = useState(false);
+
   // Load user data if present
   useEffect(() => {
     if (user) {
@@ -74,6 +82,8 @@ function CheckoutContent() {
   }, [payphoneId, clientTxId]);
 
   const selectBillingAddress = (addr) => {
+    setSelectedBillingId(addr.id);
+    setBillingModified(false);
     const data = {
       full_name: addr.full_name,
       email: addr.email || user?.email || '',
@@ -88,6 +98,8 @@ function CheckoutContent() {
   };
 
   const selectShippingAddress = (addr) => {
+    setSelectedShippingId(addr.id);
+    setShippingModified(false);
     setShippingInfo({
       full_name: addr.full_name,
       phone: addr.phone,
@@ -98,38 +110,99 @@ function CheckoutContent() {
     });
   };
 
-  const initPayPhone = useCallback(() => {
-    if (!window.PPaymentButtonBox) {
-      showToast('Error cargando pasarela de pagos', 'error');
-      return;
+  const updateBilling = (update) => {
+    setBillingInfo(prev => ({ ...prev, ...update }));
+    if (selectedBillingId) setBillingModified(true);
+  };
+
+  const updateShipping = (update) => {
+    setShippingInfo(prev => ({ ...prev, ...update }));
+    if (selectedShippingId) setShippingModified(true);
+  };
+
+  const handleUpsertAddress = async (type) => {
+    if (!user) return;
+    setLoading(true);
+    const info = type === 'billing' ? billingInfo : shippingInfo;
+    const id = type === 'billing' ? selectedBillingId : selectedShippingId;
+    const asNew = type === 'billing' ? saveAsNewBilling : saveAsNewShipping;
+
+    try {
+      const addressData = {
+        customer_id: user.id,
+        label: asNew ? `Dirección ${savedAddresses.length + 1}` : savedAddresses.find(a => a.id === id)?.label || 'Dirección',
+        full_name: info.full_name,
+        phone: info.phone,
+        address_line1: info.address,
+        city: info.city,
+        id_number: info.id_number,
+        id_type: info.id_type,
+        email: user.email
+      };
+
+      if (asNew || !id) {
+        const { data, error } = await supabase.from('customer_addresses').insert(addressData).select().single();
+        if (error) throw error;
+        setSavedAddresses(prev => [...prev, data]);
+        showToast('Dirección guardada con éxito', 'success');
+        if (type === 'billing') {
+          setSelectedBillingId(data.id);
+          setSaveAsNewBilling(false);
+        } else {
+          setSelectedShippingId(data.id);
+          setSaveAsNewShipping(false);
+        }
+      } else {
+        const { error } = await supabase.from('customer_addresses').update(addressData).eq('id', id);
+        if (error) throw error;
+        setSavedAddresses(prev => prev.map(a => a.id === id ? { ...a, ...addressData } : a));
+        showToast('Dirección actualizada con éxito', 'success');
+        if (type === 'billing') setBillingModified(false);
+        else setShippingModified(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error al guardar la dirección', 'error');
     }
+    setLoading(false);
+  };
 
-    const amountCents = Math.round(cartTotal * 100);
-    const taxCents   = Math.round(cartTax * 100);
-    const subCents   = amountCents - taxCents;
-
-    // In Next.js, use placeholder for safety if env not set
-    const token = process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || 'MISSING_TOKEN';
-    const storeId = process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID || 'MISSING_STORE_ID';
-
-    const ppb = new window.PPaymentButtonBox({
-      token: token,
-      storeId: storeId,
-      clientTransactionId: `BANANA-${Date.now()}`,
-      amount: amountCents,
-      amountWithTax: subCents,
-      tax: taxCents,
-      currency: "USD",
-      reference: `Compra Banana Computer - ${cartCount} items`,
-      phoneNumber: billingInfo.phone.replace(/\s/g, ''),
-      email: billingInfo.email,
-      documentId: billingInfo.id_number,
-      identificationType: billingInfo.id_type,
-    });
-
-    ppb.render('pp-button');
+  const initPayPhone = () => {
     setStep(2);
-  }, [cartTotal, cartTax, cartCount, billingInfo, showToast]);
+  };
+
+  // Render PayPhone button when entering Step 2
+  useEffect(() => {
+    if (step === 2 && window.PPaymentButtonBox) {
+      // Small timeout to ensure DOM is fully painted
+      const timer = setTimeout(() => {
+        const amountCents = Math.round(cartTotal * 100);
+        const taxCents   = Math.round(cartTax * 100);
+        const subCents   = amountCents - taxCents;
+
+        const token = process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || 'MISSING_TOKEN';
+        const storeId = process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID || 'MISSING_STORE_ID';
+
+        const ppb = new window.PPaymentButtonBox({
+          token: token,
+          storeId: storeId,
+          clientTransactionId: `BANANA-${Date.now()}`,
+          amount: amountCents,
+          amountWithTax: subCents,
+          tax: taxCents,
+          currency: "USD",
+          reference: `Compra Banana Computer - ${cartCount} items`,
+          phoneNumber: billingInfo.phone.replace(/\s/g, ''),
+          email: billingInfo.email,
+          documentId: billingInfo.id_number,
+          identificationType: billingInfo.id_type,
+        });
+
+        ppb.render('pp-button');
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [step, cartTotal, cartTax, cartCount, billingInfo]);
 
   const confirmPayment = async (id, txId) => {
     setIsProcessingPayment(true);
@@ -278,39 +351,70 @@ function CheckoutContent() {
                         <input 
                           className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
                           value={billingInfo.phone}
-                          onChange={(e) => setBillingInfo(p => ({...p, phone: e.target.value}))}
+                          onChange={(e) => updateBilling({ phone: e.target.value })}
                         />
                     </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo ID</label>
-                        <select 
-                           className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-black outline-none appearance-none"
-                           value={billingInfo.id_type}
-                           onChange={(e) => setBillingInfo(p => ({...p, id_type: parseInt(e.target.value)}))}
-                        >
-                          <option value={1}>Cédula</option>
-                          <option value={2}>RUC</option>
-                          <option value={3}>Pasaporte</option>
-                        </select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Número ID</label>
-                        <input 
-                          className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
-                          value={billingInfo.id_number}
-                          onChange={(e) => setBillingInfo(p => ({...p, id_number: e.target.value}))}
-                          placeholder="0000000000"
-                        />
+                    <div className="md:col-span-2 flex flex-col gap-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Identificación</label>
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <select 
+                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-black outline-none appearance-none min-w-[140px]"
+                             value={billingInfo.id_type}
+                             onChange={(e) => updateBilling({ id_type: parseInt(e.target.value) })}
+                          >
+                            <option value={1}>Cédula</option>
+                            <option value={2}>RUC</option>
+                            <option value={3}>Pasaporte</option>
+                          </select>
+                          <input 
+                            className="flex-1 bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                            value={billingInfo.id_number}
+                            onChange={(e) => updateBilling({ id_number: e.target.value })}
+                            placeholder="Número de Identificación"
+                          />
+                        </div>
                     </div>
                     <div className="md:col-span-2 flex flex-col gap-2">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dirección de Facturación</label>
                         <input 
                           className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
                           value={billingInfo.address}
-                          onChange={(e) => setBillingInfo(p => ({...p, address: e.target.value}))}
+                          onChange={(e) => updateBilling({ address: e.target.value })}
                         />
                     </div>
                   </div>
+
+                  {user && (
+                    <div className="mt-8 pt-8 border-t border-black/5 flex items-center justify-between">
+                      {selectedBillingId && billingModified ? (
+                        <button 
+                          onClick={() => handleUpsertAddress('billing')}
+                          className="text-[10px] font-black uppercase tracking-widest text-purple-brand hover:underline"
+                        >
+                          Actualizar dirección en mi perfil
+                        </button>
+                      ) : !selectedBillingId ? (
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <input 
+                            type="checkbox" 
+                            checked={saveAsNewBilling}
+                            onChange={(e) => setSaveAsNewBilling(e.target.checked)}
+                            className="w-4 h-4 rounded-lg border-black/10 text-purple-brand focus:ring-purple-brand"
+                          />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-purple-brand transition-colors">Guardar en mi libreta de direcciones</span>
+                        </label>
+                      ) : <span className="text-[10px] font-black uppercase tracking-widest text-mint-success">Dirección seleccionada correctamente</span>}
+                      
+                      {!selectedBillingId && billingInfo.address && (
+                         <button 
+                           onClick={() => handleUpsertAddress('billing')}
+                           className="px-4 py-2 bg-purple-brand/5 text-purple-brand rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-brand hover:text-white transition-all"
+                         >
+                           Guardar Ahora
+                         </button>
+                      )}
+                    </div>
+                  )}
                 </section>
 
                 {/* Shipping Section */}
@@ -354,7 +458,7 @@ function CheckoutContent() {
                           <input 
                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
                             value={shippingInfo.full_name}
-                            onChange={(e) => setShippingInfo(p => ({...p, full_name: e.target.value}))}
+                            onChange={(e) => updateShipping({ full_name: e.target.value })}
                           />
                         </div>
                         <div className="flex flex-col gap-2">
@@ -362,7 +466,7 @@ function CheckoutContent() {
                           <input 
                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
                             value={shippingInfo.phone}
-                            onChange={(e) => setShippingInfo(p => ({...p, phone: e.target.value}))}
+                            onChange={(e) => updateShipping({ phone: e.target.value })}
                           />
                         </div>
                         <div className="md:col-span-2 flex flex-col gap-2">
@@ -370,11 +474,43 @@ function CheckoutContent() {
                           <input 
                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
                             value={shippingInfo.address}
-                            onChange={(e) => setShippingInfo(p => ({...p, address: e.target.value}))}
+                            onChange={(e) => updateShipping({ address: e.target.value })}
                             placeholder="Calle, #, Apto, junto a..."
                           />
                         </div>
                       </div>
+
+                      {user && (
+                        <div className="mt-8 pt-8 border-t border-black/5 flex items-center justify-between">
+                          {selectedShippingId && shippingModified ? (
+                            <button 
+                              onClick={() => handleUpsertAddress('shipping')}
+                              className="text-[10px] font-black uppercase tracking-widest text-purple-brand hover:underline"
+                            >
+                              Actualizar dirección de envío en mi perfil
+                            </button>
+                          ) : !selectedShippingId ? (
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                              <input 
+                                type="checkbox" 
+                                checked={saveAsNewShipping}
+                                onChange={(e) => setSaveAsNewShipping(e.target.checked)}
+                                className="w-4 h-4 rounded-lg border-black/10 text-purple-brand focus:ring-purple-brand"
+                              />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-purple-brand transition-colors">Guardar en mi libreta de direcciones</span>
+                            </label>
+                          ) : <span className="text-[10px] font-black uppercase tracking-widest text-mint-success">Dirección de envío seleccionada correctamente</span>}
+                          
+                          {!selectedShippingId && shippingInfo.address && (
+                             <button 
+                               onClick={() => handleUpsertAddress('shipping')}
+                               className="px-4 py-2 bg-purple-brand/5 text-purple-brand rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-brand hover:text-white transition-all"
+                             >
+                               Guardar Ahora
+                             </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </section>
