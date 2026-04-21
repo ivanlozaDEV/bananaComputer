@@ -20,3 +20,9 @@ services:
         value: https://bananacomputer.onrender.com # Update to your domain
       - key: NODE_VERSION
         value: 20.10.0
+      - key: NEXT_PUBLIC_PAYPHONE_TOKEN
+        sync: false
+      - key: NEXT_PUBLIC_PAYPHONE_STORE_ID
+        sync: false
+      - key: PAYPHONE_TOKEN
+        sync: false
