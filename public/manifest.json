@@ -1,0 +1,16 @@
+{
+  "name": "Banana Computer",
+  "short_name": "Banana",
+  "description": "Laptops y Tecnología con Garantía en Ecuador",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FCF9F3",
+  "theme_color": "#2D0A4E",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

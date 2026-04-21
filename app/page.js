@@ -117,7 +117,7 @@ export default function HomePage() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 items-center">
+          <div className="flex flex-col items-center">
             <div className="relative group/cta">
               {/* Floating Bananas Effect */}
               <div className="absolute inset-0 pointer-events-none -z-10 opacity-100 transition-opacity">
@@ -126,21 +126,14 @@ export default function HomePage() {
                 <span className="absolute -top-8 -right-8 text-2xl animate-[bananaFloat_4.5s_linear_infinite] delay-1000">🍌</span>
               </div>
               <button
-                className="group relative px-8 py-4 bg-purple-brand text-white rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-purple-brand/20 flex items-center gap-3 overflow-hidden animate-wiggle animate-ai-glow"
+                className="group relative px-10 py-5 bg-purple-brand text-white rounded-2xl font-black text-xl hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-purple-brand/30 flex items-center gap-4 overflow-hidden animate-shake-strong animate-ai-glow"
                 onClick={() => setShowAI(true)}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <Sparkles className="text-banana-yellow" size={20} />
+                <Sparkles className="text-banana-yellow" size={24} />
                 {heroContent?.primary_cta || 'Explorar Sistemas'}
               </button>
             </div>
-            <a
-              href="#catalogo"
-              className="px-8 py-4 bg-white border border-black/5 rounded-2xl font-black text-lg hover:bg-gray-50 transition-all flex items-center gap-2"
-            >
-              {heroContent?.secondary_cta || 'Ver Catálogo'}
-              <ArrowRight size={18} className="text-purple-brand" />
-            </a>
           </div>
 
           {/* Trust Stats */}

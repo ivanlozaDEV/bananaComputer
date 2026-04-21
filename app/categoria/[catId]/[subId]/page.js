@@ -1,55 +1,48 @@
-"use client";
-import React, { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import { supabase } from '@/lib/supabase';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductGrid from '@/components/ProductGrid';
 import Link from 'next/link';
 import { ChevronRight, Home } from 'lucide-react';
+import { notFound } from 'next/navigation';
 
-export default function SubcategoryPage({ params }) {
-  const { catId, subId } = use(params);
-  const router = useRouter();
-  const [category, setCategory] = useState(null);
-  const [subcategory, setSubcategory] = useState(null);
-  const [loading, setLoading] = useState(true);
+export async function generateMetadata({ params }) {
+  const { subId } = await params;
+  
+  const { data: subcategory } = await supabase
+    .from('subcategories')
+    .select('name, description')
+    .eq('id', subId)
+    .single();
 
-  useEffect(() => {
-    const fetchParamsData = async () => {
-      try {
-        setLoading(true);
-        const [catRes, subRes] = await Promise.all([
-          supabase.from('categories').select('*').eq('id', catId).single(),
-          supabase.from('subcategories').select('*').eq('id', subId).single()
-        ]);
-
-        if (catRes.error) throw catRes.error;
-        if (subRes.error) throw subRes.error;
-
-        setCategory(catRes.data);
-        setSubcategory(subRes.data);
-      } catch (err) {
-        console.error('Error fetching subcategory context:', err);
-        router.push('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchParamsData();
-  }, [catId, subId, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-cream-bg flex flex-col items-center justify-center gap-4">
-        <span className="text-4xl animate-bounce">🍌</span>
-        <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Filtrando Inventario...</span>
-      </div>
-    );
+  if (!subcategory) {
+    return { title: 'Subcategoría No Encontrada | Banana Computer' };
   }
 
-  if (!category || !subcategory) return null;
+  const title = `${subcategory.name} | Expertos en Hardware Ecuador`;
+  const description = subcategory.description || `Equipos especializados ${subcategory.name} con garantía real y soporte técnico en Ecuador.`;
+
+  return {
+    title,
+    description,
+  };
+}
+
+export default async function Page({ params }) {
+  const { catId, subId } = await params;
+
+  const [catRes, subRes] = await Promise.all([
+    supabase.from('categories').select('*').eq('id', catId).single(),
+    supabase.from('subcategories').select('*').eq('id', subId).single()
+  ]);
+
+  if (!catRes.data || !subRes.data) {
+    notFound();
+  }
+
+  const category = catRes.data;
+  const subcategory = subRes.data;
 
   return (
     <div className="min-h-screen bg-cream-bg">
