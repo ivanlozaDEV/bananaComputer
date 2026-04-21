@@ -45,7 +45,8 @@ const Header = () => {
   };
 
   const handleCheckout = () => {
-    showToast('Integración de pagos próximamente.', 'info');
+    closeCart();
+    router.push('/checkout');
   };
 
   return (

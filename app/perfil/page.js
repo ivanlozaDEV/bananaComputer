@@ -6,7 +6,7 @@ import { useToast } from '@/context/ToastContext';
 import { supabase } from '@/lib/supabase';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { User, Phone, MapPin, Package, CreditCard, Calendar, Globe, LogOut, ChevronRight } from 'lucide-react';
+import { User, Phone, MapPin, Package, CreditCard, Calendar, Globe, LogOut, ChevronRight, Plus, Trash2, Home, Briefcase, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProfilePage() {
@@ -23,6 +23,15 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('datos');
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [addressForm, setAddressForm] = useState({
+    label: '', full_name: '', email: '', phone: '',
+    id_type: 1, id_number: '', address_line1: '', address_line2: '',
+    city: '', zip_code: '', is_default: false,
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -54,8 +63,23 @@ export default function ProfilePage() {
           setOrders(data || []);
           setOrdersLoading(false);
         });
+
+      // Fetch addresses
+      fetchAddresses();
     }
   }, [user, authLoading, router]);
+
+  const fetchAddresses = async () => {
+    setAddressesLoading(true);
+    const { data } = await supabase
+      .from('customer_addresses')
+      .select('*')
+      .eq('customer_id', user.id)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
+    setAddresses(data || []);
+    setAddressesLoading(false);
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -68,6 +92,72 @@ export default function ProfilePage() {
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
+  };
+
+  const handleAddressSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    
+    const payload = {
+      ...addressForm,
+      customer_id: user.id
+    };
+
+    let error;
+    if (editingAddress) {
+      const { error: err } = await supabase.from('customer_addresses').update(payload).eq('id', editingAddress.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('customer_addresses').insert(payload);
+      error = err;
+    }
+
+    if (error) {
+      showToast('Error al guardar la dirección', 'error');
+    } else {
+      showToast('Dirección guardada con éxito', 'success');
+      setShowAddressForm(false);
+      setEditingAddress(null);
+      fetchAddresses();
+    }
+    setSaving(false);
+  };
+
+  const deleteAddress = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar esta dirección?')) return;
+    const { error } = await supabase.from('customer_addresses').delete().eq('id', id);
+    if (!error) {
+      showToast('Dirección eliminada', 'info');
+      fetchAddresses();
+    }
+  };
+
+  const openEditAddress = (addr) => {
+    setEditingAddress(addr);
+    setAddressForm({
+      label: addr.label,
+      full_name: addr.full_name,
+      email: addr.email || '',
+      phone: addr.phone,
+      id_type: addr.id_type,
+      id_number: addr.id_number,
+      address_line1: addr.address_line1,
+      address_line2: addr.address_line2 || '',
+      city: addr.city,
+      zip_code: addr.zip_code || '',
+      is_default: addr.is_default
+    });
+    setShowAddressForm(true);
+  };
+
+  const openNewAddress = () => {
+    setEditingAddress(null);
+    setAddressForm({
+      label: '', full_name: profile?.full_name || '', email: user?.email || '', phone: profile?.phone || '+593',
+      id_type: 1, id_number: '', address_line1: '', address_line2: '',
+      city: profile?.city || '', zip_code: profile?.zip_code || '', is_default: false,
+    });
+    setShowAddressForm(true);
   };
 
   if (authLoading || (!user && !authLoading)) {
@@ -106,6 +196,12 @@ export default function ProfilePage() {
             onClick={() => setActiveTab('datos')}
           >
             MIS DATOS
+          </button>
+          <button 
+            className={`px-8 py-3 rounded-[1.5rem] text-xs font-black transition-all ${activeTab === 'direcciones' ? 'bg-white text-purple-brand shadow-xl' : 'text-gray-400 hover:text-gray-600'}`}
+            onClick={() => setActiveTab('direcciones')}
+          >
+            LIBRETA DIRECCIONES
           </button>
           <button 
             className={`px-8 py-3 rounded-[1.5rem] text-xs font-black transition-all ${activeTab === 'pedidos' ? 'bg-white text-purple-brand shadow-xl' : 'text-gray-400 hover:text-gray-600'}`}
@@ -218,6 +314,181 @@ export default function ProfilePage() {
                   <p className="text-xs font-medium text-gray-500 leading-relaxed">¿Necesitas ayuda? Contáctanos vía soporte oficial para asistencia inmediata.</p>
                 </div>
               </aside>
+            </div>
+          ) : activeTab === 'direcciones' ? (
+            <div className="flex flex-col gap-8">
+              {/* Address Header */}
+              <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-black/5 shadow-xl shadow-black/5">
+                <div>
+                  <h3 className="font-black text-xl">Mis Direcciones</h3>
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Gana tiempo en tu próximo checkout</p>
+                </div>
+                <button 
+                  onClick={openNewAddress}
+                  className="flex items-center gap-2 px-6 py-3 bg-purple-brand text-white rounded-2xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-purple-brand/20"
+                >
+                  <Plus size={16} /> AGREGAR NUEVA
+                </button>
+              </div>
+
+              {/* Address Form Modal/Section */}
+              {showAddressForm && (
+                <form onSubmit={handleAddressSave} className="bg-white rounded-[2.5rem] p-10 border-2 border-purple-brand/20 shadow-2xl relative animate-in fade-in slide-in-from-top-4 duration-300">
+                  <header className="flex justify-between items-center mb-10">
+                    <h4 className="text-2xl font-black text-purple-brand">{editingAddress ? 'Editar Dirección' : 'Nueva Dirección'}</h4>
+                    <button type="button" onClick={() => setShowAddressForm(false)} className="text-gray-400 hover:text-black">&times; Cancelar</button>
+                  </header>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Etiqueta (ej: Casa, Oficina)</label>
+                      <input
+                        required
+                        className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                        type="text"
+                        value={addressForm.label}
+                        onChange={(e) => setAddressForm(f => ({ ...f, label: e.target.value }))}
+                        placeholder="Mi Casa"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nombre Completo de Contacto</label>
+                      <input
+                        required
+                        className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                        type="text"
+                        value={addressForm.full_name}
+                        onChange={(e) => setAddressForm(f => ({ ...f, full_name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email (Opcional)</label>
+                        <input
+                          className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                          type="email"
+                          value={addressForm.email}
+                          onChange={(e) => setAddressForm(f => ({ ...f, email: e.target.value }))}
+                        />
+                      </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Teléfono</label>
+                      <input
+                        required
+                        className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                        type="tel"
+                        value={addressForm.phone}
+                        onChange={(e) => setAddressForm(f => ({ ...f, phone: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo ID</label>
+                      <select 
+                        className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-black outline-none appearance-none"
+                        value={addressForm.id_type}
+                        onChange={(e) => setAddressForm(f => ({ ...f, id_type: parseInt(e.target.value) }))}
+                      >
+                        <option value={1}>Cédula</option>
+                        <option value={2}>RUC</option>
+                        <option value={3}>Pasaporte</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Número ID / RUC</label>
+                      <input
+                        required
+                        className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                        type="text"
+                        value={addressForm.id_number}
+                        onChange={(e) => setAddressForm(f => ({ ...f, id_number: e.target.value }))}
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dirección Detallada</label>
+                      <input
+                        required
+                        className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                        type="text"
+                        value={addressForm.address_line1}
+                        onChange={(e) => setAddressForm(f => ({ ...f, address_line1: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ciudad</label>
+                      <input
+                        required
+                        className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-purple-brand/30 focus:bg-white transition-all"
+                        type="text"
+                        value={addressForm.city}
+                        onChange={(e) => setAddressForm(f => ({ ...f, city: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex flex-col items-start gap-4">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Preferencia</label>
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className={`w-12 h-6 rounded-full p-1 transition-all ${addressForm.is_default ? 'bg-mint-success' : 'bg-gray-200'}`}>
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform ${addressForm.is_default ? 'translate-x-6' : ''}`}></div>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          className="hidden" 
+                          checked={addressForm.is_default} 
+                          onChange={(e) => setAddressForm(f => ({ ...f, is_default: e.target.checked }))}
+                        />
+                        <span className="text-xs font-black text-gray-500 group-hover:text-black">Dirección Predeterminada</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="w-full py-5 bg-purple-brand text-white rounded-2xl font-black text-lg hover:shadow-xl transition-all disabled:opacity-50"
+                    disabled={saving}
+                  >
+                    {saving ? 'Guardando...' : editingAddress ? 'Guardar Cambios' : 'Registrar Dirección'}
+                  </button>
+                </form>
+              )}
+
+              {/* Address List */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {addressesLoading ? (
+                  <div className="col-span-full py-20 text-center opacity-20">Cargando libreta...</div>
+                ) : addresses.length === 0 ? (
+                  <div className="col-span-full bg-white/50 border-2 border-dashed border-black/5 p-12 rounded-[2rem] text-center">
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">Tu libreta de direcciones está vacía</p>
+                  </div>
+                ) : (
+                  addresses.map(addr => (
+                    <div key={addr.id} className={`bg-white p-8 rounded-[2rem] border transition-all hover:shadow-2xl flex flex-col gap-4 ${addr.is_default ? 'border-purple-brand/30 ring-4 ring-purple-brand/5' : 'border-black/5'}`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                             {addr.label.toLowerCase().includes('casa') ? <Home size={14} className="text-purple-brand" /> : addr.label.toLowerCase().includes('oficina') ? <Briefcase size={14} className="text-purple-brand" /> : <MapPin size={14} className="text-purple-brand" />}
+                             <h4 className="font-black text-base uppercase tracking-tight">{addr.label}</h4>
+                          </div>
+                          {addr.is_default && <span className="text-[8px] font-black bg-purple-brand text-white px-2 py-1 rounded-full uppercase tracking-widest">Predeterminada</span>}
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => openEditAddress(addr)} className="p-3 bg-gray-50 text-gray-400 hover:text-purple-brand hover:bg-purple-brand/5 rounded-xl transition-all">
+                            <Plus className="rotate-45 scale-125" size={16} /> 
+                          </button>
+                          <button onClick={() => deleteAddress(addr.id)} className="p-3 bg-gray-50 text-gray-400 hover:text-raspberry hover:bg-raspberry/5 rounded-xl transition-all">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-black text-gray-800">{addr.full_name}</p>
+                        <p className="text-xs font-medium text-gray-500">{addr.address_line1}, {addr.city}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mt-2">
+                           <FileText size={12} /> {addr.id_number} | <Phone size={12} /> {addr.phone}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
