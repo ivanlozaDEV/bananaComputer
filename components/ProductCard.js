@@ -181,51 +181,49 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
   return (
     <article className="group relative bg-white rounded-2xl border border-black/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] flex flex-col h-full">
       {/* Badge */}
-      <div className="absolute top-4 left-4 z-10">
+      <div className="absolute top-2 left-2 md:top-4 md:left-4 z-10">
         {product.badgeType === 'featured' ? (
-          <span className="px-3 py-1 bg-purple-brand text-white text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
+          <span className="px-2 py-0.5 md:px-3 md:py-1 bg-purple-brand text-white text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
             DISTINGUIDO
           </span>
         ) : (
-          <span className="px-3 py-1 bg-banana-yellow text-black text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
-            ULTIMA LLEGADA
+          <span className="px-2 py-0.5 md:px-3 md:py-1 bg-banana-yellow text-black text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
+            NUEVO
           </span>
         )}
       </div>
 
       {/* Image Carousel */}
       <div className="relative aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden">
-        {/* Link only wraps the image, NOT the buttons */}
         <Link href={`/producto/${product.id}`} className="absolute inset-0 flex items-center justify-center z-0">
           {images.length > 0 ? (
             <img
               src={images[imgIndex]}
               alt={product.name}
-              className="object-contain w-full h-full p-6 transition-transform duration-700 group-hover:scale-110"
+              className="object-contain w-full h-full p-2 md:p-6 transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
-            <div className="text-5xl grayscale opacity-20">🍌</div>
+            <div className="text-3xl md:text-5xl grayscale opacity-20">🍌</div>
           )}
         </Link>
 
-        {/* Carousel buttons are siblings of Link, always on top */}
         {images.length > 1 && (
           <>
             <button 
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
+              className="absolute left-1 top-1/2 -translate-y-1/2 z-20 p-1 md:p-2 bg-black/5 md:bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
               onClick={prevImg}
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={16} />
             </button>
             <button 
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
+              className="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-1 md:p-2 bg-black/5 md:bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
               onClick={nextImg}
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={16} />
             </button>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 pointer-events-none">
+            <div className="absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1 pointer-events-none">
               {images.map((_, i) => (
-                <span key={i} className={`h-1.5 rounded-full transition-all ${i === imgIndex ? 'bg-purple-brand w-4' : 'bg-black/20 w-1.5'}`} />
+                <span key={i} className={`h-1 md:h-1.5 rounded-full transition-all ${i === imgIndex ? 'bg-purple-brand w-3 md:w-4' : 'bg-black/20 w-1 md:w-1.5'}`} />
               ))}
             </div>
           </>
@@ -233,65 +231,68 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
       </div>
 
       {/* Info Container */}
-      <div className="p-6 flex flex-col flex-1 gap-4">
+      <div className="p-3 md:p-6 flex flex-col flex-1 gap-2 md:gap-4">
         <Link href={`/producto/${product.id}`} className="block">
-          <div className="flex justify-between items-start gap-2 mb-0.5">
-            <h3 className="text-base font-black leading-tight group-hover:text-purple-brand transition-colors line-clamp-1">{product.name}</h3>
-            <span className="text-[9px] font-bold py-0.5 px-2 bg-black/5 rounded-full whitespace-nowrap">{product.year}</span>
+          <div className="flex justify-between items-start gap-1 mb-0.5">
+            <h3 className="text-[13px] md:text-base font-black leading-tight group-hover:text-purple-brand transition-colors line-clamp-1">{product.name}</h3>
+            <span className="text-[8px] md:text-[9px] font-bold py-0.5 px-1.5 bg-black/5 rounded-full whitespace-nowrap">{product.year}</span>
           </div>
           {product.model_number && (
-            <span className="inline-block px-2 py-0.5 bg-purple-brand/5 text-purple-brand text-[9px] font-black tracking-widest uppercase rounded">
+            <span className="inline-block px-1.5 py-0.5 bg-purple-brand/5 text-purple-brand text-[8px] md:text-[9px] font-black tracking-widest uppercase rounded">
               {product.model_number}
             </span>
           )}
-          <p className="mt-2 text-xs text-gray-500 font-medium line-clamp-2 leading-relaxed">
+          <p className="mt-1 text-[10px] md:text-xs text-gray-500 font-medium line-clamp-2 leading-tight md:leading-relaxed">
             {product.marketing_subtitle || product.description}
           </p>
         </Link>
 
-        {/* Specs Grid */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* Specs Grid - Hidden or very compact on mobile */}
+        <div className="grid grid-cols-2 gap-1.5 md:gap-2">
           {product.specs?.slice(0, 4).map((spec, index) => (
-            <div key={index} className="flex items-center gap-2 p-1.5 rounded-xl bg-gray-50 border border-black/5">
-              <span className="text-purple-brand opacity-60 scale-90">{getIcon(spec.icon)}</span>
-              <div className="flex flex-col">
-                <span className="text-[9px] font-black leading-none">{spec.value}{spec.unit}</span>
-                <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">{spec.label}</span>
+            <div key={index} className="flex items-center gap-1 md:gap-2 p-1 md:p-1.5 rounded-lg md:rounded-xl bg-gray-50 border border-black/5">
+              <span className="text-purple-brand opacity-60 scale-75 md:scale-90">{getIcon(spec.icon, 12)}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[8px] md:text-[9px] font-black leading-none truncate">{spec.value}{spec.unit}</span>
+                <span className="hidden md:block text-[7px] font-bold text-gray-400 uppercase tracking-tighter">{spec.label}</span>
               </div>
             </div>
           ))}
         </div>
 
         {/* Footer: Price & CTA */}
-        <div className="mt-auto pt-3 flex items-center justify-between border-t border-black/5">
-          <div className="flex flex-col">
-            <span className="text-xl font-black text-purple-brand leading-none">
+        <div className="mt-auto pt-2 md:pt-3 flex items-center justify-between border-t border-black/5 gap-2">
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm md:text-xl font-black text-purple-brand leading-none">
               ${(parseFloat(product.price) || 0).toLocaleString()}
             </span>
-            <span className="text-[0.55rem] font-bold text-gray-400 uppercase tracking-widest mt-1">Incluido impuestos</span>
+            <span className="text-[7px] md:text-[0.55rem] font-bold text-gray-400 uppercase tracking-widest mt-1 truncate">Incl. Impuestos</span>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1 md:gap-2 shrink-0">
             <Link
               href={`/producto/${product.id}`}
-              className="p-3 rounded-xl bg-purple-brand/5 text-purple-brand hover:bg-purple-brand/10 transition-colors"
+              className="p-1.5 md:p-3 rounded-lg md:rounded-xl bg-purple-brand/5 text-purple-brand hover:bg-purple-brand/10 transition-colors"
               title="Ver detalles"
             >
-              <Zap size={18} fill="currentColor" />
+              <Zap size={15} fill="currentColor" className="md:w-[18px] md:h-[18px]" />
             </Link>
             <button
               onClick={(e) => handleAddToCart(e, product)}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-xl font-black text-xs transition-all
+                flex items-center justify-center gap-1 px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl font-black text-[9px] md:text-xs transition-all tracking-tight
                 ${isAdded ? 'bg-mint-success text-white scale-95' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-lg shadow-banana-yellow/20'}
               `}
             >
-              {isAdded ? 'AÑADIDO ✓' : (
+              {isAdded ? (
+                <span className="hidden md:inline">AÑADIDO</span>
+              ) : (
                 <>
-                  <ShoppingCart size={14} fill="currentColor" />
-                  + CARRITO
+                  <ShoppingCart size={12} fill="currentColor" className="md:w-[14px] md:h-[14px]" />
+                  <span className="whitespace-nowrap">CARRITO</span>
                 </>
               )}
+              {isAdded && <span className="md:hidden">✓</span>}
             </button>
           </div>
         </div>

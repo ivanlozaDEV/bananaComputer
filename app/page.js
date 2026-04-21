@@ -44,45 +44,14 @@ export default function HomePage() {
       });
   }, []);
 
-  // Run the hero ↔ banner cycle only when promotions are available
+  // Auto-cycle promotions every 5 seconds
   useEffect(() => {
-    if (promotions.length === 0) return; // no promotions → stay on hero forever
-
-    let t;
-
-    if (phase === 'hero') {
-      t = setTimeout(() => setPhase('hero-out'), HERO_DISPLAY_MS);
-
-    } else if (phase === 'hero-out') {
-      t = setTimeout(() => setPhase('banner-in'), TRANSITION_MS);
-
-    } else if (phase === 'banner-in') {
-      t = setTimeout(() => setPhase('banner'), TRANSITION_MS);
-
-    } else if (phase === 'banner') {
-      t = setTimeout(() => setPhase('banner-out'), BANNER_DISPLAY_MS);
-
-    } else if (phase === 'banner-out') {
-      t = setTimeout(() => {
-        // Advance to next promo for the next cycle
-        setPromoIndex(i => (i + 1) % promotions.length);
-        setPhase('hero');
-      }, TRANSITION_MS);
-    }
-
-    return () => clearTimeout(t);
-  }, [phase, promotions]);
-
-  // ── Derived values for animations ─────────────────────────────
-  // Hero fades out while banner is showing — opacity only, no translate
-  const heroOpacity =
-    phase === 'hero' || phase === 'banner-out' ? 1 : 0;
-
-  const bannerVisible = phase === 'banner-in' || phase === 'banner' || phase === 'banner-out';
-  const bannerPhase =
-    phase === 'banner-in' ? 'entering' :
-      phase === 'banner' ? 'visible' :
-    /* banner-out */         'exiting';
+    if (promotions.length <= 1) return;
+    const t = setInterval(() => {
+      setPromoIndex(i => (i + 1) % promotions.length);
+    }, BANNER_DISPLAY_MS);
+    return () => clearInterval(t);
+  }, [promotions]);
 
   const currentPromo = promotions[promoIndex] ?? null;
 
@@ -98,18 +67,15 @@ export default function HomePage() {
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-brand/10 blur-[120px] rounded-full"></div>
         </div>
 
-        {/* ── HERO CONTENT (fades out while banner shows) ── */}
-        <div
-          className="max-w-4xl w-full flex flex-col items-center text-center transition-opacity duration-700 ease-in-out"
-          style={{ opacity: heroOpacity }}
-        >
+        {/* ── HERO CONTENT ── */}
+        <div className="max-w-4xl w-full flex flex-col items-center text-center">
           {/* Logo large */}
           <div className="mb-8 md:mb-10 hover:scale-110 transition-transform duration-700 cursor-none transform-gpu">
             <Logo size="large" animated={true} />
           </div>
 
-          <h1 className="mb-4 md:mb-6 text-3xl md:text-5xl lg:text-7xl px-4 uppercase font-black">
-            <BrandText text={heroContent?.title || 'Tu Tecnologia Garantizada'} brandClassName="font-pixel-legacy text-black" />
+          <h1 className="mb-4 md:mb-6 text-4xl md:text-6xl lg:text-8xl px-4 uppercase font-black tracking-tighter">
+            <BrandText text={heroContent?.title || 'PEELING INTO THE FUTURE'} brandClassName="font-pixel-legacy text-black" />
           </h1>
 
           <p className="text-sm md:text-lg text-gray-400 font-medium max-w-2xl mb-6 md:mb-8 px-6 leading-relaxed">
@@ -157,14 +123,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── BANNER (fixed overlay, positioned below navbar) ── */}
-        {bannerVisible && <HeroBanner promotion={currentPromo} phase={bannerPhase} />}
-
-        {/* Scroll indicator — hide when banner is showing */}
-        <div className={`absolute bottom-6 animate-bounce transition-opacity duration-500 ${bannerVisible ? 'opacity-0' : 'opacity-100'}`}>
+        {/* Scroll indicator */}
+        <div className="absolute bottom-6 animate-bounce">
           <ChevronDown className="text-gray-300" size={32} />
         </div>
       </section>
+
+      {/* Promotions Carousel Section */}
+      {promotions.length > 0 && (
+        <section className="bg-cream-bg py-8 md:py-12 border-y border-black/5">
+          <div className="max-w-7xl mx-auto px-4">
+            <HeroBanner 
+              promotion={currentPromo} 
+              promoCount={promotions.length} 
+              activeIndex={promoIndex} 
+            />
+          </div>
+        </section>
+      )}
 
       {/* Catalog Anchor */}
       <div id="catalogo" className="h-4"></div>
