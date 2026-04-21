@@ -33,6 +33,7 @@ export const CartProvider = ({ children }) => {
 
   const openCart  = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
+  const clearCart = () => setCartItems([]);
 
   const cartTotal    = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
   const cartSubtotal = cartTotal / 1.15;
@@ -41,7 +42,7 @@ export const CartProvider = ({ children }) => {
 
   return (
     <CartContext.Provider value={{
-      cartItems, addToCart, removeFromCart,
+      cartItems, addToCart, removeFromCart, clearCart,
       cartCount, cartTotal, cartSubtotal, cartTax,
       isCartOpen, openCart, closeCart,
     }}>

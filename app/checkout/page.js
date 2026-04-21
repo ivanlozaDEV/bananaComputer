@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Script from 'next/script';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -12,23 +12,19 @@ import {
   MapPin, Phone, User, Mail, ChevronRight, CheckCircle2 
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 function CheckoutContent() {
   const { cartItems, cartTotal, cartSubtotal, cartTax, cartCount } = useCart();
   const { user } = useAuth();
   const { showToast } = useToast();
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL Params from PayPhone Redirect
-  const payphoneId = searchParams.get('id');
-  const clientTxId = searchParams.get('clientTransactionId');
+  // Note: PayPhone redirect params are now handled by /checkout/resultado
 
   const [step, setStep] = useState(1); // 1: Info, 2: Payment, 3: Success
   const [loading, setLoading] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const [billingInfo, setBillingInfo] = useState({
     full_name: '', email: '', phone: '', address: '', city: '', id_number: '', id_type: 1
@@ -55,7 +51,7 @@ function CheckoutContent() {
           setBillingInfo(prev => ({
             ...prev,
             full_name: profile.full_name || '',
-            phone: profile.phone || '+593',
+            phone: profile.phone || '593',
             email: user.email,
             address: profile.address_line1 || '',
             city: profile.city || '',
@@ -74,12 +70,7 @@ function CheckoutContent() {
     }
   }, [user]);
 
-  // Handle PayPhone Confirmation on redirect
-  useEffect(() => {
-    if (payphoneId && clientTxId && !isProcessingPayment) {
-      confirmPayment(payphoneId, clientTxId);
-    }
-  }, [payphoneId, clientTxId]);
+  // PayPhone redirect confirmation is handled by /checkout/resultado page
 
   const selectBillingAddress = (addr) => {
     setSelectedBillingId(addr.id);
@@ -180,22 +171,48 @@ function CheckoutContent() {
         const taxCents   = Math.round(cartTax * 100);
         const subCents   = amountCents - taxCents;
 
+        // v1.1 Documentation logic: 
+        // 1. If tax exists, subtotal goes to amountWithTax.
+        // 2. Otherwise, subtotal goes to amountWithoutTax.
+        const amountWithTax = taxCents > 0 ? subCents : 0;
+        const amountWithoutTax = taxCents > 0 ? 0 : subCents;
+
         const token = process.env.NEXT_PUBLIC_PAYPHONE_TOKEN || 'MISSING_TOKEN';
         const storeId = process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID || 'MISSING_STORE_ID';
+
+        // Phone formatting: PayPhone SDK v1.1 documentation says +593984111222
+        let cleanPhone = billingInfo.phone.replace(/\D/g, '');
+        if (cleanPhone.startsWith('593')) cleanPhone = cleanPhone.slice(3);
+        if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.slice(1);
+        
+        // Final format: +593 + 9 digits
+        const formattedPhone = `+593${cleanPhone.padStart(9, '9').slice(-9)}`;
+
+        const clientTxId = `BANANA-${Date.now()}`;
 
         const ppb = new window.PPaymentButtonBox({
           token: token,
           storeId: storeId,
-          clientTransactionId: `BANANA-${Date.now()}`,
+          clientTransactionId: clientTxId,
           amount: amountCents,
-          amountWithTax: subCents,
+          amountWithTax: amountWithTax,
+          amountWithoutTax: amountWithoutTax,
           tax: taxCents,
+          service: 0,
+          tip: 0,
           currency: "USD",
           reference: `Compra Banana Computer - ${cartCount} items`,
-          phoneNumber: billingInfo.phone.replace(/\s/g, ''),
+          phoneNumber: formattedPhone,
           email: billingInfo.email,
           documentId: billingInfo.id_number,
-          identificationType: billingInfo.id_type,
+          identificationType: parseInt(billingInfo.id_type),
+          lang: "es",
+          defaultMethod: "card",
+          timeZone: -5,
+          lat: "-0.180653",
+          lng: "-78.467838",
+          responseUrl: window.location.origin + '/checkout/resultado',
+          cancelledUrl: window.location.origin + '/checkout/resultado?status=cancelled',
         });
 
         ppb.render('pp-button');
@@ -204,56 +221,7 @@ function CheckoutContent() {
     }
   }, [step, cartTotal, cartTax, cartCount, billingInfo]);
 
-  const confirmPayment = async (id, txId) => {
-    setIsProcessingPayment(true);
-    setLoading(true);
-    
-    try {
-      const res = await fetch('/api/checkout/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, clientTxId: txId })
-      });
-
-      const data = await res.json();
-
-      if (data.transactionStatus === 'Approved' || data.statusCode === 3) {
-        // Create Order in Supabase
-        const orderData = {
-          customer_id: user?.id || null,
-          total: cartTotal,
-          status: 'paid',
-          shipping_address: sameAsBilling ? billingInfo : shippingInfo,
-          billing_address: billingInfo,
-          client_transaction_id: txId
-        };
-
-        const { data: order, error } = await supabase.from('orders').insert(orderData).select().single();
-        
-        if (!error) {
-          // Add items
-          const items = cartItems.map(item => ({
-            order_id: order.id,
-            product_id: item.id,
-            quantity: 1,
-            unit_price: item.price
-          }));
-          await supabase.from('order_items').insert(items);
-          
-          showToast('¡Pago exitoso! Gracias por tu compra.', 'success');
-          setStep(3);
-          // Here we should clear cart, but let's assume CartContext handles persistence
-        }
-      } else {
-        showToast('El pago no pudo ser procesado.', 'error');
-        setStep(1);
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Error confirmando el pago.', 'error');
-    }
-    setLoading(false);
-  };
+  // confirmPayment logic has moved to /checkout/resultado/page.js
 
   if (step === 3) {
     return (
@@ -283,7 +251,7 @@ function CheckoutContent() {
       <Script 
         src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js" 
         type="module"
-        onLoad={() => console.log('PayPhone SDK loaded')}
+        onLoad={() => {}}
       />
       <link rel="stylesheet" href="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css" />
 
