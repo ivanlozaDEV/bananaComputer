@@ -4,12 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { updateAIBaselineInDB } from '@/lib/inventory';
 import { useToast } from '@/context/ToastContext';
-import { Package, Star, Tag, Users, Image, Sparkles, RefreshCw, CheckCircle2, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { Package, Star, Tag, Users, Image, Sparkles, RefreshCw, CheckCircle2, ArrowRight, LayoutDashboard, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
   const { showToast } = useToast();
-  const [stats, setStats] = useState({ products: 0, categories: 0, customers: 0, featured: 0 });
+  const [stats, setStats] = useState({ products: 0, categories: 0, customers: 0, featured: 0, orders: 0 });
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
@@ -18,16 +18,18 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { count: p } = await supabase.from('products').select('*', { count: 'exact', head: true });
-      const { count: c } = await supabase.from('categories').select('*', { count: 'exact', head: true });
-      const { count: cu } = await supabase.from('customers').select('*', { count: 'exact', head: true });
-      const { count: f } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_featured', true);
+      const { count: p }  = await supabase.from('products').select('*',  { count: 'exact', head: true });
+      const { count: c }  = await supabase.from('categories').select('*', { count: 'exact', head: true });
+      const { count: cu } = await supabase.from('customers').select('*',  { count: 'exact', head: true });
+      const { count: f }  = await supabase.from('products').select('*',  { count: 'exact', head: true }).eq('is_featured', true);
+      const { count: o }  = await supabase.from('orders').select('*',    { count: 'exact', head: true }).eq('status', 'paid');
       
       setStats({
-        products: p || 0,
-        categories: c || 0,
-        customers: cu || 0,
-        featured: f || 0,
+        products:   p  || 0,
+        categories: c  || 0,
+        customers:  cu || 0,
+        featured:   f  || 0,
+        orders:     o  || 0,
       });
       setLoading(false);
     };
@@ -58,10 +60,10 @@ export default function AdminDashboardPage() {
   };
 
   const STATS = [
-    { label: 'Productos', value: stats.products, icon: <Package size={24} className="text-banana-yellow" /> },
-    { label: 'Destacados', value: stats.featured, icon: <Star size={24} className="text-purple-brand" /> },
-    { label: 'Categorías', value: stats.categories, icon: <Tag size={24} className="text-mint-success" /> },
-    { label: 'Clientes', value: stats.customers, icon: <Users size={24} className="text-sunset" /> },
+    { label: 'Productos',       value: stats.products,   icon: <Package      size={24} className="text-banana-yellow" /> },
+    { label: 'Pedidos Pagados', value: stats.orders,     icon: <ShoppingBag  size={24} className="text-mint-success"  /> },
+    { label: 'Categorías',      value: stats.categories, icon: <Tag          size={24} className="text-purple-brand"  /> },
+    { label: 'Clientes',        value: stats.customers,  icon: <Users        size={24} className="text-sunset"        /> },
   ];
 
   const handleSyncAI = async () => {
@@ -105,11 +107,12 @@ export default function AdminDashboardPage() {
             Accesos Rápidos
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <QuickLink href="/admin/hero" icon={<Image size={18} />} label="Editar Hero" />
-            <QuickLink href="/admin/categories" icon={<Tag size={18} />} label="Categorías" />
-            <QuickLink href="/admin/products" icon={<Package size={18} />} label="Productos" />
-            <QuickLink href="/admin/promotions" icon={<Sparkles size={18} />} label="Banners Promo" />
-            <QuickLink href="/admin/waitlist" icon={<Users size={18} />} label="Lista de Espera" />
+            <QuickLink href="/admin/hero"       icon={<Image size={18} />}       label="Editar Hero" />
+            <QuickLink href="/admin/categories"  icon={<Tag size={18} />}          label="Categorías" />
+            <QuickLink href="/admin/products"    icon={<Package size={18} />}      label="Productos" />
+            <QuickLink href="/admin/orders"      icon={<ShoppingBag size={18} />}  label="Pedidos" />
+            <QuickLink href="/admin/promotions"  icon={<Sparkles size={18} />}     label="Banners Promo" />
+            <QuickLink href="/admin/waitlist"    icon={<Users size={18} />}        label="Lista de Espera" />
           </div>
         </div>
 

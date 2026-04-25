@@ -107,3 +107,18 @@ h3 { @apply text-xl md:text-2xl font-black; }
 .font-pixel-legacy {
   font-family: var(--font-pixel-legacy);
 }
+
+/* Print Styles */
+@media print {
+  header, footer, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  main {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+  }
+}

@@ -52,11 +52,14 @@ export default function ProductsAdminPage() {
   }, [productForm.modal]);
 
   const deleteProduct = async (id) => {
-    if (!confirm('¿Eliminar este producto permanentemente?')) return;
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) showToast('Error al eliminar producto', 'error');
+    if (!confirm('¿Desactivar este producto del catálogo? (El historial de pedidos se conserva)')) return;
+    const { error } = await supabase
+      .from('products')
+      .update({ is_active: false })
+      .eq('id', id);
+    if (error) showToast('Error al desactivar producto', 'error');
     else {
-      showToast('Producto eliminado', 'success');
+      showToast('Producto desactivado del catálogo', 'success');
       fetchAll();
     }
   };

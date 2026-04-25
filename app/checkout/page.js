@@ -9,7 +9,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { 
   ShieldCheck, ArrowLeft, Truck, FileText, CreditCard, 
-  MapPin, Phone, User, Mail, ChevronRight, CheckCircle2 
+  MapPin, Phone, User, Mail, ChevronRight, CheckCircle2, Check
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -27,10 +27,10 @@ function CheckoutContent() {
   const [savedAddresses, setSavedAddresses] = useState([]);
 
   const [billingInfo, setBillingInfo] = useState({
-    full_name: '', email: '', phone: '', address: '', city: '', id_number: '', id_type: 1
+    full_name: '', email: '', phone: '', street_main: '', street_secondary: '', house_number: '', city: '', province: '', canton: '', zip_code: '', id_number: '', id_type: 1
   });
   const [shippingInfo, setShippingInfo] = useState({
-    full_name: '', phone: '', address: '', city: '', id_number: '', id_type: 1
+    full_name: '', phone: '', street_main: '', street_secondary: '', house_number: '', city: '', province: '', canton: '', zip_code: '', id_number: '', id_type: 1
   });
   const [sameAsBilling, setSameAsBilling] = useState(true);
 
@@ -46,24 +46,36 @@ function CheckoutContent() {
   useEffect(() => {
     if (user) {
       const fetchProfileAndAddresses = async () => {
-        const { data: profile } = await supabase.from('customers').select('*').eq('id', user.id).single();
-        if (profile) {
-          setBillingInfo(prev => ({
-            ...prev,
+        // Parallel fetch for speed
+        const [profileRes, addrsRes] = await Promise.all([
+          supabase.from('customers').select('*').eq('id', user.id).single(),
+          supabase.from('customer_addresses').select('*').eq('customer_id', user.id).order('is_default', { ascending: false })
+        ]);
+
+        const profile = profileRes.data;
+        const addrs = addrsRes.data || [];
+        
+        setSavedAddresses(addrs);
+
+        // ── AUTO-FILL LOGIC ──
+        // 1. Try to find the default address first
+        const defaultAddr = addrs.find(a => a.is_default) || addrs[0];
+
+        if (defaultAddr) {
+          // If we have a saved address, use it as priority
+          selectBillingAddress(defaultAddr);
+        } else if (profile) {
+          // Fallback to basic profile info if no address book entries exist
+          const data = {
             full_name: profile.full_name || '',
-            phone: profile.phone || '593',
             email: user.email,
+            phone: profile.phone || '593',
             address: profile.address_line1 || '',
             city: profile.city || '',
-          }));
-        }
-
-        const { data: addrs } = await supabase.from('customer_addresses').select('*').eq('customer_id', user.id);
-        setSavedAddresses(addrs || []);
-        
-        const defaultAddr = addrs?.find(a => a.is_default);
-        if (defaultAddr) {
-          selectBillingAddress(defaultAddr);
+            id_number: '', id_type: 1
+          };
+          setBillingInfo(data);
+          if (sameAsBilling) setShippingInfo(data);
         }
       };
       fetchProfileAndAddresses();
@@ -79,8 +91,13 @@ function CheckoutContent() {
       full_name: addr.full_name,
       email: addr.email || user?.email || '',
       phone: addr.phone,
-      address: addr.address_line1,
-      city: addr.city,
+      street_main: addr.street_main || addr.address_line1 || '',
+      street_secondary: addr.street_secondary || '',
+      house_number: addr.house_number || '',
+      city: addr.city || '',
+      province: addr.province || '',
+      canton: addr.canton || '',
+      zip_code: addr.zip_code || '',
       id_number: addr.id_number,
       id_type: addr.id_type
     };
@@ -94,8 +111,13 @@ function CheckoutContent() {
     setShippingInfo({
       full_name: addr.full_name,
       phone: addr.phone,
-      address: addr.address_line1,
-      city: addr.city,
+      street_main: addr.street_main || addr.address_line1 || '',
+      street_secondary: addr.street_secondary || '',
+      house_number: addr.house_number || '',
+      city: addr.city || '',
+      province: addr.province || '',
+      canton: addr.canton || '',
+      zip_code: addr.zip_code || '',
       id_number: addr.id_number,
       id_type: addr.id_type
     });
@@ -124,10 +146,17 @@ function CheckoutContent() {
         label: asNew ? `Dirección ${savedAddresses.length + 1}` : savedAddresses.find(a => a.id === id)?.label || 'Dirección',
         full_name: info.full_name,
         phone: info.phone,
-        address_line1: info.address,
+        street_main: info.street_main,
+        street_secondary: info.street_secondary,
+        house_number: info.house_number,
         city: info.city,
+        province: info.province,
+        canton: info.canton,
+        zip_code: info.zip_code,
         id_number: info.id_number,
         id_type: info.id_type,
+        address_line1: info.street_main, // Fallback for compatibility
+        city: info.city, // Re-ensure city is passed in case of old schema
         email: user.email
       };
 
@@ -158,7 +187,64 @@ function CheckoutContent() {
     setLoading(false);
   };
 
-  const initPayPhone = () => {
+  const initPayPhone = async () => {
+    // ── SYNC BACK TO PROFILE AND ADDRESS BOOK ──
+    // If the user is logged in, we automatically save these details
+    // so they are ready for their next purchase or profile visit.
+    if (user) {
+      try {
+        // 1. Update main profile (customers)
+        await supabase.from('customers').update({
+          full_name: billingInfo.full_name,
+          phone: billingInfo.phone,
+          street_main: billingInfo.street_main,
+          street_secondary: billingInfo.street_secondary,
+          house_number: billingInfo.house_number,
+          province: billingInfo.province,
+          canton: billingInfo.canton,
+          city: billingInfo.city,
+          zip_code: billingInfo.zip_code,
+          updated_at: new Date().toISOString()
+        }).eq('id', user.id);
+
+        // 2. Ensure an address book entry exists if none selected
+        if (!selectedBillingId) {
+          await supabase.from('customer_addresses').insert({
+            customer_id: user.id,
+            full_name: billingInfo.full_name,
+            phone: billingInfo.phone,
+            street_main: billingInfo.street_main,
+            street_secondary: billingInfo.street_secondary,
+            house_number: billingInfo.house_number,
+            province: billingInfo.province,
+            canton: billingInfo.canton,
+            city: billingInfo.city,
+            zip_code: billingInfo.zip_code,
+            id_number: billingInfo.id_number,
+            id_type: billingInfo.id_type,
+            email: user.email,
+            label: 'Dirección de Compra',
+            is_default: savedAddresses.length === 0 // Make default if it's the first one
+          });
+        }
+      } catch (e) {
+        console.error("Sync error:", e);
+      }
+    }
+
+    // ── Persist checkout data BEFORE PayPhone redirects away from our app ──
+    try {
+      sessionStorage.setItem('banana_pending_cart', JSON.stringify({
+        items: cartItems,
+        total: cartTotal,
+      }));
+      sessionStorage.setItem('banana_pending_checkout', JSON.stringify({
+        billing:  billingInfo,
+        shipping: sameAsBilling ? billingInfo : shippingInfo,
+        sameAsBilling,
+        userId: user?.id || null // Safe for guest users
+      }));
+    } catch (_) {}
     setStep(2);
   };
 
@@ -283,16 +369,40 @@ function CheckoutContent() {
                   </div>
 
                   {user && savedAddresses.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-8">
-                       {savedAddresses.map(addr => (
-                         <button 
-                           key={addr.id}
-                           onClick={() => selectBillingAddress(addr)}
-                           className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${billingInfo.address === addr.address_line1 ? 'bg-purple-brand text-white border-purple-brand shadow-lg' : 'bg-gray-50 border-black/5 text-gray-400 hover:border-purple-brand/30'}`}
-                         >
-                           {addr.label}
-                         </button>
-                       ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                       {savedAddresses.map(addr => {
+                         const isSelected = selectedBillingId === addr.id;
+                         return (
+                           <button 
+                             key={addr.id}
+                             onClick={() => selectBillingAddress(addr)}
+                             className={`
+                               p-5 rounded-3xl border-2 text-left transition-all relative group
+                               ${isSelected 
+                                 ? 'bg-purple-brand/5 border-purple-brand shadow-xl shadow-purple-brand/10' 
+                                 : 'bg-white border-black/5 hover:border-purple-brand/30 hover:bg-gray-50/50'}
+                             `}
+                           >
+                             <div className="flex flex-col gap-1">
+                               <div className="flex items-center justify-between">
+                                 <span className={`text-[9px] font-black uppercase tracking-widest ${isSelected ? 'text-purple-brand' : 'text-gray-400'}`}>
+                                   {addr.label}
+                                 </span>
+                                 {isSelected && (
+                                   <div className="w-5 h-5 bg-purple-brand text-white rounded-full flex items-center justify-center">
+                                     <Check size={12} />
+                                   </div>
+                                 )}
+                               </div>
+                               <p className="font-black text-gray-900 text-sm mt-1">{addr.full_name}</p>
+                               <p className="text-xs text-gray-500 font-medium leading-relaxed mt-1 line-clamp-2">
+                                 {addr.street_main || addr.address_line1} {addr.house_number}, {addr.city}
+                               </p>
+                               <p className="text-[10px] text-gray-400 font-bold mt-2">{addr.phone}</p>
+                             </div>
+                           </button>
+                         );
+                       })}
                     </div>
                   )}
 
@@ -306,12 +416,12 @@ function CheckoutContent() {
                       />
                     </div>
                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email (Factura Electrónica)</label>
                         <input 
                           type="email"
                           className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
                           value={billingInfo.email}
-                          onChange={(e) => setBillingInfo(p => ({...p, email: e.target.value}))}
+                          onChange={(e) => updateBilling({ email: e.target.value })}
                         />
                       </div>
                     <div className="flex flex-col gap-2">
@@ -342,13 +452,71 @@ function CheckoutContent() {
                           />
                         </div>
                     </div>
-                    <div className="md:col-span-2 flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dirección de Facturación</label>
-                        <input 
-                          className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
-                          value={billingInfo.address}
-                          onChange={(e) => updateBilling({ address: e.target.value })}
-                        />
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-1 flex flex-col gap-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Provincia</label>
+                          <input 
+                            className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                            value={billingInfo.province}
+                            onChange={(e) => updateBilling({ province: e.target.value })}
+                            placeholder="Ej: Guayas"
+                          />
+                        </div>
+                        <div className="md:col-span-1 flex flex-col gap-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ciudad</label>
+                          <input 
+                            className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                            value={billingInfo.city}
+                            onChange={(e) => updateBilling({ city: e.target.value })}
+                            placeholder="Ej: Guayaquil"
+                          />
+                        </div>
+                        <div className="md:col-span-1 flex flex-col gap-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cantón</label>
+                          <input 
+                            className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                            value={billingInfo.canton}
+                            onChange={(e) => updateBilling({ canton: e.target.value })}
+                          />
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-2">
+                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Calle Principal</label>
+                           <input 
+                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                             value={billingInfo.street_main}
+                             onChange={(e) => updateBilling({ street_main: e.target.value })}
+                           />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Calle Secundaria</label>
+                           <input 
+                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                             value={billingInfo.street_secondary}
+                             onChange={(e) => updateBilling({ street_secondary: e.target.value })}
+                           />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-2">
+                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest"># Casa/Apto</label>
+                           <input 
+                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                             value={billingInfo.house_number}
+                             onChange={(e) => updateBilling({ house_number: e.target.value })}
+                           />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Código Postal</label>
+                           <input 
+                             className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                             value={billingInfo.zip_code}
+                             onChange={(e) => updateBilling({ zip_code: e.target.value })}
+                           />
+                        </div>
                     </div>
                   </div>
 
@@ -373,7 +541,7 @@ function CheckoutContent() {
                         </label>
                       ) : <span className="text-[10px] font-black uppercase tracking-widest text-mint-success">Dirección seleccionada correctamente</span>}
                       
-                      {!selectedBillingId && billingInfo.address && (
+                      {!selectedBillingId && billingInfo.street_main && (
                          <button 
                            onClick={() => handleUpsertAddress('billing')}
                            className="px-4 py-2 bg-purple-brand/5 text-purple-brand rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-brand hover:text-white transition-all"
@@ -408,16 +576,40 @@ function CheckoutContent() {
                   {!sameAsBilling && (
                     <div className="space-y-8 animate-in fade-in duration-300">
                       {user && savedAddresses.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-8">
-                          {savedAddresses.map(addr => (
-                            <button 
-                              key={addr.id}
-                              onClick={() => selectShippingAddress(addr)}
-                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${shippingInfo.address === addr.address_line1 ? 'bg-purple-brand text-white border-purple-brand shadow-lg' : 'bg-gray-50 border-black/5 text-gray-400 hover:border-purple-brand/30'}`}
-                            >
-                              {addr.label}
-                            </button>
-                          ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                          {savedAddresses.map(addr => {
+                            const isSelected = selectedShippingId === addr.id;
+                            return (
+                              <button 
+                                key={addr.id}
+                                onClick={() => selectShippingAddress(addr)}
+                                className={`
+                                  p-5 rounded-3xl border-2 text-left transition-all relative
+                                  ${isSelected 
+                                    ? 'bg-purple-brand/5 border-purple-brand shadow-xl shadow-purple-brand/10' 
+                                    : 'bg-white border-black/5 hover:border-purple-brand/30 hover:bg-gray-50/50'}
+                                `}
+                              >
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className={`text-[9px] font-black uppercase tracking-widest ${isSelected ? 'text-purple-brand' : 'text-gray-400'}`}>
+                                      {addr.label}
+                                    </span>
+                                    {isSelected && (
+                                      <div className="w-5 h-5 bg-purple-brand text-white rounded-full flex items-center justify-center">
+                                        <Check size={12} />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="font-black text-gray-900 text-sm mt-1">{addr.full_name}</p>
+                                  <p className="text-xs text-gray-500 font-medium leading-relaxed mt-1 line-clamp-2">
+                                    {addr.street_main || addr.address_line1} {addr.house_number}, {addr.city}
+                                  </p>
+                                  <p className="text-[10px] text-gray-400 font-bold mt-2">{addr.phone}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -437,14 +629,67 @@ function CheckoutContent() {
                             onChange={(e) => updateShipping({ phone: e.target.value })}
                           />
                         </div>
-                        <div className="md:col-span-2 flex flex-col gap-2">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dirección Exacta (con referencias)</label>
-                          <input 
-                            className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
-                            value={shippingInfo.address}
-                            onChange={(e) => updateShipping({ address: e.target.value })}
-                            placeholder="Calle, #, Apto, junto a..."
-                          />
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+                           <div className="flex flex-col gap-2">
+                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Provincia</label>
+                             <input 
+                               className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                               value={shippingInfo.province}
+                               onChange={(e) => updateShipping({ province: e.target.value })}
+                             />
+                           </div>
+                           <div className="flex flex-col gap-2">
+                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ciudad</label>
+                             <input 
+                               className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                               value={shippingInfo.city}
+                               onChange={(e) => updateShipping({ city: e.target.value })}
+                             />
+                           </div>
+                           <div className="flex flex-col gap-2">
+                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Canton</label>
+                             <input 
+                               className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                               value={shippingInfo.canton}
+                               onChange={(e) => updateShipping({ canton: e.target.value })}
+                             />
+                           </div>
+                        </div>
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="flex flex-col gap-2">
+                               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Calle Principal</label>
+                               <input 
+                                 className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                                 value={shippingInfo.street_main}
+                                 onChange={(e) => updateShipping({ street_main: e.target.value })}
+                               />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Calle Secundaria</label>
+                               <input 
+                                 className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                                 value={shippingInfo.street_secondary}
+                                 onChange={(e) => updateShipping({ street_secondary: e.target.value })}
+                               />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="flex flex-col gap-2">
+                               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest"># Casa/Apto</label>
+                               <input 
+                                 className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                                 value={shippingInfo.house_number}
+                                 onChange={(e) => updateShipping({ house_number: e.target.value })}
+                               />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Código Postal</label>
+                               <input 
+                                 className="bg-gray-50 border border-black/5 rounded-2xl px-5 py-4 text-sm font-medium focus:bg-white outline-none focus:ring-4 ring-purple-brand/5 transition-all"
+                                 value={shippingInfo.zip_code}
+                                 onChange={(e) => updateShipping({ zip_code: e.target.value })}
+                               />
+                            </div>
                         </div>
                       </div>
 
@@ -469,7 +714,7 @@ function CheckoutContent() {
                             </label>
                           ) : <span className="text-[10px] font-black uppercase tracking-widest text-mint-success">Dirección de envío seleccionada correctamente</span>}
                           
-                          {!selectedShippingId && shippingInfo.address && (
+                          {!selectedShippingId && shippingInfo.street_main && (
                              <button 
                                onClick={() => handleUpsertAddress('shipping')}
                                className="px-4 py-2 bg-purple-brand/5 text-purple-brand rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-brand hover:text-white transition-all"

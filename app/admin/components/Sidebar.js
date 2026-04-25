@@ -4,15 +4,16 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { 
-  LayoutDashboard, Image, Tag, Package, LogOut, ExternalLink, Users 
+  LayoutDashboard, Image, Tag, Package, LogOut, ExternalLink, Users, ShoppingBag
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/hero', icon: Image, label: 'Hero' },
-  { href: '/admin/categories', icon: Tag, label: 'Categorías' },
-  { href: '/admin/products', icon: Package, label: 'Productos' },
-  { href: '/admin/waitlist', icon: Users, label: 'Lista de Espera' },
+  { href: '/admin',         icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/admin/hero',    icon: Image,           label: 'Hero' },
+  { href: '/admin/categories', icon: Tag,          label: 'Categorías' },
+  { href: '/admin/products',   icon: Package,      label: 'Productos' },
+  { href: '/admin/orders',     icon: ShoppingBag,  label: 'Pedidos' },
+  { href: '/admin/waitlist',   icon: Users,        label: 'Lista de Espera' },
 ];
 
 const Sidebar = () => {
