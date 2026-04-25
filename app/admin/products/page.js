@@ -52,15 +52,34 @@ export default function ProductsAdminPage() {
   }, [productForm.modal]);
 
   const deleteProduct = async (id) => {
-    if (!confirm('¿Desactivar este producto del catálogo? (El historial de pedidos se conserva)')) return;
-    const { error } = await supabase
-      .from('products')
-      .update({ is_active: false })
-      .eq('id', id);
-    if (error) showToast('Error al desactivar producto', 'error');
-    else {
-      showToast('Producto desactivado del catálogo', 'success');
-      fetchAll();
+    // Check if this product has any associated orders
+    const { count } = await supabase
+      .from('order_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('product_id', id);
+
+    const hasOrders = count > 0;
+
+    const confirmed = confirm(
+      hasOrders
+        ? `Este producto tiene ${count} ítem(s) en pedidos existentes.\n¿Desactivarlo del catálogo? (El historial de pedidos se conserva)`
+        : '¿Eliminar este producto permanentemente? No tiene pedidos asociados.'
+    );
+    if (!confirmed) return;
+
+    if (hasOrders) {
+      // Soft-delete: preserve order history
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', id);
+      if (error) showToast('Error al desactivar producto', 'error');
+      else { showToast('Producto desactivado del catálogo', 'success'); fetchAll(); }
+    } else {
+      // Hard delete: no orders reference this product
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) showToast('Error al eliminar producto', 'error');
+      else { showToast('Producto eliminado permanentemente', 'success'); fetchAll(); }
     }
   };
 
