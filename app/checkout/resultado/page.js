@@ -40,7 +40,10 @@ function ResultadoContent() {
   }, []);
 
   useEffect(() => {
-    if (!clientTxId && !payphoneId) {
+    const orderIdParam = searchParams.get('orderId');
+    const isTransfer = methodParam === 'transfer' && orderIdParam;
+
+    if (!clientTxId && !payphoneId && !isTransfer) {
       setStatus('error');
       setErrorMsg('Parámetros de transacción no encontrados en la URL.');
       return;
@@ -77,6 +80,29 @@ function ResultadoContent() {
                 payment_method: 'transfer'
               };
 
+              // ── Populate receipt state from sessionStorage ──
+              try {
+                const savedCart = sessionStorage.getItem('banana_pending_cart');
+                const savedCheckout = sessionStorage.getItem('banana_pending_checkout');
+                if (savedCart) {
+                  const parsedCart = JSON.parse(savedCart);
+                  setOrderSummary(parsedCart);
+                }
+                if (savedCheckout) {
+                  const parsedCheckout = JSON.parse(savedCheckout);
+                  setCheckoutInfo({
+                    billing: parsedCheckout.billing || {},
+                    shipping: parsedCheckout.shipping || parsedCheckout.billing || {}
+                  });
+                } else {
+                  // Fallback: use billing/shipping from the order stored in DB
+                  setCheckoutInfo({
+                    billing: order.billing_address || {},
+                    shipping: order.shipping_address || order.billing_address || {}
+                  });
+                }
+              } catch (_) { }
+
               // Trigger WhatsApp if needed
               if (waParam === 'true') {
                 try {
@@ -86,6 +112,13 @@ function ResultadoContent() {
                   }
                 } catch (e) { }
               }
+
+              // Clear cart + sessionStorage after populating receipt state
+              clearCart();
+              try {
+                sessionStorage.removeItem('banana_pending_cart');
+                sessionStorage.removeItem('banana_pending_checkout');
+              } catch (_) { }
             } else {
               setStatus('error');
               setErrorMsg('No pudimos recuperar los detalles de tu orden.');

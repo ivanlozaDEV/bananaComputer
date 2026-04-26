@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import {
   ArrowLeft, CheckCircle2, XCircle, Clock, Package,
   CreditCard, MapPin, User, ShoppingBag, Receipt,
-  Phone, Mail, Hash, Shield
+  Phone, Mail, Hash, Shield, Building2, Tag
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -129,35 +129,40 @@ export default function AdminOrderDetailPage() {
       {/* ── 2. Direcciones (Side by Side) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Section icon={Receipt} title="Facturación" iconColor="text-banana-yellow">
-          <div className="space-y-4">
-            <div>
-              <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-1">{billing.full_name}</p>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {billing.street_main} {billing.house_number}<br/>
-                {billing.street_secondary && <span className="opacity-60 text-xs italic">y {billing.street_secondary}<br/></span>}
-                <span className="font-bold text-gray-800">{billing.city}, {billing.province}</span>
-                {billing.zip_code && <span className="ml-2 px-1.5 py-0.5 bg-gray-100 rounded-lg text-[10px] font-mono">{billing.zip_code}</span>}
-              </p>
-            </div>
+          <div className="space-y-3">
+            <InfoBlock label="Nombre" value={billing.full_name} />
+            <InfoBlock label="Identificación" value={billing.id_number} />
+            <InfoBlock label="Email" value={billing.email} />
+            <InfoBlock label="Teléfono" value={billing.phone} />
+            <InfoBlock label="Calle Principal" value={billing.street_main} />
+            {billing.street_secondary && <InfoBlock label="Calle Secundaria" value={billing.street_secondary} />}
+            <InfoBlock label="Nro. Casa/Apto" value={billing.house_number} />
+            <InfoBlock label="Ciudad" value={billing.city} />
+            <InfoBlock label="Cantón" value={billing.canton} />
+            <InfoBlock label="Provincia" value={billing.province} />
+            {billing.zip_code && <InfoBlock label="Código Postal" value={billing.zip_code} />}
           </div>
         </Section>
 
         <Section icon={MapPin} title="Envío" iconColor="text-mint-success">
-          <div className="space-y-4">
-            <div>
-              <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-1">{shipping.full_name}</p>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {shipping.street_main} {shipping.house_number}<br/>
-                {shipping.street_secondary && <span className="opacity-60 text-xs italic">y {shipping.street_secondary}<br/></span>}
-                <span className="font-bold text-gray-800">{shipping.city}, {shipping.province}</span>
-                {shipping.zip_code && <span className="ml-2 px-1.5 py-0.5 bg-gray-100 rounded-lg text-[10px] font-mono">{shipping.zip_code}</span>}
-              </p>
-            </div>
-            {JSON.stringify(billing) === JSON.stringify(shipping) && (
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-mint-success/5 border border-mint-success/20 rounded-full">
+          <div className="space-y-3">
+            {JSON.stringify(billing) === JSON.stringify(shipping) ? (
+              <div className="flex items-center gap-2 px-3 py-2 bg-mint-success/5 border border-mint-success/20 rounded-full">
                  <CheckCircle2 size={12} className="text-mint-success" />
                  <span className="text-[9px] font-black uppercase text-mint-success">Misma que facturación</span>
               </div>
+            ) : (
+              <>
+                <InfoBlock label="Nombre" value={shipping.full_name} />
+                <InfoBlock label="Teléfono" value={shipping.phone} />
+                <InfoBlock label="Calle Principal" value={shipping.street_main} />
+                {shipping.street_secondary && <InfoBlock label="Calle Secundaria" value={shipping.street_secondary} />}
+                <InfoBlock label="Nro. Casa/Apto" value={shipping.house_number} />
+                <InfoBlock label="Ciudad" value={shipping.city} />
+                <InfoBlock label="Cantón" value={shipping.canton} />
+                <InfoBlock label="Provincia" value={shipping.province} />
+                {shipping.zip_code && <InfoBlock label="Código Postal" value={shipping.zip_code} />}
+              </>
             )}
           </div>
         </Section>
@@ -170,6 +175,8 @@ export default function AdminOrderDetailPage() {
             <div className="space-y-4 divide-y divide-black/5">
               {items.map(item => {
                 const product = item.products || {};
+                const isTransfer = order.payment_method === 'transfer';
+                const displayPrice = isTransfer ? item.unit_price / 1.06 : item.unit_price;
                 return (
                   <div key={item.id} className="flex items-center gap-4 group pt-4 first:pt-0 last:pb-0">
                     <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-black/5 overflow-hidden flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
@@ -183,11 +190,13 @@ export default function AdminOrderDetailPage() {
                       <p className="font-black text-gray-900 truncate leading-tight">{product.name || 'Producto'}</p>
                       <p className="text-[10px] font-mono text-gray-400 mt-0.5">SKU: {product.sku || '—'}</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {item.quantity} × <span className="font-bold text-gray-700">${Number(item.unit_price).toFixed(2)}</span>
+                        {item.quantity} × <span className="font-bold text-gray-700">${Number(displayPrice).toFixed(2)}</span>
+                        {isTransfer && <span className="ml-2 line-through text-gray-300">${Number(item.unit_price).toFixed(2)}</span>}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-gray-900">${(item.quantity * item.unit_price).toFixed(2)}</p>
+                      <p className="font-black text-gray-900">${(item.quantity * displayPrice).toFixed(2)}</p>
+                      {isTransfer && <p className="text-[9px] font-black text-mint-success uppercase tracking-widest">-6% desc.</p>}
                     </div>
                   </div>
                 );
@@ -208,6 +217,12 @@ export default function AdminOrderDetailPage() {
                 <span className="text-gray-400 font-bold uppercase tracking-widest">IVA (15%)</span>
                 <span className="font-bold text-gray-700">${(Number(order.total) - (Number(order.total) / 1.15)).toFixed(2)}</span>
               </div>
+              {order.discount_amount > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400 font-bold uppercase tracking-widest">Descuento Transferencia</span>
+                  <span className="font-bold text-mint-success">-${Number(order.discount_amount).toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-xs">
                 <span className="text-gray-400 font-bold uppercase tracking-widest">Envío</span>
                 <span className="font-bold text-mint-success">Gratis</span>
@@ -216,34 +231,56 @@ export default function AdminOrderDetailPage() {
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">Total Neto</span>
                 <span className="text-3xl font-black text-gray-900">${Number(order.total).toFixed(2)}</span>
               </div>
-              
-              {/* PayPhone Integration */}
+
+              {/* Payment method block — dynamic */}
               <div className="mt-8 pt-6 border-t border-black/5 space-y-4">
-                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-raspberry/5 flex items-center justify-center text-raspberry">
-                       <CreditCard size={14} />
+                {order.payment_method === 'transfer' ? (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-purple-brand/5 flex items-center justify-center text-purple-brand">
+                        <Building2 size={14} />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Método de Pago</p>
+                        <p className="text-xs font-bold text-gray-900">Transferencia Bancaria</p>
+                      </div>
                     </div>
-                    <div>
-                       <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Pago PayPhone</p>
-                       <p className="text-xs font-bold text-gray-900">Tarjeta de Crédito/Débito</p>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-banana-yellow/10 border border-banana-yellow/20 rounded-2xl">
+                      <Tag size={12} className="text-banana-yellow" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-banana-yellow">Descuento ~6% aplicado</span>
                     </div>
-                 </div>
-                 {order.authorization_code && (
-                   <div className="flex justify-between items-center p-3 bg-mint-success/5 border border-mint-success/20 rounded-2xl">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-mint-success">Autorización</span>
-                      <span className="font-mono text-xs font-black text-gray-700">{order.authorization_code}</span>
-                   </div>
-                 )}
-                 <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">ID Transacción</p>
-                    <p className="text-[10px] font-mono text-gray-400 break-all leading-tight opacity-60">
-                       {order.payphone_transaction_id || order.client_transaction_id}
-                    </p>
-                 </div>
-                 <div className="pt-4 border-t border-black/5 flex items-center gap-2 text-[10px] font-mono text-gray-400">
-                    <Shield size={10} />
-                    <span>ID Interno: {order.id.slice(0,18)}...</span>
-                 </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-raspberry/5 flex items-center justify-center text-raspberry">
+                        <CreditCard size={14} />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Método de Pago</p>
+                        <p className="text-xs font-bold text-gray-900">PayPhone · Tarjeta</p>
+                      </div>
+                    </div>
+                    {order.authorization_code && (
+                      <div className="flex justify-between items-center p-3 bg-mint-success/5 border border-mint-success/20 rounded-2xl">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-mint-success">Autorización</span>
+                        <span className="font-mono text-xs font-black text-gray-700">{order.authorization_code}</span>
+                      </div>
+                    )}
+                    {(order.payphone_transaction_id || order.client_transaction_id) && (
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">ID Transacción</p>
+                        <p className="text-[10px] font-mono text-gray-400 break-all leading-tight opacity-60">
+                          {order.payphone_transaction_id || order.client_transaction_id}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className="pt-4 border-t border-black/5 flex items-center gap-2 text-[10px] font-mono text-gray-400">
+                  <Shield size={10} />
+                  <span>ID: {order.id.slice(0,18)}...</span>
+                </div>
               </div>
             </div>
           </Section>

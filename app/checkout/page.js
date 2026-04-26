@@ -243,7 +243,8 @@ function CheckoutContent() {
       const whatsappUrl = getWhatsAppUrl(
         { ...order, full_name: billingInfo.full_name },
         cartItems,
-        { subtotal: cartSubtotal, tax: cartTax, total: cartTotal }
+        { subtotal: cartSubtotal, tax: cartTax, total: cartTotal },
+        'transfer'
       );
 
       // 5. Persist minimal info for resultado page (to show summary)
@@ -897,65 +898,69 @@ function CheckoutContent() {
                     : 'Haz clic en el botón de abajo para abrir la pasarela de PayPhone y completar tu pago de forma segura.'}
                 </p>
 
-                {paymentMethod === 'transfer' ? (
-                  <div className="w-full space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Billing Data */}
-                      <div className="bg-gray-50 rounded-3xl p-6 border border-black/5 text-left">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-brand mb-4 flex items-center gap-2">
-                          <FileText size={12} /> Datos de Facturación
-                        </h4>
-                        <div className="space-y-2">
-                          <p className="text-xs font-bold text-gray-700">{billingInfo.full_name}</p>
-                          <p className="text-[10px] text-gray-500 font-medium">{billingInfo.id_number} • {billingInfo.email}</p>
-                          <p className="text-[10px] text-gray-500 font-medium">{billingInfo.phone}</p>
-                          <p className="text-[10px] text-gray-400 leading-tight mt-2">{billingInfo.street_main}, {billingInfo.house_number}</p>
-                        </div>
-                      </div>
-
-                      {/* Shipping Data */}
-                      <div className="bg-gray-50 rounded-3xl p-6 border border-black/5 text-left">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-brand mb-4 flex items-center gap-2">
-                          <Truck size={12} /> Datos de Envío
-                        </h4>
-                        <div className="space-y-2">
-                          <p className="text-xs font-bold text-gray-700">{shippingInfo.full_name}</p>
-                          <p className="text-[10px] text-gray-500 font-medium">{shippingInfo.phone}</p>
-                          <p className="text-[10px] text-gray-400 leading-tight mt-2">{shippingInfo.street_main}, {shippingInfo.house_number}</p>
-                          <p className="text-[10px] text-gray-400 leading-tight italic">{shippingInfo.city}, {shippingInfo.province}</p>
-                        </div>
+                <div className="w-full space-y-8 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Billing Data */}
+                    <div className="bg-gray-50 rounded-3xl p-6 border border-black/5 text-left">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-brand mb-4 flex items-center gap-2">
+                        <FileText size={12} /> Datos de Facturación
+                      </h4>
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-gray-700">{billingInfo.full_name}</p>
+                        <p className="text-[10px] text-gray-500 font-medium">{billingInfo.id_number} • {billingInfo.email}</p>
+                        <p className="text-[10px] text-gray-500 font-medium">{billingInfo.phone}</p>
+                        <p className="text-[10px] text-gray-400 leading-tight mt-2">{billingInfo.street_main}, {billingInfo.house_number}</p>
                       </div>
                     </div>
 
-                    <label className="flex items-start gap-4 p-4 bg-purple-brand/5 rounded-2xl border border-purple-brand/10 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={agreedToTerms}
-                        onChange={(e) => setAgreedToTerms(e.target.checked)}
-                        className="w-5 h-5 mt-1 rounded-lg border-purple-brand/20 text-purple-brand focus:ring-purple-brand"
-                      />
-                      <span className="text-xs font-bold text-purple-brand/80 leading-relaxed group-hover:text-purple-brand transition-colors">
-                        Acepto que los datos de mi pedido son correctos y me comprometo a realizar la transferencia por el valor total de <span className="font-black">${cartTotal.toFixed(2)}</span>.
-                      </span>
-                    </label>
-
-                    <button
-                      onClick={handleConfirmTransfer}
-                      disabled={loading || !agreedToTerms}
-                      className={`
-                           w-full py-5 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3
-                           ${agreedToTerms
-                          ? 'bg-purple-brand text-white shadow-xl shadow-purple-brand/20 hover:scale-105 active:scale-95'
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'}
-                         `}
-                    >
-                      <Building2 size={20} />
-                      {loading ? 'PROCESANDO...' : 'GENERAR ORDEN'}
-                    </button>
+                    {/* Shipping Data */}
+                    <div className="bg-gray-50 rounded-3xl p-6 border border-black/5 text-left">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-brand mb-4 flex items-center gap-2">
+                        <Truck size={12} /> Datos de Envío
+                      </h4>
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-gray-700">{shippingInfo.full_name}</p>
+                        <p className="text-[10px] text-gray-500 font-medium">{shippingInfo.phone}</p>
+                        <p className="text-[10px] text-gray-400 leading-tight mt-2">{shippingInfo.street_main}, {shippingInfo.house_number}</p>
+                        <p className="text-[10px] text-gray-400 leading-tight italic">{shippingInfo.city}, {shippingInfo.province}</p>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div id="pp-button" className="w-full max-w-xs transition-all hover:scale-105"></div>
-                )}
+
+                  {paymentMethod === 'transfer' ? (
+                    <div className="space-y-8">
+                      <label className="flex items-start gap-4 p-4 bg-purple-brand/5 rounded-2xl border border-purple-brand/10 cursor-pointer group text-left">
+                        <input
+                          type="checkbox"
+                          checked={agreedToTerms}
+                          onChange={(e) => setAgreedToTerms(e.target.checked)}
+                          className="w-5 h-5 mt-1 rounded-lg border-purple-brand/20 text-purple-brand focus:ring-purple-brand"
+                        />
+                        <span className="text-xs font-bold text-purple-brand/80 leading-relaxed group-hover:text-purple-brand transition-colors">
+                          Acepto que los datos de mi pedido son correctos y me comprometo a realizar la transferencia por el valor total de <span className="font-black">${cartTotal.toFixed(2)}</span>.
+                        </span>
+                      </label>
+
+                      <button
+                        onClick={handleConfirmTransfer}
+                        disabled={loading || !agreedToTerms}
+                        className={`
+                             w-full py-5 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3
+                             ${agreedToTerms
+                            ? 'bg-purple-brand text-white shadow-xl shadow-purple-brand/20 hover:scale-105 active:scale-95'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'}
+                           `}
+                      >
+                        <Building2 size={20} />
+                        {loading ? 'PROCESANDO...' : 'GENERAR ORDEN'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-center w-full">
+                      <div id="pp-button" className="w-full max-w-xs transition-all hover:scale-105"></div>
+                    </div>
+                  )}
+                </div>
 
                 <button
                   onClick={() => setStep(1)}
@@ -974,7 +979,7 @@ function CheckoutContent() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
 
                 <h3 className="text-xl font-black mb-8 flex items-center gap-3">
-                  <CreditCard size={20} /> Resumen de Orden
+                  <CreditCard size={20} /> Tu Compra
                 </h3>
 
 
