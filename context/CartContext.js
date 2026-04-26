@@ -8,6 +8,7 @@ export const useCart = () => useContext(CartContext);
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('payphone');
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -35,15 +36,24 @@ export const CartProvider = ({ children }) => {
   const closeCart = () => setIsCartOpen(false);
   const clearCart = () => setCartItems([]);
 
-  const cartTotal    = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-  const cartSubtotal = cartTotal / 1.15;
-  const cartTax      = cartTotal - cartSubtotal;
-  const cartCount    = cartItems.length;
+  const getFinalPrice = (basePrice, method) => {
+    if (method === 'transfer') return basePrice / 1.06;
+    return basePrice;
+  };
+
+  const baseTotal     = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+  const cartTotal     = paymentMethod === 'transfer' ? baseTotal / 1.06 : baseTotal;
+  const cartSubtotal  = cartTotal / 1.15;
+  const cartTax       = cartTotal - cartSubtotal;
+  const discountAmount = baseTotal - cartTotal;
+  const cartCount     = cartItems.length;
 
   return (
     <CartContext.Provider value={{
       cartItems, addToCart, removeFromCart, clearCart,
       cartCount, cartTotal, cartSubtotal, cartTax,
+      baseTotal, discountAmount,
+      paymentMethod, setPaymentMethod, getFinalPrice,
       isCartOpen, openCart, closeCart,
     }}>
       {children}

@@ -34,6 +34,10 @@ const ICON_MAP = {
   'default': Settings,
 };
 
+const formatPrice = (price) => {
+  return (price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const getIcon = (name, size = 14) => {
   const IconComp = ICON_MAP[name] || ICON_MAP.default;
   return <IconComp size={size} />;
@@ -48,8 +52,8 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
         imgs = product.images;
       } else if (typeof product.images === 'string' && product.images.length > 0) {
         // Handle postgres array format {url1,url2} or JSON string ["url1","url2"]
-        const cleaned = product.images.startsWith('{') 
-          ? product.images.replace('{', '[').replace('}', ']') 
+        const cleaned = product.images.startsWith('{')
+          ? product.images.replace('{', '[').replace('}', ']')
           : product.images;
         if (cleaned.startsWith('[')) {
           imgs = JSON.parse(cleaned);
@@ -60,7 +64,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
     } catch (e) {
       console.error("Error parsing images for product:", product.id, e);
     }
-    
+
     if (imgs.length === 0 && product.image_url) {
       imgs = [product.image_url];
     }
@@ -85,6 +89,8 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
   };
 
   const isAdded = addedIds?.has(product.id);
+  const basePrice = parseFloat(product.price) || 0;
+  const transferPrice = basePrice / 1.06;
 
   if (variant === 'list') {
     return (
@@ -143,11 +149,20 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
         {/* Action Pane - Right */}
         <div className="w-full sm:w-[180px] p-5 bg-gray-50/50 border-t sm:border-t-0 sm:border-l border-black/5 flex flex-col justify-center items-center gap-4 shrink-0">
-          <div className="text-center">
-            <span className="block text-xl font-black text-purple-brand">
-              ${(parseFloat(product.price) || 0).toLocaleString()}
-            </span>
-            <span className="text-[0.55rem] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">Incluido Impuestos</span>
+          <div className="text-center flex flex-col gap-1">
+            <div className="flex flex-col items-center">
+              <span className="block text-2xl font-bold text-purple-brand leading-none">
+                ${formatPrice(basePrice)}
+              </span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1.5">Precio Normal</span>
+            </div>
+
+            <div className="mt-2 text-center opacity-30">
+              <span className="text-xs font-medium text-purple-brand">
+                Pago por transferencia: ${formatPrice(transferPrice)}
+              </span>
+              <span className="block text-[8px] font-bold uppercase tracking-wider opacity-60 mt-0.5">Disponible en el checkout</span>
+            </div>
           </div>
 
           <div className="flex flex-col w-full gap-2">
@@ -209,14 +224,14 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
         {images.length > 1 && (
           <>
-            <button 
-              className="absolute left-1 top-1/2 -translate-y-1/2 z-20 p-1 md:p-2 bg-black/5 md:bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
+            <button
+              className="absolute left-1 top-1/2 -translate-y-1/2 z-20 p-1 md:p-2 bg-black/5 md:bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95"
               onClick={prevImg}
             >
               <ChevronLeft size={16} />
             </button>
-            <button 
-              className="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-1 md:p-2 bg-black/5 md:bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95" 
+            <button
+              className="absolute right-1 top-1/2 -translate-y-1/2 z-20 p-1 md:p-2 bg-black/5 md:bg-black/10 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-black hover:bg-black/30 hover:scale-110 active:scale-95"
               onClick={nextImg}
             >
               <ChevronRight size={16} />
@@ -261,22 +276,21 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
         </div>
 
         {/* Footer: Price & CTA */}
-        <div className="mt-auto pt-2 md:pt-3 flex items-center justify-between border-t border-black/5 gap-2">
+        <div className="mt-auto pt-3 md:pt-4 flex items-center justify-between border-t border-black/5 gap-2">
           <div className="flex flex-col min-w-0">
-            <span className="text-sm md:text-xl font-black text-purple-brand leading-none">
-              ${(parseFloat(product.price) || 0).toLocaleString()}
-            </span>
-            <span className="text-[7px] md:text-[0.55rem] font-bold text-gray-400 uppercase tracking-widest mt-1 truncate">Incl. Impuestos</span>
+            <div className="flex flex-col">
+              <span className="text-sm md:text-xl font-bold text-purple-brand leading-none">
+                ${formatPrice(basePrice)}
+              </span>
+              <span className="text-[10px] md:text-xs font-medium text-purple-brand mt-1 opacity-80">
+                Pago con Transferencia: ${formatPrice(transferPrice)}
+              </span>
+              <span className="text-[7px] md:text-[8px] font-bold uppercase tracking-tight opacity-40 mt-0.5">Disponible en el checkout</span>
+            </div>
           </div>
 
           <div className="flex gap-1 md:gap-2 shrink-0">
-            <Link
-              href={`/producto/${product.id}`}
-              className="p-1.5 md:p-3 rounded-lg md:rounded-xl bg-purple-brand/5 text-purple-brand hover:bg-purple-brand/10 transition-colors"
-              title="Ver detalles"
-            >
-              <Zap size={15} fill="currentColor" className="md:w-[18px] md:h-[18px]" />
-            </Link>
+
             <button
               onClick={(e) => handleAddToCart(e, product)}
               className={`
@@ -289,7 +303,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
               ) : (
                 <>
                   <ShoppingCart size={12} fill="currentColor" className="md:w-[14px] md:h-[14px]" />
-                  <span className="whitespace-nowrap">CARRITO</span>
+                  <span className="whitespace-nowrap">AGREGAR</span>
                 </>
               )}
               {isAdded && <span className="md:hidden">✓</span>}

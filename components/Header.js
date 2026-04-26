@@ -24,6 +24,7 @@ const Header = () => {
   const {
     cartItems, cartCount, removeFromCart,
     cartTotal, cartSubtotal, cartTax,
+    baseTotal,
     isCartOpen, openCart, closeCart,
   } = useCart();
 
@@ -256,15 +257,15 @@ const Header = () => {
           <div className="mt-auto pt-8 border-t border-black/5 flex flex-col gap-3">
             <div className="flex justify-between text-sm text-gray-500 font-bold">
               <span>Subtotal:</span>
-              <span>${cartSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span>${(baseTotal / 1.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-500 font-bold">
               <span>IVA (15%):</span>
-              <span>${cartTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span>${(baseTotal - (baseTotal / 1.15)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-2xl font-black text-purple-brand mt-2">
               <span>Total:</span>
-              <span>${cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span>${baseTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <button className="mt-4 w-full py-4 bg-purple-brand text-white rounded-xl font-black text-xl hover:scale-102 hover:shadow-xl transition-all" onClick={handleCheckout}>
               Finalizar Pedido

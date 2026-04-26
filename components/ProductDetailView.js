@@ -6,9 +6,9 @@ import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ChevronDown, ChevronUp, ShieldCheck, Truck, 
-  Cpu, MemoryStick, HardDrive, Monitor, Battery, 
+import {
+  ChevronDown, ChevronUp, ShieldCheck, Truck,
+  Cpu, MemoryStick, HardDrive, Monitor, Battery,
   Scale, Wifi, Camera, Layers, Zap, Scan, Settings,
   Palette, Film, ChevronRight, Home, Sparkles
 } from 'lucide-react';
@@ -40,6 +40,10 @@ const ICON_MAP = {
   'default': Settings,
 };
 
+const formatPrice = (price) => {
+  return (price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const getIcon = (name, size = 18) => {
   const IconComp = ICON_MAP[name] || ICON_MAP.default;
   return <IconComp size={size} />;
@@ -50,6 +54,9 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
   const [dsOpen, setDsOpen] = useState(false);
   const [added, setAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(product?.images?.[0] || product?.image_url);
+
+  const basePrice = parseFloat(product?.price) || 0;
+  const transferPrice = basePrice / 1.06;
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -136,7 +143,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <Header />
-      
+
       {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 pt-28 pb-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40">
         <Link href="/" className="hover:text-purple-brand"><Home size={12} /></Link>
@@ -154,7 +161,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
 
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
-          
+
           {/* Gallery */}
           <div className="flex flex-col gap-6">
             <div className="aspect-square bg-white rounded-3xl border border-black/5 flex items-center justify-center p-8 overflow-hidden">
@@ -164,12 +171,12 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                 <span className="text-6xl opacity-10">🍌</span>
               )}
             </div>
-            
+
             {allImages.length > 1 && (
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 {allImages.map((u, i) => (
-                  <button 
-                    key={i} 
+                  <button
+                    key={i}
                     className={`w-24 h-24 shrink-0 rounded-2xl bg-white border-2 transition-all p-2 flex items-center justify-center ${activeImg === u ? 'border-purple-brand shadow-xl' : 'border-transparent opacity-60'}`}
                     onClick={() => setActiveImg(u)}
                   >
@@ -200,12 +207,22 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                   <span className={`text-[10px] font-black uppercase tracking-widest ${product?.stock > 0 ? 'text-mint-success' : 'text-raspberry'}`}>
                     {product?.stock > 0 ? `✓ ${product.stock} en stock real` : '✗ Sin stock temporalmente'}
                   </span>
-                  <span className="text-3xl md:text-4xl font-black text-purple-brand mt-1">
-                    ${(parseFloat(product?.price) || 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                  </span>
-                  <span className="text-[0.6rem] font-black text-gray-400 uppercase tracking-widest mt-1">Precio Incluido impuestos</span>
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-3xl md:text-5xl font-black text-purple-brand">
+                        ${formatPrice(basePrice)}
+                      </span>
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Precio Normal</span>
+                    </div>
+                    <div className="flex flex-col pt-2 border-t border-black/5">
+                      <span className="text-sm md:text-lg font-bold text-purple-brand opacity-80">
+                        Pago con Transferencia: ${formatPrice(transferPrice)}
+                      </span>
+                      <span className="text-[9px] font-black uppercase tracking-widest opacity-40 mt-1">Disponible en el checkout</span>
+                    </div>
+                  </div>
                 </div>
-                
+
                 <button
                   className={`
                     px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black text-base md:text-lg transition-all shadow-2xl
@@ -235,14 +252,14 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                 <div className="flex items-center gap-2"><Truck size={14} /> Envío Certificado a nivel nacional</div>
               </div>
             </div>
-            
+
             <p className="text-[10px] font-bold uppercase opacity-20 text-center tracking-widest leading-relaxed">Original Retail Product • SKU: {product?.sku}</p>
           </div>
         </div>
 
         {/* Banana Review Section */}
         {product?.banana_review && (
-          <motion.section 
+          <motion.section
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -257,7 +274,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
 
             <div className="bg-white border border-black/5 rounded-[2.5rem] p-8 md:p-12 overflow-hidden relative group shadow-sm">
               <div className="absolute top-0 right-0 w-64 h-64 bg-purple-brand/5 blur-[100px] -z-0"></div>
-              
+
               <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
                 {/* Verdict */}
                 <div className="lg:col-span-12 p-6 rounded-3xl bg-purple-brand/5 border border-purple-brand/10 flex flex-col md:flex-row items-center gap-6">
@@ -275,10 +292,10 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                     { label: 'Portabilidad', score: product.banana_review.scores?.portability },
                     { label: 'Costo / Beneficio', score: product.banana_review.scores?.value },
                   ].map((s, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-black/5 group-hover:bg-purple-brand/5 transition-colors">
-                        <span className="font-bold text-sm tracking-tight text-gray-700">{s.label}</span>
-                        <BananaRating score={s.score} />
-                      </div>
+                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-black/5 group-hover:bg-purple-brand/5 transition-colors">
+                      <span className="font-bold text-sm tracking-tight text-gray-700">{s.label}</span>
+                      <BananaRating score={s.score} />
+                    </div>
                   ))}
                 </div>
 
@@ -316,7 +333,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
         {/* Expandable Datasheet */}
         {datasheetEntries.length > 0 && (
           <section className="mt-20 mb-20">
-            <button 
+            <button
               className="w-full flex items-center justify-between p-8 rounded-3xl bg-white border border-black/5 hover:border-purple-brand/20 transition-all font-black"
               onClick={() => setDsOpen(!dsOpen)}
             >
