@@ -107,10 +107,14 @@ export default function ProductsAdminPage() {
     );
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name?.toLowerCase().includes(search.toLowerCase()) || 
-    p.sku?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const s = search.toLowerCase();
+    return (
+      p.name?.toLowerCase().includes(s) || 
+      p.sku?.toLowerCase().includes(s) ||
+      p.model_number?.toLowerCase().includes(s)
+    );
+  });
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
@@ -138,7 +142,7 @@ export default function ProductsAdminPage() {
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
           <input 
             className="w-full bg-gray-50 border border-black/5 rounded-2xl pl-14 pr-6 py-3.5 text-sm font-bold focus:outline-none focus:border-purple-brand/30 transition-all"
-            placeholder="Buscar por nombre o SKU..."
+            placeholder="Buscar por nombre, SKU o modelo..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
