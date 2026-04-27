@@ -103,15 +103,6 @@ function ResultadoContent() {
                 }
               } catch (_) { }
 
-              // Trigger WhatsApp if needed
-              if (waParam === 'true') {
-                try {
-                  const lastOrder = JSON.parse(sessionStorage.getItem('banana_last_order'));
-                  if (lastOrder?.whatsappUrl) {
-                    window.open(lastOrder.whatsappUrl, '_blank');
-                  }
-                } catch (e) { }
-              }
 
               // Clear cart + sessionStorage after populating receipt state
               clearCart();
@@ -198,6 +189,26 @@ function ResultadoContent() {
                     unit_price: item.price
                   }));
                   await supabase.from('order_items').insert(items);
+                  
+                  // Trigger Email Alerts
+                  const emailPayload = {
+                    order: { ...order, billing_address: orderData.billing_address, order_items: items },
+                    customerEmail: orderData.billing_address?.email || user?.email,
+                  };
+
+                  // Admin Alert
+                  fetch('/api/email/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'new_order_admin', ...emailPayload })
+                  }).catch(err => console.error("Admin Email Alert failed:", err));
+
+                  // Customer Initial Confirmation
+                  fetch('/api/email/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'status_update', ...emailPayload, newStatus: 'paid' })
+                  }).catch(err => console.error("Customer Email notification failed:", err));
                 }
               }
             } catch (dbErr) {

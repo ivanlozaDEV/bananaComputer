@@ -239,7 +239,27 @@ function CheckoutContent() {
       const { error: itemsError } = await supabase.from('order_items').insert(items);
       if (itemsError) throw itemsError;
 
-      // 4. Generate WhatsApp Message & URL
+      // 4. Trigger Email Alerts
+      const emailPayload = {
+        order: { ...order, billing_address: billingInfo, order_items: items },
+        customerEmail: billingInfo.email || user?.email,
+      };
+
+      // Admin Alert
+      fetch('/api/email/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'new_order_admin', ...emailPayload })
+      }).catch(err => console.error("Admin Email Alert failed:", err));
+
+      // Customer Initial Confirmation
+      fetch('/api/email/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'status_update', ...emailPayload, newStatus: 'verificando_pago' })
+      }).catch(err => console.error("Customer Email notification failed:", err));
+
+      // 5. Generate WhatsApp Message & URL
       const whatsappUrl = getWhatsAppUrl(
         { ...order, full_name: billingInfo.full_name },
         cartItems,
@@ -258,7 +278,7 @@ function CheckoutContent() {
       // clearCart(); // We can clear it here or in resultado. Redirection to WhatsApp will happen next.
 
       // We'll redirect to a URL that resultado can handle AND also trigger the WA window
-      window.location.href = `/checkout/resultado?method=transfer&orderId=${order.id}&wa=true`;
+      window.location.href = `/checkout/resultado?method=transfer&orderId=${order.id}`;
     } catch (err) {
       console.error('Error creating transfer order:', err);
       showToast('Error al crear el pedido. Por favor intenta de nuevo.', 'error');

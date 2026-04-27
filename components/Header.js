@@ -245,7 +245,12 @@ const Header = () => {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-bold text-sm leading-tight mb-1">{item.name}</h4>
-                  <p className="text-purple-brand font-black">${parseFloat(item.price).toLocaleString()}</p>
+                  <div className="flex flex-col">
+                    <p className="text-purple-brand font-black leading-none">${parseFloat(item.price).toLocaleString()}</p>
+                    <p className="text-[10px] font-bold text-purple-brand/60 mt-1">
+                      o ${(parseFloat(item.price) / 1.06).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} con transferencia
+                    </p>
+                  </div>
                 </div>
                 <button className="text-raspberry p-2 hover:bg-raspberry/5 rounded-full transition-colors" onClick={() => removeFromCart(item.cartId)}>&times;</button>
               </div>
@@ -267,6 +272,17 @@ const Header = () => {
               <span>Total:</span>
               <span>${baseTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
+            
+            <div className="bg-purple-brand/5 p-3 rounded-xl border border-purple-brand/10 mt-1">
+              <div className="flex justify-between text-sm font-black text-purple-brand">
+                <span>Total Transferencia:</span>
+                <span>${(baseTotal / 1.06).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <p className="text-[9px] font-bold text-purple-brand/60 mt-1 uppercase tracking-wider text-center">
+                Precio con descuento disponible en el checkout
+              </p>
+            </div>
+
             <button className="mt-4 w-full py-4 bg-purple-brand text-white rounded-xl font-black text-xl hover:scale-102 hover:shadow-xl transition-all" onClick={handleCheckout}>
               Finalizar Pedido
             </button>

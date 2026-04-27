@@ -727,8 +727,20 @@ export default function ProfilePage() {
                            <h3 className="font-black">Pedido #{order.order_number || order.id.slice(0, 8)}</h3>
                            <span className="text-[10px] font-black opacity-30 tracking-widest uppercase">{new Date(order.created_at).toLocaleDateString()}</span>
                          </div>
-                         <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${order.status === 'pending' ? 'bg-banana-yellow/10 text-banana-yellow' : 'bg-mint-success/10 text-mint-success'}`}>
-                            {order.status === 'pending' ? 'Pendiente' : order.status === 'paid' ? 'Pagado' : order.status}
+                         <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${
+                           order.status === 'paid' ? 'bg-mint-success/10 text-mint-success' :
+                           order.status === 'shipped' ? 'bg-purple-brand/10 text-purple-brand' :
+                           order.status === 'cancelled' ? 'bg-raspberry/10 text-raspberry' :
+                           'bg-banana-yellow/10 text-banana-yellow'
+                         }`}>
+                            {
+                              order.status === 'pending' ? 'Pendiente' :
+                              order.status === 'verificando_pago' ? 'Verificando Pago' :
+                              order.status === 'paid' ? 'Pagado' :
+                              order.status === 'shipped' ? 'Enviado' :
+                              order.status === 'cancelled' ? 'Cancelado' :
+                              order.status
+                            }
                          </span>
                       </div>
                       <div className="flex flex-col gap-1">
@@ -779,7 +791,16 @@ export default function ProfilePage() {
                     </div>
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-widest text-purple-brand/50">Estado</span>
-                      <p className="font-black text-purple-brand">{selectedOrder.status === 'paid' ? 'PAGADO' : selectedOrder.status.toUpperCase()}</p>
+                      <p className="font-black text-purple-brand">
+                        {
+                          selectedOrder.status === 'pending' ? 'PENDIENTE' :
+                          selectedOrder.status === 'verificando_pago' ? 'VERIFICANDO PAGO' :
+                          selectedOrder.status === 'paid' ? 'PAGADO' :
+                          selectedOrder.status === 'shipped' ? 'ENVIADO' :
+                          selectedOrder.status === 'cancelled' ? 'CANCELADO' :
+                          selectedOrder.status.toUpperCase()
+                        }
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">

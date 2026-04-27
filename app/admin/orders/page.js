@@ -3,14 +3,16 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-  ShoppingBag, ArrowLeft, CheckCircle2, XCircle,
-  Clock, RefreshCw, ChevronRight
+  ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw,
+  ChevronRight, Printer, Package
 } from 'lucide-react';
 import Link from 'next/link';
 
 const STATUS_CONFIG = {
-  paid:      { label: 'Pagado',    color: 'text-mint-success',  bg: 'bg-mint-success/10',  border: 'border-mint-success/20',  Icon: CheckCircle2 },
   pending:   { label: 'Pendiente', color: 'text-banana-yellow', bg: 'bg-banana-yellow/10', border: 'border-banana-yellow/20', Icon: Clock },
+  verificando_pago: { label: 'Verificando Pago', color: 'text-banana-yellow', bg: 'bg-banana-yellow/10', border: 'border-banana-yellow/20', Icon: Clock },
+  paid:      { label: 'Pagado',    color: 'text-mint-success',  bg: 'bg-mint-success/10',  border: 'border-mint-success/20',  Icon: CheckCircle2 },
+  shipped:   { label: 'Enviado',   color: 'text-purple-brand',  bg: 'bg-purple-brand/10',  border: 'border-purple-brand/20',  Icon: Package },
   cancelled: { label: 'Cancelado', color: 'text-raspberry',     bg: 'bg-raspberry/10',     border: 'border-raspberry/20',    Icon: XCircle },
 };
 
@@ -42,9 +44,9 @@ export default function AdminOrdersPage() {
   const shown = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
   const totals = {
-    all:       orders.length,
+    pending:   orders.filter(o => o.status === 'pending' || o.status === 'verificando_pago').length,
     paid:      orders.filter(o => o.status === 'paid').length,
-    pending:   orders.filter(o => o.status === 'pending').length,
+    shipped:   orders.filter(o => o.status === 'shipped').length,
     cancelled: orders.filter(o => o.status === 'cancelled').length,
   };
 
@@ -89,7 +91,7 @@ export default function AdminOrdersPage() {
 
       {/* ── Filter tabs ── */}
       <div className="flex gap-2 flex-wrap">
-        {['all', 'paid', 'pending', 'cancelled'].map(f => (
+        {['all', 'pending', 'paid', 'shipped', 'cancelled'].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -98,8 +100,8 @@ export default function AdminOrdersPage() {
                 ? 'bg-purple-brand text-white border-purple-brand shadow-lg shadow-purple-brand/20'
                 : 'bg-white text-gray-500 border-black/10 hover:border-black/20 hover:text-black'}`}
           >
-            {f === 'all' ? 'Todos' : f === 'paid' ? 'Pagados' : f === 'pending' ? 'Pendientes' : 'Cancelados'}
-            <span className="ml-1.5 opacity-60">({totals[f]})</span>
+            {f === 'all' ? 'Todos' : f === 'paid' ? 'Pagados' : f === 'pending' ? 'Pendientes' : f === 'shipped' ? 'Enviados' : 'Cancelados'}
+            <span className="ml-1.5 opacity-60">({totals[f] || 0})</span>
           </button>
         ))}
       </div>
@@ -121,7 +123,7 @@ export default function AdminOrdersPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-black/5 bg-gray-50/50">
-                {['Estado', 'Cliente', 'Productos', 'Total', 'Fecha', ''].map(h => (
+                {['Estado', 'Cliente', 'Productos', 'Total', 'Fecha', 'Acciones'].map(h => (
                   <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">{h}</th>
                 ))}
               </tr>
@@ -163,12 +165,21 @@ export default function AdminOrdersPage() {
                       </p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link
-                        href={`/admin/orders/${order.id}`}
-                        className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-purple-brand opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        Ver detalle <ChevronRight size={12} />
-                      </Link>
+                      <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                        <Link
+                          href={`/admin/orders/${order.id}`}
+                          className="p-2 bg-gray-50 text-gray-400 hover:text-purple-brand hover:bg-purple-brand/5 rounded-xl transition-all"
+                          title="Imprimir Etiqueta"
+                        >
+                          <Printer size={16} />
+                        </Link>
+                        <Link
+                          href={`/admin/orders/${order.id}`}
+                          className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-purple-brand transition-all"
+                        >
+                          Ver detalle <ChevronRight size={12} />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

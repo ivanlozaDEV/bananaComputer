@@ -113,6 +113,9 @@ h3 { @apply text-xl md:text-2xl font-black; }
   header, footer, .no-print {
     display: none !important;
   }
+  .print-only {
+    display: block !important;
+  }
   body {
     background: white !important;
   }
@@ -120,5 +123,16 @@ h3 { @apply text-xl md:text-2xl font-black; }
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     margin: 0 !important;
+  }
+  .receipt-card {
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
   }
 }
