@@ -125,8 +125,11 @@ const ProductGrid = ({ subcategoryId }) => {
         }
       }
 
+      // Final sort to prioritize stock
+      const stockPrioritized = [...mixed].sort((a, b) => (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0));
+
       // Final processing for the smart group
-      const processedProducts = mixed.map(p => {
+      const processedProducts = stockPrioritized.map(p => {
         const year = new Date(p.created_at).getFullYear().toString();
         let specs = (p.product_attributes || [])
           .filter(pa => pa.attribute_definitions?.show_in_card && pa.value && String(pa.value).trim() !== '')
@@ -172,13 +175,15 @@ const ProductGrid = ({ subcategoryId }) => {
         const items = group.products;
         const featured = items.filter(p => p.is_featured);
         const latest = items.filter(p => !p.is_featured);
-
         const combined = [...featured.map(p => ({ ...p, badgeType: 'featured' })), ...latest.map(p => ({ ...p, badgeType: 'new' }))];
+
+        // Sort within group by stock priority
+        const stockPrioritized = combined.sort((a, b) => (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0));
 
         return {
           id: group.id,
           name: group.name,
-          products: combined.map(p => {
+          products: stockPrioritized.map(p => {
             const year = new Date(p.created_at).getFullYear().toString();
             let specs = (p.product_attributes || [])
               .filter(a => a.attribute_definitions?.show_in_card)

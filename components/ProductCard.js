@@ -4,8 +4,9 @@ import Link from 'next/link';
 import {
   Cpu, MemoryStick, HardDrive, Monitor, Battery,
   Scale, Wifi, Camera, Layers, Zap, Scan, Settings,
-  Palette, Film, ChevronLeft, ChevronRight, ShoppingCart
+  Palette, Film, ChevronLeft, ChevronRight, ShoppingCart, Bell
 } from 'lucide-react';
+import WaitlistModal from './WaitlistModal';
 
 const ICON_MAP = {
   '🧠': MemoryStick,
@@ -45,6 +46,7 @@ const getIcon = (name, size = 14) => {
 
 const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) => {
   const [imgIndex, setImgIndex] = useState(0);
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const images = React.useMemo(() => {
     let imgs = [];
     try {
@@ -110,10 +112,20 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
           </Link>
 
           {/* Badge */}
-          <div className="absolute top-3 left-3 z-10">
-            <span className={`px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md ${product.badgeType === 'featured' ? 'bg-purple-brand text-white' : 'bg-banana-yellow text-black'}`}>
-              {product.badgeType === 'featured' ? 'D' : 'N'}
-            </span>
+          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+            {product.stock === 0 ? (
+              <span className="px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md bg-raspberry text-white">
+                AGOTADA
+              </span>
+            ) : product.badgeType === 'featured' || product.is_featured ? (
+              <span className="px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md bg-purple-brand text-white flex items-center gap-1">
+                🏆 MÁS VENDIDA
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md bg-banana-yellow text-black">
+                NUEVO
+              </span>
+            )}
           </div>
         </div>
 
@@ -151,29 +163,43 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
         <div className="w-full sm:w-[180px] p-5 bg-gray-50/50 border-t sm:border-t-0 sm:border-l border-black/5 flex flex-col justify-center items-center gap-4 shrink-0">
           <div className="text-center flex flex-col gap-1">
             <div className="flex flex-col items-center">
-              <span className="block text-2xl font-bold text-purple-brand leading-none">
+              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Precio Normal (incl. IVA)</span>
+              <span className="block text-xl font-bold text-gray-400 leading-none line-through opacity-50">
                 ${formatPrice(basePrice)}
               </span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1.5">Precio Normal</span>
             </div>
 
-            <div className="mt-2 text-center opacity-30">
-              <span className="text-xs font-medium text-purple-brand">
-                Pago por transferencia: ${formatPrice(transferPrice)}
+            <div className="mt-2 text-center">
+              <span className="block text-[10px] font-black text-purple-brand uppercase tracking-widest leading-none mb-1">Efectivo / Transferencia</span>
+              <span className="block text-2xl font-black text-purple-brand">
+                ${formatPrice(transferPrice)}
               </span>
-              <span className="block text-[8px] font-bold uppercase tracking-wider opacity-60 mt-0.5">Disponible en el checkout</span>
+              <span className="block text-[8px] font-bold uppercase tracking-wider opacity-60 mt-1">IVA INCLUIDO • Disponible en checkout</span>
             </div>
           </div>
 
           <div className="flex flex-col w-full gap-2">
             <button
-              onClick={(e) => handleAddToCart(e, product)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (product.stock > 0) {
+                  handleAddToCart(e, product);
+                } else {
+                  setIsWaitlistOpen(true);
+                }
+              }}
               className={`
                 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all
-                ${isAdded ? 'bg-mint-success text-white' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-md shadow-banana-yellow/10'}
+                ${product.stock === 0 ? 'bg-purple-brand/10 text-purple-brand hover:bg-purple-brand/20' : isAdded ? 'bg-mint-success text-white' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-md shadow-banana-yellow/10'}
               `}
             >
-              {isAdded ? '✓ LISTO' : (
+              {product.stock === 0 ? (
+                <>
+                  <Bell size={14} />
+                  ME INTERESA
+                </>
+              ) : isAdded ? '✓ LISTO' : (
                 <>
                   <ShoppingCart size={14} fill="currentColor" />
                   AGREGAR
@@ -196,10 +222,14 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
   return (
     <article className="group relative bg-white rounded-2xl border border-black/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] flex flex-col h-full">
       {/* Badge */}
-      <div className="absolute top-2 left-2 md:top-4 md:left-4 z-10">
-        {product.badgeType === 'featured' ? (
-          <span className="px-2 py-0.5 md:px-3 md:py-1 bg-purple-brand text-white text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
-            DISTINGUIDO
+      <div className="absolute top-2 left-2 md:top-4 md:left-4 z-10 flex flex-col gap-1">
+        {product.stock === 0 ? (
+          <span className="px-2 py-0.5 md:px-3 md:py-1 bg-raspberry text-white text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
+            AGOTADA
+          </span>
+        ) : product.badgeType === 'featured' || product.is_featured ? (
+          <span className="px-2 py-0.5 md:px-3 md:py-1 bg-purple-brand text-white text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg flex items-center gap-1">
+            🏆 MÁS VENDIDA
           </span>
         ) : (
           <span className="px-2 py-0.5 md:px-3 md:py-1 bg-banana-yellow text-black text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
@@ -264,7 +294,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
         {/* Specs Grid - Hidden or very compact on mobile */}
         <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-          {product.specs?.slice(0, 4).map((spec, index) => (
+          {product.specs?.slice(0, 6).map((spec, index) => (
             <div key={index} className="flex items-center gap-1 md:gap-2 p-1 md:p-1.5 rounded-lg md:rounded-xl bg-gray-50 border border-black/5">
               <span className="text-purple-brand opacity-60 scale-75 md:scale-90">{getIcon(spec.icon, 12)}</span>
               <div className="flex flex-col min-w-0">
@@ -276,29 +306,47 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
         </div>
 
         {/* Footer: Price & CTA */}
-        <div className="mt-auto pt-3 md:pt-4 flex items-center justify-between border-t border-black/5 gap-2">
-          <div className="flex flex-col min-w-0">
-            <div className="flex flex-col">
-              <span className="text-sm md:text-xl font-bold text-purple-brand leading-none">
-                ${formatPrice(basePrice)}
-              </span>
-              <span className="text-[10px] md:text-xs font-medium text-purple-brand mt-1 opacity-80">
-                Pago con Transferencia: ${formatPrice(transferPrice)}
-              </span>
-              <span className="text-[7px] md:text-[8px] font-bold uppercase tracking-tight opacity-40 mt-0.5">Disponible en el checkout</span>
+        <div className="mt-auto pt-3 md:pt-4 flex flex-col border-t border-black/5 gap-3">
+          <div className="flex flex-col w-full">
+            <div className="flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Efectivo / Transferencia (incl. IVA)</span>
+                <span className="text-lg md:text-2xl font-black text-purple-brand leading-none">
+                  ${formatPrice(transferPrice)}
+                </span>
+              </div>
+              <div className="flex flex-col items-end opacity-40">
+                <span className="text-[7px] font-bold uppercase tracking-tighter">Normal (incl. IVA)</span>
+                <span className="text-[10px] md:text-xs font-bold line-through">
+                  ${formatPrice(basePrice)}
+                </span>
+              </div>
             </div>
+            <span className="text-[7px] md:text-[8px] font-bold uppercase tracking-widest opacity-40 mt-1">Precio final con factura</span>
           </div>
 
           <div className="flex gap-1 md:gap-2 shrink-0">
 
             <button
-              onClick={(e) => handleAddToCart(e, product)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (product.stock > 0) {
+                  handleAddToCart(e, product);
+                } else {
+                  setIsWaitlistOpen(true);
+                }
+              }}
               className={`
                 flex items-center justify-center gap-1 px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl font-black text-[9px] md:text-xs transition-all tracking-tight
-                ${isAdded ? 'bg-mint-success text-white scale-95' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-lg shadow-banana-yellow/20'}
+                ${product.stock === 0 ? 'bg-purple-brand/10 text-purple-brand hover:bg-purple-brand/20' : isAdded ? 'bg-mint-success text-white scale-95' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-lg shadow-banana-yellow/20'}
               `}
             >
-              {isAdded ? (
+              {product.stock === 0 ? (
+                <span className="whitespace-nowrap flex items-center gap-1">
+                  <Bell size={12} /> ME INTERESA
+                </span>
+              ) : isAdded ? (
                 <span className="hidden md:inline">AÑADIDO</span>
               ) : (
                 <>
@@ -306,11 +354,16 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
                   <span className="whitespace-nowrap">AGREGAR</span>
                 </>
               )}
-              {isAdded && <span className="md:hidden">✓</span>}
+              {isAdded && product.stock > 0 && <span className="md:hidden">✓</span>}
             </button>
           </div>
         </div>
       </div>
+      <WaitlistModal 
+        isOpen={isWaitlistOpen}
+        onClose={() => setIsWaitlistOpen(false)}
+        product={product}
+      />
     </article>
   );
 };

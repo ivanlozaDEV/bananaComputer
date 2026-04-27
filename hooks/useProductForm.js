@@ -196,23 +196,51 @@ export function useProductForm(categories, onSaveSuccess) {
     const rawSpecs = result.specs || result.featured_specs;
     if (rawSpecs) {
       const mapped = {};
+      const attrDefsLower = attrDefs.map(a => ({ ...a, nameLower: a.name.toLowerCase().trim() }));
+      
       for (const [key, value] of Object.entries(rawSpecs)) {
+        if (!value) continue;
+        const keyLower = key.toLowerCase().trim();
+        
+        // 1. Precise Match (ID)
         const directMatch = attrDefs.find(a => a.id === key);
         if (directMatch) {
           mapped[directMatch.id] = String(value);
           continue;
         }
 
-        const keyLower = key.toLowerCase().trim();
-        const nameMatch = attrDefs.find(a => {
-          const aLower = a.name.toLowerCase();
-          return aLower === keyLower || aLower.includes(keyLower) || keyLower.includes(aLower);
-        });
-        if (nameMatch) mapped[nameMatch.id] = String(value);
+        // 2. Exact Name Match
+        const exactNameMatch = attrDefsLower.find(a => a.nameLower === keyLower);
+        if (exactNameMatch) {
+          mapped[exactNameMatch.id] = String(value);
+          continue;
+        }
+
+        // 3. Close Name Match (only if specific keywords match)
+        const partialMatch = attrDefsLower.find(a => 
+          a.nameLower.includes(keyLower) || keyLower.includes(a.nameLower)
+        );
+        if (partialMatch) {
+          // Additional safety: ignore very short keys or overly generic matches
+          if (keyLower.length > 2) {
+            mapped[partialMatch.id] = String(value);
+          }
+        }
       }
       setAttrValues(v => ({ ...v, ...mapped }));
     }
-    if (result.datasheet) setDatasheetParsed(result.datasheet);
+
+    if (result.datasheet) {
+      setDatasheetParsed(result.datasheet);
+      // We ONLY update datasheetRaw if it was previously empty or much shorter than the result
+      // This prevents losing the original pasted text if the IA returns a truncated version.
+      setDatasheetRaw(prev => {
+        if (!prev || prev.trim().length < 50) {
+          return Object.entries(result.datasheet).map(([k,v]) => `${k}\t${v}`).join('\n');
+        }
+        return prev;
+      });
+    }
   }, [attrDefs]);
 
   return {

@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from '
 import Link from 'next/link';
 import { Bot, User, Send, X, Terminal, Cpu, Sparkles, AlertTriangle, Package, RefreshCw, ArrowRight } from 'lucide-react';
 import { chatWithOllama, pingOllama } from '@/lib/ollama';
-import { searchInventoryForAI, formatInventoryForAI, fetchAIBaseline, addToWaitlist, filterInventoryByIds } from '@/lib/inventory';
+import { searchInventoryForAI, formatInventoryForAI, fetchAIBaseline, filterInventoryByIds } from '@/lib/inventory';
+import WaitlistForm from '@/components/WaitlistForm';
 import { supabase } from '@/lib/supabase';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -403,54 +404,7 @@ const RecommendedProduct = memo(({ id }) => {
   );
 });
 
-const WaitlistForm = memo(({ interest }) => {
-  const [email, setEmail] = useState('');
-  const [joined, setJoined] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!email || submitting) return;
-    setSubmitting(true);
-    try {
-      await addToWaitlist(email, interest);
-      setJoined(true);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (joined) return (
-    <div className="bg-mint-success/10 border border-mint-success/20 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-mint-success flex items-center gap-2">
-      <Sparkles size={14} /> ¡Anotado! Te avisaremos a {email}
-    </div>
-  );
-
-  return (
-    <form onSubmit={handleSubmit} className="bg-white border border-black/5 p-5 rounded-2xl flex flex-col gap-3 text-black">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">¿Quieres que te avisemos cuando llegue stock?</p>
-      <div className="flex gap-2">
-        <input
-          type="email"
-          placeholder="tu@email.com"
-          className="flex-1 bg-gray-50 border border-black/5 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-purple-brand/30"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="px-4 py-2 bg-purple-brand text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-brand/80 transition-all font-black"
-        >
-          {submitting ? '...' : 'Anotarme'}
-        </button>
-      </div>
-    </form>
-  );
-});
 
 const ComparisonTable = memo(({ ids }) => {
   const [products, setProducts] = useState([]);

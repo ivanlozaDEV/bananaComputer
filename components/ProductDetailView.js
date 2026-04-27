@@ -10,8 +10,9 @@ import {
   ChevronDown, ChevronUp, ShieldCheck, Truck,
   Cpu, MemoryStick, HardDrive, Monitor, Battery,
   Scale, Wifi, Camera, Layers, Zap, Scan, Settings,
-  Palette, Film, ChevronRight, Home, Sparkles
+  Palette, Film, ChevronRight, Home, Sparkles, Trophy, Bell
 } from 'lucide-react';
+import WaitlistModal from './WaitlistModal';
 
 const ICON_MAP = {
   '🧠': MemoryStick,
@@ -53,6 +54,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
   const { addToCart } = useCart();
   const [dsOpen, setDsOpen] = useState(false);
   const [added, setAdded] = useState(false);
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [activeImg, setActiveImg] = useState(product?.images?.[0] || product?.image_url);
 
   const basePrice = parseFloat(product?.price) || 0;
@@ -190,7 +192,14 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
           {/* Info Section */}
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-2">
-              <span className="text-purple-brand font-black text-[10px] uppercase tracking-[0.2em]">{product?.tagline || 'Ecuador Tech Official'}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-purple-brand font-black text-[10px] uppercase tracking-[0.2em]">{product?.tagline || 'Ecuador Tech Official'}</span>
+                {(product?.is_featured || product?.badgeType === 'featured') && (
+                  <span className="px-2 py-0.5 bg-purple-brand text-white text-[8px] font-black tracking-widest uppercase rounded-full flex items-center gap-1 shadow-sm">
+                    🏆 MÁS VENDIDA
+                  </span>
+                )}
+              </div>
               <h1 className="mb-2 tracking-tight">{product?.name}</h1>
               {product?.model_number && (
                 <div className="flex items-center gap-2 mt-2">
@@ -205,35 +214,53 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
                 <div className="flex flex-col">
                   <span className={`text-[10px] font-black uppercase tracking-widest ${product?.stock > 0 ? 'text-mint-success' : 'text-raspberry'}`}>
-                    {product?.stock > 0 ? `✓ ${product.stock} en stock real` : '✗ Sin stock temporalmente'}
+                    {product?.stock > 0 ? `✓ ${product.stock} en stock real` : '✗ AGOTADA'}
                   </span>
+                  {product?.stock === 0 && (
+                    <p className="text-[10px] font-bold text-gray-400 italic mt-1 leading-tight">
+                      La espera usualmente dura 3 días laborables,<br/>pero primero le confirmaríamos las existencias.
+                    </p>
+                  )}
                   <div className="flex flex-col gap-2 mt-2">
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-3xl md:text-5xl font-black text-purple-brand">
-                        ${formatPrice(basePrice)}
+                  <div className="flex flex-col gap-4 mt-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-purple-brand uppercase tracking-[0.2em] mb-1">Efectivo / Transferencia (incl. IVA)</span>
+                      <span className="text-4xl md:text-6xl font-black text-purple-brand">
+                        ${formatPrice(transferPrice)}
                       </span>
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Precio Normal</span>
                     </div>
-                    <div className="flex flex-col pt-2 border-t border-black/5">
-                      <span className="text-sm md:text-lg font-bold text-purple-brand opacity-80">
-                        Pago con Transferencia: ${formatPrice(transferPrice)}
-                      </span>
-                      <span className="text-[9px] font-black uppercase tracking-widest opacity-40 mt-1">Disponible en el checkout</span>
+                    <div className="flex flex-col pt-4 border-t border-black/5">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Precio Normal (Tarjeta / Otros)</span>
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-2xl md:text-3xl font-bold text-gray-400 line-through">
+                          ${formatPrice(basePrice)}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Incluye IVA</span>
+                      </div>
+                      <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mt-2">Precio final con factura oficial</span>
                     </div>
+                  </div>
                   </div>
                 </div>
 
-                <button
-                  className={`
-                    px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black text-base md:text-lg transition-all shadow-2xl
-                    ${added ? 'bg-mint-success text-white scale-95' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-banana-yellow/20'}
-                    ${product?.stock === 0 ? 'opacity-50 cursor-not-allowed grayscale' : ''}
-                  `}
-                  onClick={handleAddToCart}
-                  disabled={product?.stock === 0}
-                >
-                  {added ? '✓ AGREGADO' : 'COMPRAR AHORA'}
-                </button>
+                {product?.stock > 0 ? (
+                  <button
+                    className={`
+                      px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black text-base md:text-lg transition-all shadow-2xl
+                      ${added ? 'bg-mint-success text-white scale-95' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-banana-yellow/20'}
+                    `}
+                    onClick={handleAddToCart}
+                  >
+                    {added ? '✓ AGREGADO' : 'COMPRAR AHORA'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsWaitlistOpen(true)}
+                    className="flex-1 flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black text-base md:text-lg bg-purple-brand/10 text-purple-brand hover:bg-purple-brand/20 transition-all shadow-sm border border-purple-brand/10"
+                  >
+                    <Bell size={20} /> ME INTERESA
+                  </button>
+                )}
               </div>
 
               {/* Quick Specs Grid */}
@@ -362,6 +389,11 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
         )}
       </div>
 
+      <WaitlistModal 
+        isOpen={isWaitlistOpen}
+        onClose={() => setIsWaitlistOpen(false)}
+        product={product}
+      />
       <Footer />
     </div>
   );
