@@ -116,6 +116,35 @@ export default function ProductsAdminPage() {
     );
   });
 
+  if (productForm.modal !== null) {
+    return (
+      <div className="flex flex-col gap-8 animate-in fade-in duration-500 pb-20">
+        <ProductModal
+          modal={productForm.modal}
+          setModal={productForm.setModal}
+          form={productForm.form}
+          setForm={productForm.setForm}
+          categories={categories}
+          attrDefs={productForm.attrDefs}
+          attrValues={productForm.attrValues}
+          setAttrValues={productForm.setAttrValues}
+          datasheetRaw={productForm.datasheetRaw}
+          setDatasheetRaw={productForm.setDatasheetRaw}
+          handleDatasheetFile={productForm.handleDatasheetFile}
+          handleImageUpload={productForm.handleImageUpload}
+          handleSave={productForm.handleSave}
+          uploading={productForm.uploading}
+          saving={productForm.saving}
+          ollama={ollama}
+          onOllamaAnalyze={handleOllamaAnalyze}
+          onGenerateReview={handleGenerateReview}
+          removeImage={productForm.removeImage}
+          errors={productForm.errors}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="flex flex-col gap-4">
@@ -169,29 +198,6 @@ export default function ProductsAdminPage() {
           onDelete={deleteProduct} 
         />
       )}
-
-      <ProductModal
-        modal={productForm.modal}
-        setModal={productForm.setModal}
-        form={productForm.form}
-        setForm={productForm.setForm}
-        categories={categories}
-        attrDefs={productForm.attrDefs}
-        attrValues={productForm.attrValues}
-        setAttrValues={productForm.setAttrValues}
-        datasheetRaw={productForm.datasheetRaw}
-        setDatasheetRaw={productForm.setDatasheetRaw}
-        handleDatasheetFile={productForm.handleDatasheetFile}
-        handleImageUpload={productForm.handleImageUpload}
-        handleSave={productForm.handleSave}
-        uploading={productForm.uploading}
-        saving={productForm.saving}
-        ollama={ollama}
-        onOllamaAnalyze={handleOllamaAnalyze}
-        onGenerateReview={handleGenerateReview}
-        removeImage={productForm.removeImage}
-        errors={productForm.errors}
-      />
     </div>
   );
 }

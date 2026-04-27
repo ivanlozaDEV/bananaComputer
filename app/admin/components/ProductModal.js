@@ -30,8 +30,8 @@ const ProductModal = ({
   const availableSubs = categories.find(c => c.id === form.category_id)?.subcategories || [];
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-white/70 backdrop-blur-xl flex items-start justify-center overflow-y-auto p-4 md:p-8 animate-in fade-in duration-300">
-      <div className="relative w-full max-w-4xl bg-white border border-black/5 rounded-[2.5rem] shadow-2xl p-6 md:p-10 animate-in slide-in-from-bottom-10 duration-500 my-8">
+    <div className="animate-in fade-in duration-300">
+      <div className="w-full bg-white border border-black/5 rounded-[2.5rem] p-6 md:p-10">
         
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
