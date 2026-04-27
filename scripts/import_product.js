@@ -104,7 +104,7 @@ async function main() {
   console.log('📡 Consultando Supabase — attribute_definitions...');
   const { data: catData, error: catErr } = await supabase
     .from('categories')
-    .select('id, name, attribute_definitions(*), subcategories(id, slug, name, attribute_definitions(*))')
+    .select('id, name, attribute_definitions(*), subcategories(id, slug, name)')
     .eq('slug', opts.category)
     .single();
 
@@ -122,10 +122,8 @@ async function main() {
     process.exit(1);
   }
 
-  // Merge base + subcategory attributes
-  const baseAttrs  = (catData.attribute_definitions || []).filter(a => !a.subcategory_id);
-  const extraAttrs = subData?.attribute_definitions || [];
-  const allAttrs   = [...baseAttrs, ...extraAttrs].sort((a, b) => a.display_order - b.display_order);
+  // Simplificación: Todos los atributos son de la categoría
+  const allAttrs   = (catData.attribute_definitions || []).sort((a, b) => a.display_order - b.display_order);
 
   const attrSchema = allAttrs.map(a => ({
     id:   a.id,

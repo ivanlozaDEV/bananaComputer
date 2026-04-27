@@ -303,10 +303,6 @@ export default function CategoriesAdminPage() {
                     <table className="w-full text-left text-[11px]">
                       <thead>
                         <tr className="border-b border-black/10 bg-gray-50/50">
-                          <th className="px-6 py-4 font-black uppercase tracking-widest text-gray-500">Nombre</th>
-                          <th className="px-6 py-4 font-black uppercase tracking-widest text-gray-500">Unidad</th>
-                          <th className="px-6 py-4 font-black uppercase tracking-widest text-gray-500">Ícono</th>
-                          <th className="px-6 py-4 font-black uppercase tracking-widest text-gray-500">Tipo</th>
                           <th className="px-6 py-4 font-black uppercase tracking-widest text-gray-500">Orden</th>
                           <th className="px-6 py-4 font-black uppercase tracking-widest text-gray-500 text-center">En Card</th>
                           <th className="px-6 py-4 text-right"></th>
@@ -316,12 +312,10 @@ export default function CategoriesAdminPage() {
                         {cat.attribute_definitions?.sort((a,b) => a.display_order - b.display_order).map(attr => (
                           <tr key={attr.id} className="border-b border-black/10 last:border-0 hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-3.5 font-bold text-gray-900">{attr.name}</td>
-                            <td className="px-6 py-3.5 text-gray-600 font-bold">{attr.unit || '—'}</td>
-                            <td className="px-6 py-3.5 text-gray-500 font-medium italic">
-                              {ICON_OPTIONS.find(o => o.value === attr.icon)?.label || attr.icon || '—'}
-                            </td>
+                            <td className="px-6 py-3.5 text-gray-500">{attr.unit || '—'}</td>
+                            <td className="px-6 py-3.5 text-gray-500">{attr.icon || '—'}</td>
                             <td className="px-6 py-3.5">
-                              <span className="px-2 py-0.5 bg-gray-100 rounded-lg text-[9px] uppercase font-black text-gray-500 border border-black/5">
+                              <span className="px-2 py-1 bg-gray-100 rounded-lg text-[9px] uppercase font-black text-gray-500 border border-black/5">
                                 {attr.data_type}
                               </span>
                             </td>
@@ -367,17 +361,15 @@ export default function CategoriesAdminPage() {
                     </div>
                     <div className="flex flex-col gap-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Ícono</label>
-                       <select className="w-full bg-white border border-black/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none appearance-none font-bold text-gray-900 shadow-sm"
-                         value={attrForms[cat.id]?.icon || ''} onChange={e => setAttr(cat.id, 'icon', e.target.value)}>
-                         <option value="">Ninguno</option>
-                         {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                       </select>
+                       <input className="w-full bg-white border border-black/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none font-bold text-gray-900 shadow-sm" placeholder="🚀"
+                         value={attrForms[cat.id]?.icon || ''} onChange={e => setAttr(cat.id, 'icon', e.target.value)} />
                     </div>
                     <div className="flex flex-col gap-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Tipo</label>
                        <select className="w-full bg-white border border-black/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none appearance-none font-bold text-gray-900 shadow-sm"
                          value={attrForms[cat.id]?.data_type || 'text'} onChange={e => setAttr(cat.id, 'data_type', e.target.value)}>
-                         {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                         <option value="text">Texto</option>
+                         <option value="number">Número</option>
                        </select>
                     </div>
                     <div className="flex flex-col gap-2">

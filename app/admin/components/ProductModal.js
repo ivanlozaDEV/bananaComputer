@@ -177,7 +177,7 @@ const ProductModal = ({
                   <Sparkles size={12} className="text-purple-brand" /> Especificaciones Técnicas (Catálogo)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {attrDefs.sort((a,b) => a.display_order - b.display_order).map(attr => (
+                  {attrDefs.filter(a => a.show_in_card).sort((a,b) => a.display_order - b.display_order).map(attr => (
                     <div key={attr.id} className="flex flex-col gap-1.5">
                       <label className="text-[9px] font-bold uppercase tracking-tight text-gray-500 ml-1 truncate">
                         {attr.name}{attr.unit ? ` (${attr.unit})` : ''}

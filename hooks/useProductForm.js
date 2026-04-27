@@ -27,14 +27,10 @@ export function useProductForm(categories, onSaveSuccess) {
   useEffect(() => {
     const cat = categories.find(c => c.id === form.category_id);
     if (!cat) { setAttrDefs([]); return; }
-    const baseAttrs = (cat.attribute_definitions || []).filter(a => !a.subcategory_id);
     
-    // For attributes, we'll use the "primary" subcategory if any
-    const primarySubId = form.subcategory_ids?.[0] || form.subcategory_id;
-    const sub = cat.subcategories?.find(s => s.id === primarySubId);
-    const subAttrs = (sub?.attribute_definitions || []);
-    setAttrDefs([...baseAttrs, ...subAttrs]);
-  }, [form.category_id, form.subcategory_ids, form.subcategory_id, categories]);
+    // Simplificación: Cargar todos los atributos de la categoría sin distinción de subcategoría
+    setAttrDefs(cat.attribute_definitions || []);
+  }, [form.category_id, categories]);
 
   const openNew = useCallback(() => {
     setForm(emptyProduct);

@@ -22,7 +22,7 @@ export default function ProductsAdminPage() {
     setLoading(true);
     const [p, c] = await Promise.all([
       supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
-      supabase.from('categories').select('*, attribute_definitions(*), subcategories(*, attribute_definitions(*))').order('name'),
+      supabase.from('categories').select('*, attribute_definitions(*), subcategories(*)').order('name'),
     ]);
     
     if (p.error || c.error) {

@@ -129,13 +129,13 @@ const ProductGrid = ({ subcategoryId }) => {
       const processedProducts = mixed.map(p => {
         const year = new Date(p.created_at).getFullYear().toString();
         let specs = (p.product_attributes || [])
-          .filter(a => a.attribute_definitions?.show_in_card)
-          .map(a => ({
-            label: a.attribute_definitions?.name,
-            value: a.value,
-            unit: a.attribute_definitions?.unit || '',
-            icon: a.attribute_definitions?.icon || '•',
-            order: a.attribute_definitions?.display_order || 0
+          .filter(pa => pa.attribute_definitions?.show_in_card && pa.value && String(pa.value).trim() !== '')
+          .map(pa => ({
+            label: pa.attribute_definitions?.name,
+            value: pa.value,
+            unit: pa.attribute_definitions?.unit || '',
+            icon: pa.attribute_definitions?.icon || '•',
+            order: pa.attribute_definitions?.display_order || 0
           }))
           .sort((a, b) => a.order - b.order)
           .slice(0, 6);
