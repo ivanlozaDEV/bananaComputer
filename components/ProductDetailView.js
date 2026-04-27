@@ -162,7 +162,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
           {/* Gallery */}
           <div className="flex flex-col gap-6">
@@ -190,7 +190,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
           </div>
 
           {/* Info Section */}
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 <span className="text-purple-brand font-black text-[10px] uppercase tracking-[0.2em]">{product?.tagline || 'Ecuador Tech Official'}</span>
@@ -200,7 +200,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                   </span>
                 )}
               </div>
-              <h1 className="mb-2 tracking-tight">{product?.name}</h1>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-1.5 tracking-tight">{product?.name}</h1>
               {product?.model_number && (
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] font-bold uppercase opacity-40">PN:</span>
@@ -210,43 +210,41 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
               <p className="mt-4 text-sm text-gray-500 font-medium leading-relaxed">{product?.marketing_subtitle || product?.description}</p>
             </div>
 
-            <div className="p-6 md:p-8 rounded-3xl bg-white border border-black/5 flex flex-col gap-6 md:gap-8 shadow-sm">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
-                <div className="flex flex-col">
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${product?.stock > 0 ? 'text-mint-success' : 'text-raspberry'}`}>
-                    {product?.stock > 0 ? `✓ ${product.stock} en stock real` : '✗ AGOTADA'}
-                  </span>
-                  {product?.stock === 0 && (
-                    <p className="text-[10px] font-bold text-gray-400 italic mt-1 leading-tight">
-                      La espera usualmente dura 3 días laborables,<br/>pero primero le confirmaríamos las existencias.
-                    </p>
-                  )}
-                  <div className="flex flex-col gap-2 mt-2">
-                  <div className="flex flex-col gap-4 mt-4">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-purple-brand uppercase tracking-[0.2em] mb-1">Efectivo / Transferencia (incl. IVA)</span>
-                      <span className="text-4xl md:text-6xl font-black text-purple-brand">
-                        ${formatPrice(transferPrice)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col pt-4 border-t border-black/5">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Precio Normal (Tarjeta / Otros)</span>
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-2xl md:text-3xl font-bold text-gray-400 line-through">
-                          ${formatPrice(basePrice)}
+              <div className="p-6 rounded-3xl bg-white border border-black/5 flex flex-col gap-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
+                  <div className="flex flex-col">
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${product?.stock > 0 ? 'text-mint-success' : 'text-raspberry'}`}>
+                      {product?.stock > 0 ? `✓ ${product.stock} en stock real` : '✗ AGOTADA'}
+                    </span>
+                    {product?.stock === 0 && (
+                      <p className="text-[10px] font-bold text-gray-400 italic mt-1 leading-tight">
+                        La espera usualmente dura 3 días laborables,<br/>pero primero le confirmaríamos las existencias.
+                      </p>
+                    )}
+                    <div className="flex flex-col gap-4 mt-4">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-purple-brand uppercase tracking-[0.2em] mb-1">Efectivo / Transferencia (incl. IVA)</span>
+                        <span className="text-3xl lg:text-5xl font-black text-purple-brand">
+                          ${formatPrice(transferPrice)}
                         </span>
-                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Incluye IVA</span>
                       </div>
-                      <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mt-2">Precio final con factura oficial</span>
+                      <div className="flex flex-col pt-4 border-t border-black/5">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Precio Normal (Tarjeta / Otros)</span>
+                        <div className="flex items-baseline gap-3">
+                          <span className="text-xl md:text-2xl font-bold text-gray-400 line-through">
+                            ${formatPrice(basePrice)}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Incluye IVA</span>
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 mt-1">Precio final con factura oficial</span>
+                      </div>
                     </div>
                   </div>
-                  </div>
-                </div>
 
                 {product?.stock > 0 ? (
                   <button
                     className={`
-                      px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black text-base md:text-lg transition-all shadow-2xl
+                      px-8 py-3.5 rounded-2xl font-black text-sm md:text-base transition-all shadow-xl
                       ${added ? 'bg-mint-success text-white scale-95' : 'bg-banana-yellow text-black hover:scale-105 active:scale-95 shadow-banana-yellow/20'}
                     `}
                     onClick={handleAddToCart}
@@ -256,9 +254,9 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                 ) : (
                   <button
                     onClick={() => setIsWaitlistOpen(true)}
-                    className="flex-1 flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black text-base md:text-lg bg-purple-brand/10 text-purple-brand hover:bg-purple-brand/20 transition-all shadow-sm border border-purple-brand/10"
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-black text-sm bg-purple-brand/10 text-purple-brand hover:bg-purple-brand/20 transition-all shadow-sm border border-purple-brand/10"
                   >
-                    <Bell size={20} /> ME INTERESA
+                    <Bell size={18} /> ME INTERESA
                   </button>
                 )}
               </div>
@@ -326,15 +324,15 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                   ))}
                 </div>
 
-                {/* Pros/Cons & Detailed */}
-                <div className="lg:col-span-7 flex flex-col gap-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Pros/Cons */}
+                <div className="lg:col-span-7 flex flex-col gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     <div className="p-6 rounded-3xl bg-mint-success/10 border border-mint-success/20">
                       <h4 className="text-xs font-black text-mint-success mb-4 flex items-center gap-2 uppercase tracking-widest">
                         <Zap size={14} /> Lo más destacado
                       </h4>
                       <ul className="flex flex-col gap-3 text-sm font-medium opacity-80">
-                        {product.banana_review.pros?.map((p, i) => <li key={i} className="flex gap-2 text-mint-success"><span>✓</span> <span className="text-gray-600">{p}</span></li>)}
+                        {product.banana_review.pros?.map((p, i) => <li key={i} className="flex gap-2 text-mint-success"><span className="shrink-0">✓</span> <span className="text-gray-600">{p}</span></li>)}
                       </ul>
                     </div>
                     <div className="p-6 rounded-3xl bg-purple-brand/5 border border-purple-brand/20">
@@ -342,15 +340,16 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
                         <Scan size={14} /> A considerar
                       </h4>
                       <ul className="flex flex-col gap-3 text-sm font-medium opacity-80 text-gray-600">
-                        {product.banana_review.cons?.map((c, i) => <li key={i} className="flex gap-2"><span>•</span> {c}</li>)}
+                        {product.banana_review.cons?.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0">•</span> <span>{c}</span></li>)}
                       </ul>
                     </div>
                   </div>
+                </div>
 
-                  <div className="p-8 rounded-3xl bg-gray-50 border border-black/5">
-                    <h4 className="text-[10px] font-black tracking-[0.3em] opacity-40 uppercase mb-6 text-purple-brand">// ANÁLISIS CRÍTICO DEL EXPERTO</h4>
-                    <p className="text-lg opacity-80 leading-relaxed font-medium text-gray-700">{product.banana_review.detailed_review}</p>
-                  </div>
+                {/* Detailed */}
+                <div className="lg:col-span-12 p-8 rounded-3xl bg-gray-50 border border-black/5 mt-2 shadow-sm">
+                  <h4 className="text-[10px] font-black tracking-[0.3em] opacity-40 uppercase mb-6 text-purple-brand">// ANÁLISIS CRÍTICO DEL EXPERTO</h4>
+                  <p className="text-lg opacity-80 leading-relaxed font-medium text-gray-700">{product.banana_review.detailed_review}</p>
                 </div>
               </div>
             </div>
