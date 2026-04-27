@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from '
 import Link from 'next/link';
 import { Bot, User, Send, X, Terminal, Cpu, Sparkles, AlertTriangle, Package, RefreshCw, ArrowRight } from 'lucide-react';
 import { chatWithOllama, pingOllama } from '@/lib/ollama';
-import { searchInventoryForAI, formatInventoryForAI, fetchAIBaseline, addToWaitlist } from '@/lib/inventory';
+import { searchInventoryForAI, formatInventoryForAI, fetchAIBaseline, addToWaitlist, filterInventoryByIds } from '@/lib/inventory';
 import { supabase } from '@/lib/supabase';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,20 +12,20 @@ const getTagRegex = () => new RegExp(TAG_REGEX.source, TAG_REGEX.flags);
 
 const AIAssistant = ({ onClose }) => {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: '¡Hola! Soy Banana AI. Estoy aquí para ayudarte a encontrar la computadora perfecta. ¿Para qué planeas usar tu nuevo equipo principalmente? (Ej. Gaming, Oficina, Edición de video)' }
+    { role: 'assistant', content: '¡Hola! Soy Banana AI. Para recomendarte la mejor opción, primero cuéntame: **¿Para qué planeas usar tu nuevo equipo?**' }
   ]);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [userPrefs, setUserPrefs] = useState({ useCase: '', budget: '' });
   const [loading, setLoading] = useState(false);
   const [inventoryContext, setInventoryContext] = useState('');
   const [baselineKnowledge, setBaselineKnowledge] = useState('');
   const [ollamaReady, setOllamaReady] = useState(true);
   const endOfMessagesRef = useRef(null);
 
-  const [quickReplies] = useState([
-    'Quiero una laptop para diseño',
-    'Busco algo para gaming fuerte',
-    'Necesito una opción económica',
-    '¿Qué laptops recomiendas?'
-  ]);
+  const onboardingOptions = {
+    1: ['Para Gaming', 'Para Trabajo / Oficina', 'Para Diseño / Edición', 'Para Estudios'],
+    2: ['Menos de $600', '$600 - $1000', '$1000 - $1500', 'Más de $1500']
+  };
 
   const retryPing = useCallback(() => {
     setOllamaReady(true); // optimistic — clear error banner
@@ -85,6 +85,70 @@ const AIAssistant = ({ onClose }) => {
 
     const userMessage = { role: 'user', content: text };
     setMessages(prev => [...prev, userMessage]);
+
+    // --- Onboarding Flow ---
+    if (onboardingStep === 1) {
+      const options = onboardingOptions[1];
+      const isDirectMatch = options.includes(text) || options.some(opt => text.toLowerCase().includes(opt.toLowerCase().replace('para ', '').trim()));
+      
+      if (!isDirectMatch) {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Para asesorarte correctamente, por favor indícame primero el uso que le darás al equipo seleccionando una de las opciones. 🍌' }]);
+        return;
+      }
+
+      setUserPrefs(prev => ({ ...prev, useCase: text }));
+      setOnboardingStep(2);
+      setMessages(prev => [...prev, { role: 'assistant', content: '¡Excelente! ¿Y cuál es tu presupuesto aproximado para esta inversión?' }]);
+      return;
+    }
+
+    if (onboardingStep === 2) {
+      const options = onboardingOptions[2];
+      const isDirectMatch = options.includes(text) || options.some(opt => text.toLowerCase().includes(opt.replace('$', '').trim()));
+
+      if (!isDirectMatch) {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Para acotar la búsqueda, por favor selecciona uno de los rangos de presupuesto sugeridos. 🍌' }]);
+        return;
+      }
+
+      const budget = text;
+      const updatedPrefs = { ...userPrefs, budget };
+      setUserPrefs(updatedPrefs);
+      setOnboardingStep(0); // Finished onboarding
+      setLoading(true);
+
+      try {
+        // --- Selection Call: Select Top 3 products to optimize tokens ---
+        const selectionPrompt = `SISTEMA: Basado en el catálogo, selecciona los IDs de los 3 productos que mejor se ajusten a: Uso ${userPrefs.useCase}, Presupuesto ${budget}. Retorna SOLO los IDs separados por comas.`;
+        
+        const selectionResponse = await chatWithOllama(
+          [{ role: 'user', content: selectionPrompt }],
+          inventoryContext || baselineKnowledge
+        );
+        
+        const selectedIds = selectionResponse.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || [];
+        
+        const optimizedContext = filterInventoryByIds(inventoryContext || baselineKnowledge, selectedIds);
+        setInventoryContext(optimizedContext);
+
+        const promptContext = `[SISTEMA]: El usuario busca un equipo principalmente para ${userPrefs.useCase} con un presupuesto de ${budget}. Por favor, ofrece estas 3 opciones que seleccionaste y explica brevemente por qué son las mejores. 
+
+⚠️ IMPORTANTE: Debes incluir los 3 tags [RECOMENDACION: UUID] al final de tu mensaje, uno por cada producto mencionado.`;
+        
+        const aiResponseText = await chatWithOllama(
+          [...messages, userMessage, { role: 'user', content: promptContext }],
+          optimizedContext
+        );
+        processAndAddResponse(aiResponseText);
+      } catch (err) {
+        console.error("Selection/Chat Error:", err);
+        processAndAddResponse('Lo siento, tuve un problema al procesar tu solicitud. ¿Podrías intentar de nuevo? 🍌');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     setLoading(true);
 
     // Fix #4: AbortController with 20s timeout
@@ -198,7 +262,11 @@ const AIAssistant = ({ onClose }) => {
         </div>
 
         {/* Fix #2: don't hard-disable input when offline — user can still try */}
-        <ChatInput onSend={handleSend} disabled={loading} quickReplies={messages.length < 3 ? quickReplies : []} />
+        <ChatInput 
+          onSend={handleSend} 
+          disabled={loading} 
+          quickReplies={onboardingOptions[onboardingStep] || []} 
+        />
       </div>
     </div>
   );
