@@ -279,8 +279,8 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
       <div className="p-3 md:p-6 flex flex-col flex-1 gap-2 md:gap-4">
         <Link href={`/producto/${product.id}`} className="block">
           <div className="flex justify-between items-start gap-1 mb-0.5">
-            <h3 className="text-[13px] md:text-base font-black leading-tight group-hover:text-purple-brand transition-colors line-clamp-1">{product.name}</h3>
-            <span className="text-[8px] md:text-[9px] font-bold py-0.5 px-1.5 bg-black/5 rounded-full whitespace-nowrap">{product.year}</span>
+            <h3 className="text-[13px] md:text-base font-black leading-tight group-hover:text-purple-brand transition-colors line-clamp-2">{product.name}</h3>
+            <span className="text-[8px] md:text-[9px] font-bold py-0.5 px-1.5 bg-black/5 rounded-full whitespace-nowrap lg:shrink-0">{product.year}</span>
           </div>
           {product.model_number && (
             <span className="inline-block px-1.5 py-0.5 bg-purple-brand/5 text-purple-brand text-[8px] md:text-[9px] font-black tracking-widest uppercase rounded">
