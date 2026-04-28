@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import FeatureCard from '@/components/FeatureCard';
 import BrandText from '@/components/BrandText';
+import BrandFloaters from '@/components/BrandFloaters';
 
 // ─── Timing constants (ms) ────────────────────────────────────────
 const HERO_DISPLAY_MS = 2200;  // how long hero stays before first exit
@@ -26,7 +27,7 @@ const TRANSITION_MS = 700;   // must match CSS transition duration in HeroBanner
  *   hero-in → (2.2s) → hero-out → (0.7s) → banner-in → (5s) → banner-out → (0.7s) → hero-in → ...
  */
 export default function HomePage() {
-  const { heroContent } = useStore();
+  const { heroContent, brandLogos } = useStore();
   const [showAI, setShowAI] = useState(false);
   const [promotions, setPromotions] = useState([]);
   const [promoIndex, setPromoIndex] = useState(0);
@@ -63,8 +64,6 @@ export default function HomePage() {
       <section className="relative min-h-[70vh] md:min-h-[85vh] flex items-center pt-24 md:pt-32 pb-12 px-4 overflow-hidden">
         {/* Background Gradients */}
         <div className="absolute top-0 left-0 w-full h-full -z-10 bg-cream-bg">
-          <div className="absolute top-[5%] left-[-5%] w-[50%] h-[50%] bg-banana-yellow/30 blur-[130px] rounded-full animate-pulse"></div>
-          <div className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] bg-purple-brand/20 blur-[150px] rounded-full"></div>
           <div className="absolute bottom-0 right-[20%] w-[40%] h-[40%] bg-raspberry/10 blur-[100px] rounded-full"></div>
         </div>
 
@@ -124,52 +123,23 @@ export default function HomePage() {
 
           {/* RIGHT COLUMN: Visual floating layout */}
           <div className="relative w-full h-[400px] lg:h-[600px] flex items-center justify-center min-h-0 z-10 hidden md:flex">
-            {/* Ambient Background glow right behind logo */}
+            {/* Ambient Background glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/60 blur-[80px] rounded-full z-0"></div>
 
-            {/* Central Logo */}
+            {/* Central Logo container */}
             <div className="relative z-10 animate-float-hero shadow-2xl rounded-2xl bg-white border border-purple-brand/10 p-6 overflow-hidden">
                <div className="absolute inset-0 bg-gradient-to-br from-banana-yellow/10 to-transparent z-0 pointer-events-none"></div>
                <Logo size="large" animated={true} />
             </div>
 
-            {/* Floating Cards / Glassmorphism UI */}
-            <div className="absolute inset-0 pointer-events-none">
-                {/* Tech Specs block 1 */}
-                <div className="absolute top-[15%] right-[5%] lg:right-[-5%] bg-white/70 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-white animate-float-hero-reverse z-20">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-banana-yellow to-yellow-400 rounded-lg text-white shadow-inner">
-                          <Zap size={20} className="text-white" />
-                        </div>
-                        <div>
-                            <p className="text-[9px] font-black uppercase tracking-wider text-purple-brand">Hardware Global</p>
-                            <p className="text-sm font-bold text-gray-900 leading-none mt-1">RTX 40 Series</p>
-                        </div>
-                    </div>
-                </div>
+            {/* Orbiting Brand Logos */}
+            <BrandFloaters logos={brandLogos} />
 
-                {/* Tech Specs block 2 */}
-                <div className="absolute bottom-[20%] left-[5%] lg:left-[-10%] bg-white/70 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-white animate-float-hero z-20" style={{ animationDelay: '0.5s' }}>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-purple-brand to-indigo-600 rounded-lg text-white shadow-inner">
-                          <CircuitBoard size={20} className="text-white" />
-                        </div>
-                        <div>
-                            <p className="text-[9px] font-black uppercase tracking-wider text-banana-yellow">Procesamiento</p>
-                            <p className="text-sm font-bold text-gray-900 leading-none mt-1">Intel & AMD</p>
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Tech scan lines or geometric orbits */}
-                <div className="absolute top-1/2 left-1/2 w-[80%] h-[80%] lg:w-[110%] lg:h-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-purple-brand/10 border-dashed animate-[spin_60s_linear_infinite]"></div>
-                <div className="absolute top-1/2 left-1/2 w-[60%] h-[60%] lg:w-[80%] lg:h-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-banana-yellow/20 border-dotted animate-[spin_40s_linear_infinite_reverse]"></div>
-            </div>
+            {/* Geometric orbits */}
+            <div className="absolute top-1/2 left-1/2 w-[80%] h-[80%] lg:w-[110%] lg:h-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-purple-brand/10 border-dashed animate-[spin_60s_linear_infinite]"></div>
+            <div className="absolute top-1/2 left-1/2 w-[60%] h-[60%] lg:w-[80%] lg:h-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-banana-yellow/20 border-dotted animate-[spin_40s_linear_infinite_reverse]"></div>
           </div>
-
         </div>
-
-        {/* Scroll indicator */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce hidden md:block">
           <ChevronDown className="text-gray-300" size={32} />
         </div>

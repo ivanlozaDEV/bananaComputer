@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
 
 export default function HeroEditorPage() {
-  const { heroContent, setHeroContent } = useStore();
+  const { heroContent, setHeroContent, brandLogos, addBrandLogo, deleteBrandLogo } = useStore();
   const { showToast } = useToast();
   const [form, setForm] = useState({
     title: '', subtitle: '', primary_cta: '', secondary_cta: '', image_url: '',
@@ -60,12 +60,12 @@ export default function HeroEditorPage() {
 
     try {
       const compressedFile = await imageCompression(file, options);
-      const { data: uploadData, error } = await supabase.storage.from('hero-images').upload(path, compressedFile, { upsert: true });
+      const { data: uploadData, error } = await supabase.storage.from('product-images').upload(path, compressedFile, { upsert: true });
       
       if (error) {
-        showToast('Error subiendo imagen. ¿Existe el bucket "hero-images"?', 'error');
+        showToast('Error subiendo imagen. ¿Existe el bucket "product-images"?', 'error');
       } else {
-        const { data: { publicUrl } } = supabase.storage.from('hero-images').getPublicUrl(path);
+        const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
         setForm(f => ({ ...f, image_url: publicUrl }));
         showToast('Imagen subida correctamente', 'success');
       }
@@ -73,6 +73,51 @@ export default function HeroEditorPage() {
       showToast('Error al procesar la imagen', 'error');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleBrandLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (brandLogos.length >= 8) {
+      showToast('Máximo 8 logos permitidos', 'error');
+      return;
+    }
+    
+    setUploading(true);
+    const ext = file.name.split('.').pop();
+    const path = `brand-${Date.now()}.${ext}`;
+
+    const options = {
+      maxSizeMB: 0.5,
+      maxWidthOrHeight: 800,
+      useWebWorker: true
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      const { data: uploadData, error } = await supabase.storage.from('product-images').upload(path, compressedFile, { upsert: true });
+      
+      if (error) {
+        showToast('Error subiendo logo. ¿Existe el bucket "product-images"?', 'error');
+      } else {
+        const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
+        await addBrandLogo({ url: publicUrl, name: file.name.split('.')[0] });
+        showToast('Logo agregado correctamente', 'success');
+      }
+    } catch (err) {
+      showToast('Error al procesar el logo', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteBrandLogo = async (id) => {
+    const success = await deleteBrandLogo(id);
+    if (success) {
+      showToast('Logo eliminado', 'success');
+    } else {
+      showToast('Error al eliminar logo', 'error');
     }
   };
 
@@ -147,6 +192,49 @@ export default function HeroEditorPage() {
               </div>
             </div>
           </form>
+        </div>
+
+        {/* Brand Logos Panel */}
+        <div className="bg-white border border-black/5 rounded-[2.5rem] p-8 md:p-10 flex flex-col gap-8 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-banana-yellow/10 rounded-xl text-black">
+                <Sparkles size={18} />
+              </div>
+              <h2 className="text-xl font-black text-gray-800">Logos Flotantes</h2>
+            </div>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              {brandLogos.length}/8 Logos
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-4">
+            {brandLogos.map((logo) => (
+              <div key={logo.id} className="relative group aspect-square bg-gray-50 border border-black/5 rounded-2xl p-4 flex items-center justify-center overflow-hidden">
+                <img src={logo.url} alt="" className="max-w-full max-h-full object-contain" />
+                <button 
+                  onClick={() => handleDeleteBrandLogo(logo.id)}
+                  className="absolute inset-0 bg-raspberry/90 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-black text-[10px] uppercase tracking-widest"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+            
+            {brandLogos.length < 8 && (
+              <label className="aspect-square border-2 border-dashed border-black/5 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-purple-brand/30 hover:bg-purple-brand/5 cursor-pointer transition-all text-gray-400 hover:text-purple-brand">
+                <Upload size={20} />
+                <span className="text-[8px] font-black uppercase tracking-widest">Subir PNG</span>
+                <input type="file" accept="image/png" onChange={handleBrandLogoUpload} className="hidden" />
+              </label>
+            )}
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gray-50 border border-black/5">
+            <p className="text-[9px] font-medium text-gray-400 leading-relaxed">
+              Sugerencia: Usa logos con fondo transparente (PNG) para un efecto premium. Los logos flotarán automáticamente en el home.
+            </p>
+          </div>
         </div>
 
         {/* Preview Panel */}
