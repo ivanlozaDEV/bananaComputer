@@ -57,7 +57,7 @@ export default function AdminOrderDetailPage() {
           customers ( id, full_name, phone ),
           order_items (
             id, quantity, unit_price,
-            products ( id, name, sku, image_url, price )
+            products ( id, name, sku, image_url, price, transfer_price )
           )
         `)
         .eq('id', id)
@@ -237,7 +237,7 @@ export default function AdminOrderDetailPage() {
               {items.map(item => {
                 const product = item.products || {};
                 const isTransfer = order.payment_method === 'transfer';
-                const displayPrice = isTransfer ? item.unit_price / 1.06 : item.unit_price;
+                const displayPrice = isTransfer ? (parseFloat(product.transfer_price) || (item.unit_price / 1.06)) : item.unit_price;
                 return (
                   <div key={item.id} className="flex items-center gap-4 group pt-4 first:pt-0 last:pb-0">
                     <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-black/5 overflow-hidden flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">

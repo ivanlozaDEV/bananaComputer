@@ -58,7 +58,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
   const [activeImg, setActiveImg] = useState(product?.images?.[0] || product?.image_url);
 
   const basePrice = parseFloat(product?.price) || 0;
-  const transferPrice = basePrice / 1.06;
+  const transferPrice = product?.transfer_price ? parseFloat(product.transfer_price) : (basePrice / 1.06);
 
   const handleAddToCart = () => {
     addToCart(product);

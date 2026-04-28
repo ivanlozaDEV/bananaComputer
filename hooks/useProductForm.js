@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 const emptyProduct = {
   sku: '', name: '', model_number: '', tagline: '', marketing_subtitle: '',
-  marketing_body: '', description: '', price: '', stock: '0',
+  marketing_body: '', description: '', price: '', transfer_price: '', stock: '0',
   category_id: '', subcategory_id: '', image_url: '',
   images: [], subcategory_ids: [],
   is_featured: false, is_active: true,
@@ -49,8 +49,9 @@ export function useProductForm(categories, onSaveSuccess) {
     setForm({ 
       ...emptyProduct, 
       ...product, 
-      price: String(product.price), 
-      stock: String(product.stock),
+      price: String(product.price || ''), 
+      transfer_price: String(product.transfer_price || ''),
+      stock: String(product.stock || 0),
       images: product.images || (product.image_url ? [product.image_url] : []),
       subcategory_ids: subIds.length > 0 ? subIds : (product.subcategory_id ? [product.subcategory_id] : [])
     });
@@ -113,6 +114,8 @@ export function useProductForm(categories, onSaveSuccess) {
     
     const price = parseFloat(form.price);
     if (isNaN(price) || price <= 0) validationErrors.price = 'Precio inválido';
+    const transfer_price = parseFloat(form.transfer_price);
+    if (isNaN(transfer_price) || transfer_price <= 0) validationErrors.transfer_price = 'Precio de efectivo inválido';
     
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -125,7 +128,7 @@ export function useProductForm(categories, onSaveSuccess) {
     const payload = {
       sku: form.sku, name: form.name, model_number: form.model_number, tagline: form.tagline,
       marketing_subtitle: form.marketing_subtitle, marketing_body: form.marketing_body,
-      description: form.description, price,
+      description: form.description, price, transfer_price,
       stock: isNaN(stock) ? 0 : stock, 
       category_id: form.category_id || null,
       subcategory_id: form.subcategory_ids?.[0] || form.subcategory_id || null, 

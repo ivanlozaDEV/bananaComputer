@@ -36,13 +36,13 @@ export const CartProvider = ({ children }) => {
   const closeCart = () => setIsCartOpen(false);
   const clearCart = () => setCartItems([]);
 
-  const getFinalPrice = (basePrice, method) => {
-    if (method === 'transfer') return basePrice / 1.06;
-    return basePrice;
+  const getFinalPrice = (item, method) => {
+    if (method === 'transfer') return parseFloat(item.transfer_price) || (parseFloat(item.price) / 1.06);
+    return parseFloat(item.price) || 0;
   };
 
   const baseTotal     = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-  const cartTotal     = paymentMethod === 'transfer' ? baseTotal / 1.06 : baseTotal;
+  const cartTotal     = paymentMethod === 'transfer' ? cartItems.reduce((sum, item) => sum + (parseFloat(item.transfer_price) || (parseFloat(item.price) / 1.06)), 0) : baseTotal;
   const cartSubtotal  = cartTotal / 1.15;
   const cartTax       = cartTotal - cartSubtotal;
   const discountAmount = baseTotal - cartTotal;

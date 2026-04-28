@@ -106,7 +106,7 @@ const ProductModal = ({
               </div>
             </div>
 
-            <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SKU Interno</label>
                 <input className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-purple-brand/30 ${errors.sku ? 'border-raspberry/50' : 'border-black/10'}`} 
@@ -119,13 +119,22 @@ const ProductModal = ({
                   value={form.model_number || ''} onChange={e => setForm(f => ({ ...f, model_number: e.target.value }))} placeholder="M1502F" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Precio (USD)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Normal (USD)</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xs">$</span>
-                  <input type="number" step="0.01" className={`w-full bg-slate-50 border rounded-xl pl-8 pr-4 py-2.5 text-xs font-black focus:outline-none focus:border-purple-brand/30 ${errors.price ? 'border-raspberry/50' : 'border-black/10'}`} 
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xs">$</span>
+                  <input type="number" step="0.01" className={`w-full bg-slate-50 border rounded-xl pl-7 pr-3 py-2.5 text-xs font-black focus:outline-none focus:border-purple-brand/30 ${errors.price ? 'border-raspberry/50' : 'border-black/10'}`} 
                     value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" />
                 </div>
                 {errors.price && <span className="text-[9px] text-raspberry font-bold ml-1">{errors.price}</span>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Efectivo (USD)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-black text-xs">$</span>
+                  <input type="number" step="0.01" className={`w-full bg-slate-50 border rounded-xl pl-7 pr-3 py-2.5 text-xs font-black focus:outline-none focus:border-purple-brand/30 ${errors.transfer_price ? 'border-raspberry/50' : 'border-black/10'}`} 
+                    value={form.transfer_price || ''} onChange={e => setForm(f => ({ ...f, transfer_price: e.target.value }))} placeholder="0.00" />
+                </div>
+                {errors.transfer_price && <span className="text-[9px] text-raspberry font-bold ml-1">{errors.transfer_price}</span>}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Stock Actual</label>

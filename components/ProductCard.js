@@ -92,7 +92,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
   const isAdded = addedIds?.has(product.id);
   const basePrice = parseFloat(product.price) || 0;
-  const transferPrice = basePrice / 1.06;
+  const transferPrice = product.transfer_price ? parseFloat(product.transfer_price) : (basePrice / 1.06);
 
   if (variant === 'list') {
     return (

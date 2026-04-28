@@ -361,15 +361,21 @@ function ResultadoContent() {
               <div className="py-6 space-y-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Detalle del Pedido</p>
                 <div className="space-y-3">
-                  {(orderSummary.items || []).map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 flex items-center justify-center bg-purple-brand/5 text-purple-brand rounded text-[10px] font-black">{item.quantity || 1}</span>
-                        <span className="text-xs font-bold text-gray-800">{item.name}</span>
+                  {(orderSummary.items || []).map((item, idx) => {
+                    const inlinePrice = txData?.payment_method === 'transfer' 
+                      ? (parseFloat(item.transfer_price) || (parseFloat(item.price) / 1.06)) 
+                      : parseFloat(item.price);
+                    
+                    return (
+                      <div key={idx} className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 flex items-center justify-center bg-purple-brand/5 text-purple-brand rounded text-[10px] font-black">{item.quantity || 1}</span>
+                          <span className="text-xs font-bold text-gray-800">{item.name}</span>
+                        </div>
+                        <span className="text-xs font-black text-gray-900">${(inlinePrice * (item.quantity || 1)).toFixed(2)}</span>
                       </div>
-                      <span className="text-xs font-black text-gray-900">${(Number(item.price) * (item.quantity || 1)).toFixed(2)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

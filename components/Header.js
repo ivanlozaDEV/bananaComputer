@@ -248,7 +248,7 @@ const Header = () => {
                   <div className="flex flex-col">
                     <p className="text-purple-brand font-black leading-none">${parseFloat(item.price).toLocaleString()}</p>
                     <p className="text-[10px] font-bold text-purple-brand/60 mt-1">
-                      o ${(parseFloat(item.price) / 1.06).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} con transferencia
+                      o ${(item.transfer_price ? parseFloat(item.transfer_price) : (parseFloat(item.price) / 1.06)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} con transferencia
                     </p>
                   </div>
                 </div>
@@ -276,7 +276,7 @@ const Header = () => {
             <div className="bg-purple-brand/5 p-3 rounded-xl border border-purple-brand/10 mt-1">
               <div className="flex justify-between text-sm font-black text-purple-brand">
                 <span>Total Transferencia:</span>
-                <span>${(baseTotal / 1.06).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span>${(cartItems.reduce((acc, it) => acc + (parseFloat(it.transfer_price) || (parseFloat(it.price) / 1.06)), 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <p className="text-[9px] font-bold text-purple-brand/60 mt-1 uppercase tracking-wider text-center">
                 Precio con descuento disponible en el checkout

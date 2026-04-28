@@ -1009,7 +1009,7 @@ function CheckoutContent() {
                       <div key={item.cartId} className="flex flex-col">
                         <span className="text-[10px] font-black uppercase tracking-[0.1em] opacity-40 mb-1 line-clamp-1">{item.name}</span>
                         <div className="flex justify-between items-baseline">
-                          <span className="text-xl md:text-2xl font-black">${(getFinalPrice(parseFloat(item.price), paymentMethod) / 1.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-xl md:text-2xl font-black">${(getFinalPrice(item, paymentMethod) / 1.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           <span className="text-[10px] font-bold uppercase opacity-60">x {item.quantity || 1}</span>
                         </div>
                       </div>
@@ -1017,10 +1017,6 @@ function CheckoutContent() {
                   </div>
 
                   <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest pt-4 border-t border-white/10">
-                    <span>Subtotal</span>
-                    <span>${cartSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest">
                     <span>IVA (15%)</span>
                     <span>${cartTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
