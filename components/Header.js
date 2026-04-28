@@ -24,7 +24,7 @@ const Header = () => {
   const {
     cartItems, cartCount, removeFromCart,
     cartTotal, cartSubtotal, cartTax,
-    baseTotal,
+    baseTotal, discountAmount,
     isCartOpen, openCart, closeCart,
   } = useCart();
 
@@ -246,10 +246,7 @@ const Header = () => {
                 <div className="flex-1">
                   <h4 className="font-bold text-sm leading-tight mb-1">{item.name}</h4>
                   <div className="flex flex-col">
-                    <p className="text-purple-brand font-black leading-none">${parseFloat(item.price).toLocaleString()}</p>
-                    <p className="text-[10px] font-bold text-purple-brand/60 mt-1">
-                      o ${(item.transfer_price ? parseFloat(item.transfer_price) : (parseFloat(item.price) / 1.06)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} con transferencia
-                    </p>
+                    <p className="text-purple-brand font-black leading-none">${(parseFloat(item.price) / 1.15).toLocaleString()}</p>
                   </div>
                 </div>
                 <button className="text-raspberry p-2 hover:bg-raspberry/5 rounded-full transition-colors" onClick={() => removeFromCart(item.cartId)}>&times;</button>
@@ -264,23 +261,23 @@ const Header = () => {
               <span>Subtotal:</span>
               <span>${(baseTotal / 1.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-sm text-banana-yellow font-bold">
+                <span>Descuento:</span>
+                <span>-${(discountAmount / 1.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm text-gray-500 font-bold pt-2 border-t border-black/5">
+              <span>Base Imponible:</span>
+              <span>${cartSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
             <div className="flex justify-between text-sm text-gray-500 font-bold">
               <span>IVA (15%):</span>
-              <span>${(baseTotal - (baseTotal / 1.15)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span>${cartTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-2xl font-black text-purple-brand mt-2">
               <span>Total:</span>
-              <span>${baseTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-            
-            <div className="bg-purple-brand/5 p-3 rounded-xl border border-purple-brand/10 mt-1">
-              <div className="flex justify-between text-sm font-black text-purple-brand">
-                <span>Total Transferencia:</span>
-                <span>${(cartItems.reduce((acc, it) => acc + (parseFloat(it.transfer_price) || (parseFloat(it.price) / 1.06)), 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-              <p className="text-[9px] font-bold text-purple-brand/60 mt-1 uppercase tracking-wider text-center">
-                Precio con descuento disponible en el checkout
-              </p>
+              <span>${cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
 
             <button className="mt-4 w-full py-4 bg-purple-brand text-white rounded-xl font-black text-xl hover:scale-102 hover:shadow-xl transition-all" onClick={handleCheckout}>

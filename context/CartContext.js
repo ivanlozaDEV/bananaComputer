@@ -9,7 +9,7 @@ export const useCart = () => useContext(CartContext);
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('payphone');
+  const [paymentMethod, setPaymentMethod] = useState('transfer');
 
   // Load cart from localStorage on mount
   useEffect(() => {
