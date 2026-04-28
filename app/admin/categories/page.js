@@ -81,14 +81,46 @@ export default function CategoriesAdminPage() {
   const addSubcategory = async (catId) => {
     const sub = newSub[catId];
     if (!sub?.name) return showToast('Escribe un nombre', 'error');
+    
+    // Generate slug
+    const slug = sub.name.toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
     const { error } = await supabase.from('subcategories').insert([{
       name: sub.name,
+      slug: slug,
       category_id: catId
     }]);
     if (error) showToast('Error al crear subcategoría', 'error');
     else {
       showToast('Subcategoría creada', 'success');
       setNewSub(s => ({ ...s, [catId]: { name: '' } }));
+      fetchCategories();
+    }
+  };
+
+  const updateSub = async (id, newName) => {
+    // Generate new slug
+    const newSlug = newName.toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    const { error } = await supabase
+      .from('subcategories')
+      .update({ 
+        name: newName,
+        slug: newSlug
+      })
+      .eq('id', id);
+    
+    if (error) showToast('Error al actualizar', 'error');
+    else {
+      showToast('Subcategoría actualizada', 'success');
       fetchCategories();
     }
   };
@@ -225,19 +257,34 @@ export default function CategoriesAdminPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
                     {cat.subcategories?.map(sub => (
                       <div key={sub.id} className="bg-slate-50 border border-black/10 rounded-3xl p-4 flex flex-col gap-3 relative group/sub hover:bg-white hover:shadow-md transition-all">
-                         <button 
-                          onClick={() => deleteSub(sub.id)}
-                          className="absolute top-3 right-3 text-gray-400 hover:text-raspberry transition-colors opacity-0 group-hover/sub:opacity-100"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover/sub:opacity-100 transition-opacity z-20">
+                          <button 
+                            onClick={() => {
+                              const newName = prompt('Nuevo nombre para la subcategoría:', sub.name);
+                              if (newName && newName !== sub.name) {
+                                updateSub(sub.id, newName);
+                              }
+                            }}
+                            className="p-1.5 bg-white/90 backdrop-blur-md text-gray-500 hover:text-purple-brand rounded-lg shadow-sm transition-all"
+                            title="Renombrar"
+                          >
+                            <Settings size={14} />
+                          </button>
+                          <button 
+                            onClick={() => deleteSub(sub.id)}
+                            className="p-1.5 bg-white/90 backdrop-blur-md text-gray-500 hover:text-raspberry rounded-lg shadow-sm transition-all"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                         <div className="aspect-video rounded-2xl bg-white border border-black/10 flex items-center justify-center overflow-hidden relative shadow-inner">
                           {sub.image_url ? (
                             <img src={sub.image_url} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <ImageIcon size={20} className="text-gray-200" />
                           )}
-                           <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/sub:opacity-100 transition-opacity cursor-pointer text-[9px] font-black tracking-widest uppercase text-white backdrop-blur-[2px]">
+                           <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/sub:opacity-100 transition-opacity cursor-pointer text-[9px] font-black tracking-widest uppercase text-white backdrop-blur-[2px] z-10">
                             <Upload size={12} className="mr-2" /> Subir Arte
                             <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                                const file = e.target.files[0];

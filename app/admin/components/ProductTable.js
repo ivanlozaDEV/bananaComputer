@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { Pencil, Trash2, Box, Tag, DollarSign, CheckCircle2, XCircle } from 'lucide-react';
+import { Pencil, Trash2, Box, Tag, DollarSign, CheckCircle2, XCircle, Layers } from 'lucide-react';
 
 const ProductTable = ({ products, onEdit, onDelete }) => {
   return (
@@ -12,6 +12,7 @@ const ProductTable = ({ products, onEdit, onDelete }) => {
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Modelo</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">SKU</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Categoría</th>
+            <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Subcategoría</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Precio</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 text-center">Stock</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 text-center">Estado</th>
@@ -52,6 +53,14 @@ const ProductTable = ({ products, onEdit, onDelete }) => {
                 </div>
               </td>
               <td className="px-8 py-5">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
+                  <Layers size={12} className="text-gray-300" />
+                  {p.product_subcategories?.length > 0 
+                    ? p.product_subcategories.map(ps => ps.subcategories?.name).filter(Boolean).join(', ') 
+                    : (p.subcategory?.name || '—')}
+                </div>
+              </td>
+              <td className="px-8 py-5">
                 <div className="flex items-center gap-1 font-black text-sm text-gray-900">
                   <span className="text-[10px] text-gray-400 font-bold">$</span>
                   {p.price !== null && p.price !== undefined && !isNaN(parseFloat(p.price)) ? parseFloat(p.price).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'}
@@ -89,7 +98,7 @@ const ProductTable = ({ products, onEdit, onDelete }) => {
           ))}
           {products.length === 0 && (
             <tr>
-              <td colSpan="8" className="px-8 py-20 text-center">
+              <td colSpan="9" className="px-8 py-20 text-center">
                 <div className="flex flex-col items-center gap-4 text-gray-200">
                   <Box size={40} />
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">No hay productos en el inventario</span>

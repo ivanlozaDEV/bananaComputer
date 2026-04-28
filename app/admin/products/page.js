@@ -21,7 +21,7 @@ export default function ProductsAdminPage() {
   const fetchAll = async () => {
     setLoading(true);
     const [p, c] = await Promise.all([
-      supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
+      supabase.from('products').select('*, categories(name), product_subcategories(subcategories(name))').order('created_at', { ascending: false }),
       supabase.from('categories').select('*, attribute_definitions(*), subcategories(*)').order('name'),
     ]);
     
