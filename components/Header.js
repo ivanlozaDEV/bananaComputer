@@ -54,15 +54,15 @@ const Header = () => {
     <>
       <header className={`
         fixed top-0 left-0 right-0 z-50 transition-all duration-300
-        ${scrolled ? 'bg-purple-brand text-white shadow-lg' : 'bg-white/70 backdrop-blur-md text-black border-b border-black/5'}
+        bg-purple-brand text-white shadow-lg
       `}>
 
-        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-[92px] flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <Logo size="small" />
             <span className="text-base font-pixel tracking-tighter transition-colors">
-              <span className={scrolled ? 'text-banana-yellow' : 'text-purple-brand'}>Banana</span> Computer
+              <span className="text-banana-yellow">Banana</span> Computer
             </span>
           </Link>
 
@@ -79,9 +79,9 @@ const Header = () => {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
             {/* Search Toggle */}
-            <button 
+            <button
               onClick={toggleSearch}
-              className={`p-2.5 rounded-full transition-all ${scrolled ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
+              className="p-2.5 rounded-full transition-all hover:bg-white/10"
               title="Buscar productos"
             >
               <Search size={20} className={isSearchOpen ? 'text-banana-yellow' : ''} />
@@ -89,8 +89,8 @@ const Header = () => {
 
             {user ? (
               <div className="relative">
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full font-black text-xs transition-all ${scrolled ? 'bg-white/10 hover:bg-white/20' : 'bg-purple-brand/5 hover:bg-purple-brand/10'}`}
+                <button
+                  className="flex items-center gap-2 px-4 py-2 rounded-full font-black text-xs transition-all bg-white/10 hover:bg-white/20"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                 >
                   <span className="text-sm">🍌</span>
@@ -104,17 +104,17 @@ const Header = () => {
                 )}
               </div>
             ) : (
-              <Link href="/login" className={`flex items-center gap-2 px-5 py-2 rounded-full font-black text-xs transition-all ${scrolled ? 'bg-banana-yellow text-black hover:scale-105' : 'bg-purple-brand text-white hover:scale-105'}`}>
+              <Link href="/login" className="flex items-center gap-2 px-5 py-2 rounded-full font-black text-xs transition-all bg-banana-yellow text-black hover:scale-105">
                 <span className="text-sm">🍌</span>
                 SIGN IN
               </Link>
             )}
 
-            <button className={`relative flex items-center gap-2 px-4 py-2 rounded-full font-black text-xs transition-all ${scrolled ? 'bg-white/10 text-white' : 'bg-black/5 text-black'}`} onClick={openCart}>
+            <button className="relative flex items-center gap-2 px-4 py-2 rounded-full font-black text-xs transition-all bg-white/10 text-white" onClick={openCart}>
               <ShoppingCart size={14} />
               CARRITO
               {cartCount > 0 && (
-                <span className={`absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black ${scrolled ? 'bg-banana-yellow text-black' : 'bg-purple-brand text-white'}`}>
+                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black bg-banana-yellow text-black">
                   {cartCount}
                 </span>
               )}
@@ -138,24 +138,24 @@ const Header = () => {
           ${isSearchOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}
         `}>
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-             <Search size={20} className="text-purple-brand animate-pulse" />
-             <input 
-               autoFocus
-               type="text"
-               placeholder="Buscar laptops, componentes, accesorios..."
-               className="flex-1 bg-transparent border-none py-2 text-lg font-black focus:outline-none placeholder:text-gray-300 text-gray-900"
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-               onKeyDown={(e) => {
-                 if (e.key === 'Enter') {
-                   closeSearch();
-                   router.push(`/buscar?q=${searchQuery}`);
-                 }
-               }}
-             />
-             <button onClick={closeSearch} className="p-2 text-gray-400 hover:text-black transition-colors">
-               <X size={24} />
-             </button>
+            <Search size={20} className="text-purple-brand animate-pulse" />
+            <input
+              autoFocus
+              type="text"
+              placeholder="Buscar laptops, componentes, accesorios..."
+              className="flex-1 bg-transparent border-none py-2 text-lg font-black focus:outline-none placeholder:text-gray-300 text-gray-900"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  closeSearch();
+                  router.push(`/buscar?q=${searchQuery}`);
+                }
+              }}
+            />
+            <button onClick={closeSearch} className="p-2 text-gray-400 hover:text-black transition-colors">
+              <X size={24} />
+            </button>
           </div>
         </div>
 
@@ -171,9 +171,9 @@ const Header = () => {
                 <ChevronRight size={14} className="text-purple-brand opacity-40" />
               </Link>
             ))}
-            
+
             <div className="h-px bg-black/5 w-full my-2"></div>
-            
+
             <Link href="/contacto" className="flex items-center gap-3 py-3 text-sm font-bold uppercase tracking-widest text-gray-700 hover:text-purple-brand" onClick={() => setMenuOpen(false)}>
               <Phone size={14} className="text-purple-brand opacity-40" />
               Contacto
@@ -199,7 +199,7 @@ const Header = () => {
             )}
 
             <div className="h-px bg-black/5 w-full my-2"></div>
-            
+
             <button className="flex items-center gap-3 w-full py-4 px-4 bg-banana-yellow text-black rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-banana-yellow/20 active:scale-95 transition-all mt-2" onClick={() => { setMenuOpen(false); openCart(); }}>
               <ShoppingCart size={16} />
               Ver Carrito
@@ -210,8 +210,8 @@ const Header = () => {
       </header>
 
       {/* Cart Sidebar Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] transition-opacity duration-500 ${isCartOpen ? 'opacity-100 italic pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
+      <div
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] transition-opacity duration-500 ${isCartOpen ? 'opacity-100 italic pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={closeCart}
       ></div>
 
@@ -230,7 +230,7 @@ const Header = () => {
             <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
               <span className="text-5xl">🍌🍌🍌</span>
               <p className="text-gray-500 font-medium">Tu carrito está vacío</p>
-              <button 
+              <button
                 className="px-6 py-2 bg-purple-brand/5 rounded-full text-purple-brand font-bold hover:bg-purple-brand/10 transition-colors"
                 onClick={closeCart}
               >
