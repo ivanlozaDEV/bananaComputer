@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { CheckCircle2, XCircle, Loader2, ShieldAlert, Printer, CreditCard, Truck, ShoppingCart } from 'lucide-react';
+import { getOrderBreakdown } from '@/lib/pricing';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -361,34 +362,47 @@ function ResultadoContent() {
               <div className="py-6 space-y-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Detalle del Pedido</p>
                 <div className="space-y-3">
-                  {(orderSummary.items || []).map((item, idx) => {
-                    const inlinePrice = txData?.payment_method === 'transfer' 
-                      ? (parseFloat(item.transfer_price) || (parseFloat(item.price) / 1.06)) 
-                      : parseFloat(item.price);
-                    
-                    return (
-                      <div key={idx} className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 flex items-center justify-center bg-purple-brand/5 text-purple-brand rounded text-[10px] font-black">{item.quantity || 1}</span>
-                          <span className="text-xs font-bold text-gray-800">{item.name}</span>
-                        </div>
-                        <span className="text-xs font-black text-gray-900">${(inlinePrice * (item.quantity || 1)).toFixed(2)}</span>
+                  {(orderSummary.items || []).map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 flex items-center justify-center bg-purple-brand/5 text-purple-brand rounded text-[10px] font-black">{item.quantity || 1}</span>
+                        <span className="text-xs font-bold text-gray-800">{item.name}</span>
                       </div>
-                    );
-                  })}
+                      <span className="text-xs font-black text-gray-900">${((Number(item.price) / 1.15) * (item.quantity || 1)).toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* ── Totales ── */}
               <div className="py-6 border-t border-black/5 bg-gray-50/50 -mx-8 px-8 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400 font-bold uppercase tracking-widest">Subtotal (Base)</span>
-                  <span className="font-bold text-gray-700">${((orderSummary.total || 0) / 1.15).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400 font-bold uppercase tracking-widest">IVA (15%)</span>
-                  <span className="font-bold text-gray-700">${((orderSummary.total || 0) - ((orderSummary.total || 0) / 1.15)).toFixed(2)}</span>
-                </div>
+                {(() => {
+                  const itemsWithQty = orderSummary.items?.map(it => ({ ...it, price: it.price || it.unit_price })) || [];
+                  const pricing = getOrderBreakdown(itemsWithQty, txData?.payment_method || 'transfer');
+                  
+                  return (
+                    <>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400 font-bold uppercase tracking-widest">Subtotal</span>
+                        <span className="font-bold text-gray-700">${pricing.baseTotalSinIva.toFixed(2)}</span>
+                      </div>
+                      {pricing.hasDiscount && (
+                        <div className="flex justify-between text-xs text-banana-yellow font-bold uppercase tracking-widest">
+                          <span>Descuento</span>
+                          <span>-${pricing.discountSinIva.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs pt-4 border-t border-black/5">
+                        <span className="text-gray-400 font-bold uppercase tracking-widest">Base Imponible</span>
+                        <span className="font-bold text-gray-700">${pricing.baseImponible.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400 font-bold uppercase tracking-widest">IVA (15%)</span>
+                        <span className="font-bold text-gray-700">${pricing.iva.toFixed(2)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
                 <div className="flex justify-between items-center pt-4 border-t border-black/5">
                   <span className="text-sm font-black uppercase tracking-widest text-gray-900">Total Pagado</span>
                   <span className="text-3xl font-black text-purple-brand">${(orderSummary.total || 0).toFixed(2)}</span>

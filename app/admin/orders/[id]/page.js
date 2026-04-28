@@ -1,6 +1,7 @@
 "use client";
 export const dynamic = 'force-dynamic';
 import React, { useState, useEffect } from 'react';
+import { getOrderBreakdown } from '@/lib/pricing';
 import { supabase } from '@/lib/supabase';
 import {
   ArrowLeft, CheckCircle2, XCircle, Clock, Package,
@@ -237,7 +238,7 @@ export default function AdminOrderDetailPage() {
               {items.map(item => {
                 const product = item.products || {};
                 const isTransfer = order.payment_method === 'transfer';
-                const displayPrice = isTransfer ? (parseFloat(product.transfer_price) || (item.unit_price / 1.06)) : item.unit_price;
+                const displayPrice = item.unit_price;
                 return (
                   <div key={item.id} className="flex items-center gap-4 group pt-4 first:pt-0 last:pb-0">
                     <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-black/5 overflow-hidden flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
@@ -251,13 +252,11 @@ export default function AdminOrderDetailPage() {
                       <p className="font-black text-gray-900 truncate leading-tight">{product.name || 'Producto'}</p>
                       <p className="text-[10px] font-mono text-gray-400 mt-0.5">SKU: {product.sku || '—'}</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {item.quantity} × <span className="font-bold text-gray-700">${Number(displayPrice).toFixed(2)}</span>
-                        {isTransfer && <span className="ml-2 line-through text-gray-300">${Number(item.unit_price).toFixed(2)}</span>}
+                        {item.quantity} × <span className="font-bold text-gray-700">${(Number(displayPrice) / 1.15).toFixed(2)}</span>
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-gray-900">${(item.quantity * displayPrice).toFixed(2)}</p>
-                      {isTransfer && <p className="text-[9px] font-black text-mint-success uppercase tracking-widest">-6% desc.</p>}
+                      <p className="font-black text-gray-900">${((item.quantity * displayPrice) / 1.15).toFixed(2)}</p>
                     </div>
                   </div>
                 );
@@ -270,20 +269,32 @@ export default function AdminOrderDetailPage() {
         <div className="lg:col-span-1 flex flex-col gap-6">
           <Section icon={Hash} title="Resumen" iconColor="text-banana-yellow">
             <div className="space-y-3">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400 font-bold uppercase tracking-widest">Subtotal (Base)</span>
-                <span className="font-bold text-gray-700">${(Number(order.total) / 1.15).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400 font-bold uppercase tracking-widest">IVA (15%)</span>
-                <span className="font-bold text-gray-700">${(Number(order.total) - (Number(order.total) / 1.15)).toFixed(2)}</span>
-              </div>
-              {order.discount_amount > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400 font-bold uppercase tracking-widest">Descuento Transferencia</span>
-                  <span className="font-bold text-mint-success">-${Number(order.discount_amount).toFixed(2)}</span>
-                </div>
-              )}
+              {(() => {
+                const itemsWithQty = items.map(it => ({ ...it, price: it.unit_price }));
+                const pricing = getOrderBreakdown(itemsWithQty, order.payment_method || 'transfer');
+                return (
+                  <>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400 font-bold uppercase tracking-widest">Subtotal</span>
+                      <span className="font-bold text-gray-700">${pricing.baseTotalSinIva.toFixed(2)}</span>
+                    </div>
+                    {pricing.hasDiscount && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400 font-bold uppercase tracking-widest text-banana-yellow">Descuento</span>
+                        <span className="font-bold text-banana-yellow">-${pricing.discountSinIva.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-xs pt-4 border-t border-black/5">
+                      <span className="text-gray-400 font-bold uppercase tracking-widest">Base Imponible</span>
+                      <span className="font-bold text-gray-700">${pricing.baseImponible.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400 font-bold uppercase tracking-widest">IVA (15%)</span>
+                      <span className="font-bold text-gray-700">${pricing.iva.toFixed(2)}</span>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="flex justify-between text-xs">
                 <span className="text-gray-400 font-bold uppercase tracking-widest">Envío</span>
                 <span className="font-bold text-mint-success">Gratis</span>

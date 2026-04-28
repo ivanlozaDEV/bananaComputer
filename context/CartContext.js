@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getOrderBreakdown } from '@/lib/pricing';
 
 const CartContext = createContext();
 
@@ -41,11 +42,13 @@ export const CartProvider = ({ children }) => {
     return parseFloat(item.price) || 0;
   };
 
-  const baseTotal     = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-  const cartTotal     = paymentMethod === 'transfer' ? cartItems.reduce((sum, item) => sum + (parseFloat(item.transfer_price) || (parseFloat(item.price) / 1.06)), 0) : baseTotal;
-  const cartSubtotal  = cartTotal / 1.15;
-  const cartTax       = cartTotal - cartSubtotal;
-  const discountAmount = baseTotal - cartTotal;
+  const pricing = getOrderBreakdown(cartItems, paymentMethod);
+
+  const baseTotal     = pricing.baseTotalConIva;
+  const cartTotal     = pricing.cartTotalConIva;
+  const cartSubtotal  = pricing.baseImponible;
+  const cartTax       = pricing.iva;
+  const discountAmount = pricing.discountConIva;
   const cartCount     = cartItems.length;
 
   return (
