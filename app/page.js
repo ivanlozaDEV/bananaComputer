@@ -31,6 +31,7 @@ export default function HomePage() {
   const [showAI, setShowAI] = useState(false);
   const [promotions, setPromotions] = useState([]);
   const [marqueeMsgs, setMarqueeMsgs] = useState([]);
+  const [laptopProducts, setLaptopProducts] = useState([]);
   const [promoIndex, setPromoIndex] = useState(0);
   const [phase, setPhase] = useState('hero'); // 'hero' | 'hero-out' | 'banner-in' | 'banner' | 'banner-out'
 
@@ -54,6 +55,18 @@ export default function HomePage() {
       .order('display_order', { ascending: true })
       .then(({ data }) => {
         if (data && data.length > 0) setMarqueeMsgs(data);
+      });
+
+    // Laptop Products for bottom marquee
+    supabase
+      .from('products')
+      .select('name, categories!inner(name)')
+      .eq('is_active', true)
+      .ilike('categories.name', '%laptop%')
+      .limit(15)
+      .then(({ data, error }) => {
+        if (error) console.error('Error fetching laptops marquee:', error);
+        if (data) setLaptopProducts(data);
       });
   }, []);
 
@@ -235,16 +248,25 @@ export default function HomePage() {
             <div className="whitespace-nowrap animate-[marquee_25s_linear_infinite_reverse] flex items-center gap-12">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-12 text-[9px] font-bold uppercase tracking-[0.1em] text-white/30">
-                  <span>ASUS ROG</span>
-                  <span>•</span>
-                  <span>LENOVO LEGION</span>
-                  <span>•</span>
-                  <span>HP OMEN</span>
-                  <span>•</span>
-                  <span>ACER PREDATOR</span>
-                  <span>•</span>
-                  <span>APPLE M3 SERIES</span>
-                  <span>•</span>
+                  {laptopProducts.length > 0 ? laptopProducts.map((p, idx) => (
+                    <React.Fragment key={idx}>
+                      <span>{p.name}</span>
+                      <span>•</span>
+                    </React.Fragment>
+                  )) : (
+                    <>
+                      <span>ASUS ROG</span>
+                      <span>•</span>
+                      <span>LENOVO LEGION</span>
+                      <span>•</span>
+                      <span>HP OMEN</span>
+                      <span>•</span>
+                      <span>ACER PREDATOR</span>
+                      <span>•</span>
+                      <span>APPLE M3 SERIES</span>
+                      <span>•</span>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
