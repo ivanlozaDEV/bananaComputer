@@ -10,29 +10,29 @@ import { motion } from 'framer-motion';
 export default function BrandFloaters({ logos = [] }) {
   if (!logos || logos.length === 0) return null;
 
-  // Orbiting configurations around the center
+  // Orbiting configurations 30% closer to the center
   const floatingConfigs = [
-    { top: '-10%', left: '10%', delay: 0, duration: 12, size: 70 },
-    { top: '15%', right: '-15%', delay: 2, duration: 15, size: 85 },
-    { bottom: '10%', left: '-20%', delay: 4, duration: 14, size: 80 },
-    { bottom: '-15%', right: '15%', delay: 1, duration: 13, size: 90 },
-    { top: '45%', left: '-35%', delay: 3, duration: 16, size: 65 },
-    { top: '55%', right: '-35%', delay: 5, duration: 18, size: 75 },
-    { top: '-25%', right: '25%', delay: 0.5, duration: 14, size: 70 },
-    { bottom: '-25%', left: '25%', delay: 2.5, duration: 17, size: 65 },
+    { top: '8%', left: '22%', delay: 0, duration: 12, size: 70 },
+    { top: '25%', right: '4%', delay: 2, duration: 15, size: 85 },
+    { bottom: '22%', left: '1%', delay: 4, duration: 14, size: 80 },
+    { bottom: '4%', right: '25%', delay: 1, duration: 13, size: 90 },
+    { top: '46%', left: '-10%', delay: 3, duration: 16, size: 65 },
+    { top: '53%', right: '-10%', delay: 5, duration: 18, size: 75 },
+    { top: '-2%', right: '32%', delay: 0.5, duration: 14, size: 70 },
+    { bottom: '-2%', left: '32%', delay: 2.5, duration: 17, size: 65 },
   ];
 
   return (
     <div className="absolute inset-0 pointer-events-none z-0">
       {logos.slice(0, 8).map((logo, index) => {
         const config = floatingConfigs[index % floatingConfigs.length];
-        
+
         return (
           <motion.div
             key={logo.id || index}
             initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ 
-              opacity: 0.8, 
+            animate={{
+              opacity: 0.8,
               scale: 1,
               y: [0, -20, 0, 20, 0],
               x: [0, 15, 0, -15, 0],
@@ -71,12 +71,12 @@ export default function BrandFloaters({ logos = [] }) {
             }}
           >
             <div className="relative w-full h-full p-3 bg-white/60 backdrop-blur-md rounded-2xl border border-white/80 shadow-lg shadow-black/5 flex items-center justify-center transition-all duration-500 group-hover:bg-white/90 group-hover:scale-110 group-hover:opacity-100 group-hover:shadow-xl">
-              <img 
-                src={logo.url} 
-                alt={logo.name || 'Brand Logo'} 
+              <img
+                src={logo.url}
+                alt={logo.name || 'Brand Logo'}
                 className="max-w-full max-h-full object-contain transition-all duration-500"
               />
-              
+
               {/* Subtle inner glow */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/30 to-transparent pointer-events-none"></div>
             </div>

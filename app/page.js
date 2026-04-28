@@ -30,11 +30,13 @@ export default function HomePage() {
   const { heroContent, brandLogos } = useStore();
   const [showAI, setShowAI] = useState(false);
   const [promotions, setPromotions] = useState([]);
+  const [marqueeMsgs, setMarqueeMsgs] = useState([]);
   const [promoIndex, setPromoIndex] = useState(0);
   const [phase, setPhase] = useState('hero'); // 'hero' | 'hero-out' | 'banner-in' | 'banner' | 'banner-out'
 
-  // Fetch active promotions once on mount
+  // Fetch active content once on mount
   useEffect(() => {
+    // Promotions
     supabase
       .from('promotions')
       .select('*')
@@ -42,6 +44,16 @@ export default function HomePage() {
       .order('display_order', { ascending: true })
       .then(({ data }) => {
         if (data && data.length > 0) setPromotions(data);
+      });
+
+    // Marquee Messages
+    supabase
+      .from('marquee_messages')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) setMarqueeMsgs(data);
       });
   }, []);
 
@@ -69,7 +81,7 @@ export default function HomePage() {
 
         {/* ── HERO CONTENT ── */}
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-          
+
           {/* LEFT COLUMN: Text and CTA */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left z-10 w-full">
             <h1 className="mb-4 md:mb-6 text-5xl md:text-7xl lg:text-8xl uppercase font-black tracking-tighter leading-[0.9] drop-shadow-sm">
@@ -104,19 +116,19 @@ export default function HomePage() {
             <div className="mt-12 grid grid-cols-2 gap-6 w-full max-w-md opacity-90 border-t border-black/5 pt-8">
               <div className="flex items-center gap-3">
                 <ShieldCheck size={28} className="text-purple-brand" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Equipos<br/>Originales</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Equipos<br />Originales</span>
               </div>
               <div className="flex items-center gap-3">
                 <Award size={28} className="text-purple-brand" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Garantía<br/>Real</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Garantía<br />Real</span>
               </div>
               <div className="flex items-center gap-3">
                 <Truck size={28} className="text-purple-brand" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Entrega<br/>Express</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Entrega<br />Express</span>
               </div>
               <div className="flex items-center gap-3">
                 <Lock size={28} className="text-purple-brand" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Pago<br/>Seguro</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-800 text-left leading-tight">Pago<br />Seguro</span>
               </div>
             </div>
           </div>
@@ -128,8 +140,8 @@ export default function HomePage() {
 
             {/* Central Logo container */}
             <div className="relative z-10 animate-float-hero shadow-2xl rounded-2xl bg-white border border-purple-brand/10 p-6 overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-br from-banana-yellow/10 to-transparent z-0 pointer-events-none"></div>
-               <Logo size="large" animated={true} />
+              <div className="absolute inset-0 bg-gradient-to-br from-banana-yellow/10 to-transparent z-0 pointer-events-none"></div>
+              <Logo size="large" animated={true} />
             </div>
 
             {/* Orbiting Brand Logos */}
@@ -145,7 +157,8 @@ export default function HomePage() {
         </div>
 
         {/* Local animations */}
-        <style dangerouslySetInnerHTML={{__html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes float_hero {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-20px) rotate(2deg); }
@@ -159,16 +172,90 @@ export default function HomePage() {
         `}} />
       </section>
 
-      {/* Promotions Carousel Section */}
+      {/* Promotions Carousel Section - Tech Arena Style */}
       {promotions.length > 0 && (
-        <section className="bg-cream-bg py-8 md:py-12 border-y border-black/5">
-          <div className="max-w-7xl mx-auto px-4">
-            <HeroBanner 
-              promotion={currentPromo} 
-              promoCount={promotions.length} 
-              activeIndex={promoIndex} 
+        <section className="bg-purple-brand py-4 md:py-6 relative overflow-hidden border-y border-white/5">
+          {/* ── TECH ARENA DECORATIONS ── */}
+          {/* Animated Circuit Grid */}
+          <div className="absolute inset-0 z-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+          <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-purple-brand via-[#3A3561] to-[#2D2852]"></div>
+          
+          {/* Glowing Nodes & Lines */}
+          <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+            <div className="absolute top-[10%] left-[5%] w-px h-32 bg-gradient-to-b from-transparent via-banana-yellow/40 to-transparent"></div>
+            <div className="absolute top-[20%] right-[8%] w-px h-48 bg-gradient-to-b from-transparent via-purple-brand/60 to-transparent"></div>
+            <div className="absolute bottom-[15%] left-[12%] w-64 h-px bg-gradient-to-r from-transparent via-banana-yellow/30 to-transparent"></div>
+            
+            {/* Pulsing Tech Nodes */}
+            <div className="absolute top-1/4 right-[15%] w-2 h-2 bg-banana-yellow rounded-full animate-pulse shadow-[0_0_10px_#FBDD33]"></div>
+            <div className="absolute bottom-1/3 left-[10%] w-2 h-2 bg-purple-brand rounded-full animate-pulse delay-700 shadow-[0_0_10px_#4B467B]"></div>
+          </div>
+
+          {/* ── TOP MARQUEE (The "Ticker") ── */}
+          <div className="absolute top-0 left-0 w-full py-2.5 bg-black/40 backdrop-blur-xl border-b border-white/10 overflow-hidden z-20 flex items-center">
+            <div className="whitespace-nowrap animate-[marquee_30s_linear_infinite] flex items-center gap-12">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-12 text-[9px] font-black uppercase tracking-[0.3em] text-banana-yellow/80">
+                  {marqueeMsgs.length > 0 ? marqueeMsgs.map((msg, idx) => (
+                    <React.Fragment key={msg.id || idx}>
+                      <span>{msg.text}</span>
+                      <span className="text-white/40">•</span>
+                    </React.Fragment>
+                  )) : (
+                    <>
+                      <span>⚡ OFERTAS EXCLUSIVAS SEMANALES</span>
+                      <span className="text-white/40">•</span>
+                      <span>🎮 HARDWARE GLOBAL CON GARANTÍA LOCAL</span>
+                      <span className="text-white/40">•</span>
+                      <span>🚀 ENTREGAS EXPRESS A NIVEL NACIONAL</span>
+                      <span className="text-white/40">•</span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 relative z-10 pt-6 pb-6">
+            {/* Section Heading */}
+            <div className="flex flex-col items-center mb-6">
+               <h2 className="text-2xl md:text-4xl font-black text-white text-center uppercase tracking-tighter">
+                 Zona de <span className="text-banana-yellow">Oportunidades</span>
+               </h2>
+            </div>
+            <HeroBanner
+              promotion={currentPromo}
+              promoCount={promotions.length}
+              activeIndex={promoIndex}
             />
           </div>
+
+          {/* ── BOTTOM MARQUEE (Reverse direction) ── */}
+          <div className="absolute bottom-0 left-0 w-full py-3 bg-black/20 backdrop-blur-sm border-t border-white/5 overflow-hidden z-20 flex items-center">
+            <div className="whitespace-nowrap animate-[marquee_25s_linear_infinite_reverse] flex items-center gap-12">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-12 text-[9px] font-bold uppercase tracking-[0.1em] text-white/30">
+                  <span>ASUS ROG</span>
+                  <span>•</span>
+                  <span>LENOVO LEGION</span>
+                  <span>•</span>
+                  <span>HP OMEN</span>
+                  <span>•</span>
+                  <span>ACER PREDATOR</span>
+                  <span>•</span>
+                  <span>APPLE M3 SERIES</span>
+                  <span>•</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes marquee {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+          `}} />
         </section>
       )}
 

@@ -19,11 +19,30 @@ export default function PromotionsAdminPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Marquee states
+  const [marqueeMessages, setMarqueeMessages] = useState([]);
+  const [marqueeLoading, setMarqueeLoading] = useState(true);
+
   const fetchAll = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('promotions').select('*').order('display_order', { ascending: true });
-    if (!error) setPromotions(data || []);
+    setMarqueeLoading(true);
+    
+    // Fetch promotions
+    const { data: promoData, error: promoError } = await supabase
+      .from('promotions')
+      .select('*')
+      .order('display_order', { ascending: true });
+    if (!promoError) setPromotions(promoData || []);
+    
+    // Fetch marquee messages
+    const { data: marqueeData, error: marqueeError } = await supabase
+      .from('marquee_messages')
+      .select('*')
+      .order('display_order', { ascending: true });
+    if (!marqueeError) setMarqueeMessages(marqueeData || []);
+    
     setLoading(false);
+    setMarqueeLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, []);
@@ -82,6 +101,41 @@ export default function PromotionsAdminPage() {
       showToast('Error al guardar', 'error');
     }
     setSaving(false);
+  };
+
+  // Marquee Logic
+  const handleSaveMarquee = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        text: form.text,
+        display_order: parseInt(form.display_order) || 0,
+        is_active: form.is_active,
+      };
+      if (modal === 'marquee_new') {
+        const { error } = await supabase.from('marquee_messages').insert(payload);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('marquee_messages').update(payload).eq('id', modal.id);
+        if (error) throw error;
+      }
+      showToast('Mensaje guardado', 'success');
+      setModal(null);
+      fetchAll();
+    } catch (err) {
+      console.error('Marquee save error:', err);
+      showToast('Error al guardar mensaje', 'error');
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteMarquee = async (id) => {
+    if (!confirm('¿Eliminar este mensaje?')) return;
+    const { error } = await supabase.from('marquee_messages').delete().eq('id', id);
+    if (error) { showToast('Error al eliminar', 'error'); return; }
+    showToast('Mensaje eliminado', 'success');
+    fetchAll();
   };
 
   const handleDelete = async (id) => {
@@ -191,98 +245,212 @@ export default function PromotionsAdminPage() {
         </div>
       )}
 
-      {/* ── MODAL ── */}
+      {/* ── MARQUEE MESSAGES SECTION ── */}
+      <section className="mt-12 flex flex-col gap-6 pt-12 border-t border-black/5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black tracking-tight">Mensajes de Marquesina</h2>
+            <p className="text-gray-400 text-sm font-medium">Gestiona los textos que se desplazan en la Zona de Oportunidades.</p>
+          </div>
+          <button
+            onClick={() => {
+              setModal('marquee_new');
+              setForm({ text: '', display_order: marqueeMessages.length, is_active: true });
+            }}
+            className="px-4 py-2.5 bg-black text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2"
+          >
+            <Plus size={14} /> NUEVO MENSAJE
+          </button>
+        </div>
+
+        {marqueeLoading ? (
+          <div className="py-10 flex justify-center">
+            <div className="w-8 h-8 border-3 border-black/5 border-t-purple-brand rounded-full animate-spin" />
+          </div>
+        ) : marqueeMessages.length === 0 ? (
+          <div className="py-10 text-center text-gray-400 text-xs font-medium bg-gray-50 rounded-3xl border border-dashed border-black/10">
+            No hay mensajes configurados.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {marqueeMessages.map((msg) => (
+              <div key={msg.id} className="bg-white border border-black/5 rounded-2xl p-4 flex items-center justify-between group shadow-sm hover:shadow-md transition-all">
+                <div className="flex flex-col gap-1 min-w-0">
+                   <span className="text-[8px] font-black uppercase text-gray-400 tracking-widest">Orden {msg.display_order}</span>
+                   <p className="font-bold text-sm truncate pr-4">{msg.text}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setForm({ ...msg });
+                      setModal({ ...msg, type: 'marquee' });
+                    }}
+                    className="p-2 text-gray-400 hover:text-purple-brand transition-colors"
+                  >
+                    <Plus size={16} className="rotate-45" /> {/* Use Plus rotated as Edit placeholder or just text */}
+                    <span className="text-[8px] font-black uppercase">Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteMarquee(msg.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── MODALS ── */}
       {modal !== null && (
         <div className="fixed inset-0 z-[1000] bg-white/80 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-lg bg-white border border-black/5 rounded-[2.5rem] shadow-2xl p-8 flex flex-col gap-6 animate-in slide-in-from-bottom-8 duration-500">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black">{modal === 'new' ? 'Nuevo Banner' : 'Editar Banner'}</h2>
+              <h2 className="text-xl font-black">
+                {modal === 'new' ? 'Nuevo Banner' : 
+                 modal === 'marquee_new' ? 'Nuevo Mensaje' :
+                 modal.type === 'marquee' ? 'Editar Mensaje' : 'Editar Banner'}
+              </h2>
               <button onClick={() => setModal(null)} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-400 hover:text-black">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="flex flex-col gap-5">
-              {/* Image upload */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                  <Upload size={10} className="text-purple-brand" /> Imagen del Banner
-                </label>
-                {form.image_url ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-black/10">
-                    <img src={form.image_url} alt="Preview" className="w-full max-h-40 object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, image_url: '' }))}
-                      className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-lg"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ) : (
-                  <label className={`w-full h-32 rounded-2xl border-2 border-dashed border-black/10 flex flex-col items-center justify-center cursor-pointer hover:border-purple-brand/30 hover:bg-slate-50 transition-all ${uploading ? 'opacity-50 animate-pulse' : ''}`}>
-                    <Upload size={24} className="text-gray-300 mb-2" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{uploading ? 'Subiendo...' : 'Clic para subir'}</span>
-                    <span className="text-[9px] text-gray-300 mt-1">PNG, JPG, WebP — recomendado 1200×400px</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+            {modal === 'new' || (modal !== 'marquee_new' && modal.type !== 'marquee') ? (
+              /* PROMOTIONS FORM */
+              <form onSubmit={handleSave} className="flex flex-col gap-5">
+                {/* Image upload */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                    <Upload size={10} className="text-purple-brand" /> Imagen del Banner
                   </label>
-                )}
-              </div>
-
-              {/* Link URL */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                  <Link2 size={10} className="text-purple-brand" /> URL de Destino (opcional)
-                </label>
-                <input
-                  type="text"
-                  className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-purple-brand/30"
-                  placeholder="/categoria/laptops  ó  https://..."
-                  value={form.link_url}
-                  onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))}
-                />
-              </div>
-
-              {/* Display order */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                  <GripVertical size={10} className="text-purple-brand" /> Orden de aparición
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-purple-brand/30"
-                  value={form.display_order}
-                  onChange={e => setForm(f => ({ ...f, display_order: e.target.value }))}
-                />
-              </div>
-
-              {/* Active toggle */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <div
-                  className={`w-10 h-5 rounded-full transition-all relative ${form.is_active ? 'bg-mint-success' : 'bg-gray-300'}`}
-                  onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
-                >
-                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${form.is_active ? 'right-0.5' : 'left-0.5'}`} />
+                  {form.image_url ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-black/10">
+                      <img src={form.image_url} alt="Preview" className="w-full max-h-40 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, image_url: '' }))}
+                        className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-lg"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={`w-full h-32 rounded-2xl border-2 border-dashed border-black/10 flex flex-col items-center justify-center cursor-pointer hover:border-purple-brand/30 hover:bg-slate-50 transition-all ${uploading ? 'opacity-50 animate-pulse' : ''}`}>
+                      <Upload size={24} className="text-gray-300 mb-2" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{uploading ? 'Subiendo...' : 'Clic para subir'}</span>
+                      <span className="text-[9px] text-gray-300 mt-1">PNG, JPG, WebP — recomendado 1200×400px</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+                    </label>
+                  )}
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Activo</span>
-              </label>
 
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setModal(null)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-200 transition-all">
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || uploading}
-                  className="flex-1 py-3 bg-purple-brand text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-purple-brand/20 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {saving ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Save size={14} />}
-                  Guardar
-                </button>
-              </div>
-            </form>
+                {/* Link URL */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                    <Link2 size={10} className="text-purple-brand" /> URL de Destino (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-purple-brand/30"
+                    placeholder="/categoria/laptops  ó  https://..."
+                    value={form.link_url}
+                    onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))}
+                  />
+                </div>
+
+                {/* Display order */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                    <GripVertical size={10} className="text-purple-brand" /> Orden de aparición
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-purple-brand/30"
+                    value={form.display_order}
+                    onChange={e => setForm(f => ({ ...f, display_order: e.target.value }))}
+                  />
+                </div>
+
+                {/* Active toggle */}
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div
+                    className={`w-10 h-5 rounded-full transition-all relative ${form.is_active ? 'bg-mint-success' : 'bg-gray-300'}`}
+                    onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${form.is_active ? 'right-0.5' : 'left-0.5'}`} />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Activo</span>
+                </label>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setModal(null)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-200 transition-all">
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving || uploading}
+                    className="flex-1 py-3 bg-purple-brand text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-purple-brand/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {saving ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Save size={14} />}
+                    Guardar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* MARQUEE FORM */
+              <form onSubmit={handleSaveMarquee} className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-500">Texto del Mensaje</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-purple-brand/30"
+                    placeholder="Ej: ⚡ OFERTAS EXCLUSIVAS..."
+                    value={form.text}
+                    onChange={e => setForm(f => ({ ...f, text: e.target.value }))}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-500">Orden</label>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-purple-brand/30"
+                    value={form.display_order}
+                    onChange={e => setForm(f => ({ ...f, display_order: e.target.value }))}
+                  />
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div
+                    className={`w-10 h-5 rounded-full transition-all relative ${form.is_active ? 'bg-mint-success' : 'bg-gray-300'}`}
+                    onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${form.is_active ? 'right-0.5' : 'left-0.5'}`} />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Activo</span>
+                </label>
+
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setModal(null)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-200 transition-all">
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 py-3 bg-black text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {saving ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Save size={14} />}
+                    Guardar Mensaje
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
