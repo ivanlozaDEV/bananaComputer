@@ -146,7 +146,6 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
       />
       <Header />
 
-      {/* Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 pt-28 pb-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40">
         <Link href="/" className="hover:text-purple-brand"><Home size={12} /></Link>
         <ChevronRight size={10} />
@@ -154,8 +153,8 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
         {product?.subcategories?.name && (
           <>
             <ChevronRight size={10} />
-            <Link 
-              href={`/categoria/${product?.categories?.slug || product?.category_id}/${product?.subcategories?.slug || product?.subcategory_id}`} 
+            <Link
+              href={`/categoria/${product?.categories?.slug || product?.category_id}/${product?.subcategories?.slug || product?.subcategory_id}`}
               className="hover:text-purple-brand"
             >
               {product.subcategories.name}

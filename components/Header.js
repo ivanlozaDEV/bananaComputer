@@ -11,6 +11,7 @@ import {
   ShoppingCart, Menu, X, Phone, LogIn, LogOut, ChevronRight, Search
 } from 'lucide-react';
 import { useSearch } from '@/context/SearchContext';
+import SearchOverlay from './SearchOverlay';
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -132,32 +133,7 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Search Bar Inline Expandable */}
-        <div className={`
-          overflow-hidden transition-all duration-500 ease-in-out bg-white border-t border-black/5
-          ${isSearchOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}
-        `}>
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-            <Search size={20} className="text-purple-brand animate-pulse" />
-            <input
-              autoFocus
-              type="text"
-              placeholder="Buscar laptops, componentes, accesorios..."
-              className="flex-1 bg-transparent border-none py-2 text-lg font-black focus:outline-none placeholder:text-gray-300 text-gray-900"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  closeSearch();
-                  router.push(`/buscar?q=${searchQuery}`);
-                }
-              }}
-            />
-            <button onClick={closeSearch} className="p-2 text-gray-400 hover:text-black transition-colors">
-              <X size={24} />
-            </button>
-          </div>
-        </div>
+        {/* Search handled by SearchOverlay portal */}
 
         {/* Mobile Navigation Dropdown (Legacy Parity) */}
         <nav className={`
@@ -287,6 +263,8 @@ const Header = () => {
           </div>
         )}
       </aside>
+      {/* Premium Search Overlay */}
+      <SearchOverlay />
     </>
   );
 };

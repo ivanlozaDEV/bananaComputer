@@ -2,13 +2,14 @@
 export const dynamic = 'force-dynamic';
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Package, Search, Filter, ArrowLeft, RefreshCw, ChevronDown, X } from 'lucide-react';
+import { Plus, Package, Search, Filter, ArrowLeft, RefreshCw, ChevronDown, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useOllama } from '@/hooks/useOllama';
 import { useProductForm } from '@/hooks/useProductForm';
 import ProductTable from '../components/ProductTable';
 import ProductModal from '../components/ProductModal';
 import { useToast } from '@/context/ToastContext';
+import BulkBadgeEditor from '../components/BulkBadgeEditor';
 
 const BADGE_OPTIONS = [
   { value: '',             label: 'Todas las etiquetas' },
@@ -34,6 +35,7 @@ export default function ProductsAdminPage() {
 
   // ── Filter state ──
   const [showFilters, setShowFilters] = useState(false);
+  const [showBulkEditor, setShowBulkEditor] = useState(false);
   const [filterCat, setFilterCat] = useState('');
   const [filterSub, setFilterSub] = useState('');
   const [filterBadge, setFilterBadge] = useState('');
@@ -211,12 +213,20 @@ export default function ProductsAdminPage() {
               )}
             </p>
           </div>
-          <button
-            onClick={productForm.openNew}
-            className="px-6 py-3.5 bg-banana-yellow text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-banana-yellow/10 flex items-center gap-2"
-          >
-            <Plus size={18} /> NUEVO PRODUCTO
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowBulkEditor(true)}
+              className="px-5 py-3.5 bg-white border border-black/10 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center gap-2 hover:border-purple-brand/30 hover:text-purple-brand shadow-sm"
+            >
+              <Zap size={14} /> Edición Masiva
+            </button>
+            <button
+              onClick={productForm.openNew}
+              className="px-6 py-3.5 bg-banana-yellow text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-banana-yellow/10 flex items-center gap-2"
+            >
+              <Plus size={18} /> NUEVO PRODUCTO
+            </button>
+          </div>
         </div>
       </header>
 
@@ -362,6 +372,15 @@ export default function ProductsAdminPage() {
           products={filteredProducts}
           onEdit={productForm.openEdit}
           onDelete={deleteProduct}
+        />
+      )}
+
+      {/* Bulk Badge Editor */}
+      {showBulkEditor && (
+        <BulkBadgeEditor
+          allProducts={products}
+          onClose={() => setShowBulkEditor(false)}
+          onDone={() => { setShowBulkEditor(false); fetchAll(); }}
         />
       )}
     </div>

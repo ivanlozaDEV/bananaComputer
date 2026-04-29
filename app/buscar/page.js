@@ -15,9 +15,12 @@ import Link from 'next/link';
 function SearchContent() {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
-  const { searchQuery, setSearchQuery, openSearch } = useSearch();
+  const { openSearch } = useSearch();
   const { addToCart } = useCart();
   const [addedIds, setAddedIds] = useState(new Set());
+
+  // Local search query — page uses urlQuery as the source of truth
+  const [localQuery, setLocalQuery] = useState(urlQuery);
 
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -33,12 +36,10 @@ function SearchContent() {
     priceMax: 9999,
   });
 
-  // Sync context with URL if needed
+  // Keep localQuery in sync with URL changes
   useEffect(() => {
-    if (urlQuery && !searchQuery) {
-      setSearchQuery(urlQuery);
-    }
-  }, [urlQuery, searchQuery, setSearchQuery]);
+    setLocalQuery(urlQuery);
+  }, [urlQuery]);
 
   const handleAddToCart = (e, product) => {
     e.preventDefault();
@@ -98,24 +99,28 @@ function SearchContent() {
     setFilters(f => ({ ...f, priceMin: min, priceMax: max }));
   }, [allProducts]);
 
-  // Fuzzy search
+  // Fuzzy search (same keys as SearchOverlay for consistency)
   const searchFiltered = useMemo(() => {
-    const query = searchQuery || urlQuery;
-    if (!query.trim()) return allProducts;
+    if (!localQuery.trim()) return allProducts;
 
     const fuse = new Fuse(allProducts, {
       keys: [
-        { name: 'name', weight: 2 },
-        { name: 'tagline', weight: 1 },
-        { name: 'description', weight: 1 },
-        { name: 'categories.name', weight: 1.5 },
-        { name: 'product_attributes.value', weight: 1 }
+        { name: 'name',               weight: 3 },
+        { name: 'model_number',       weight: 2.5 },
+        { name: 'sku',                weight: 2 },
+        { name: 'tagline',            weight: 1.5 },
+        { name: 'description',        weight: 1 },
+        { name: 'categories.name',    weight: 1.5 },
+        { name: 'subcategories.name', weight: 1.2 },
+        { name: 'product_attributes.value', weight: 1 },
       ],
       threshold: 0.35,
+      distance: 200,
+      ignoreLocation: true,
     });
 
-    return fuse.search(query).map(r => r.item);
-  }, [allProducts, searchQuery, urlQuery]);
+    return fuse.search(localQuery).map(r => r.item);
+  }, [allProducts, localQuery]);
 
   // Apply sidebar filters
   const results = useMemo(() => {
@@ -167,7 +172,7 @@ function SearchContent() {
           </Link>
           <h1 className="!text-[12px] font-black tracking-[0.2em] uppercase flex items-center gap-3 flex-wrap">
             <span className="text-black">🍌 Resultados para</span>
-            <span className="text-purple-brand font-black">"{searchQuery || urlQuery}"</span>
+            <span className="text-purple-brand font-black">"{localQuery}"</span>
             <span className="text-[10px] font-black bg-purple-brand text-white px-2 py-0.5 rounded tracking-normal">
               {results.length} coincidencias
             </span>

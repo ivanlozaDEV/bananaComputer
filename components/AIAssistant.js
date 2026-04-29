@@ -6,6 +6,7 @@ import { chatWithOllama, pingOllama } from '@/lib/ollama';
 import { searchInventoryForAI, formatInventoryForAI, fetchAIBaseline, filterInventoryByIds } from '@/lib/inventory';
 import WaitlistForm from '@/components/WaitlistForm';
 import { supabase } from '@/lib/supabase';
+import { productUrl } from '@/lib/productUrl';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TAG_REGEX = /\[(RECOMENDACI[OÓ]N|COMPARE|WAITLIST_PROMPT|SEARCH):?\s*(.*?)\]/gi;
@@ -387,12 +388,12 @@ const RecommendedProduct = memo(({ id }) => {
     value: `${a.value} ${a.attribute_definitions.unit || ''}`.trim()
   })) || [];
 
-  const catSlug = prod.categories?.slug || 'c';
-  const subSlug = prod.subcategories?.slug || 's';
-  const prodSlug = prod.slug || prod.id;
+  const catSlug = prod.categories?.slug;
+  const subSlug = prod.subcategories?.slug;
+  const url = productUrl(prod);
 
   return (
-    <Link href={`/categoria/${catSlug}/${subSlug}/${prodSlug}`} className="flex flex-col gap-3 p-4 bg-white hover:bg-gray-50 rounded-[1.5rem] border border-black/5 transition-all group shadow-sm text-black">
+    <Link href={url} className="flex flex-col gap-3 p-4 bg-white hover:bg-gray-50 rounded-[1.5rem] border border-black/5 transition-all group shadow-sm text-black">
       <div className="flex gap-4">
         <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center p-2 border border-black/5 shrink-0">
           {/* Fix #8: fallback image on broken URL */}
