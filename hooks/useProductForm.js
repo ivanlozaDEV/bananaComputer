@@ -159,6 +159,34 @@ export function useProductForm(categories, onSaveSuccess) {
     try {
       let productId;
       let res;
+
+      // 1. Pre-save validation: Check for duplicate SKU or Slug
+      const currentSlug = form.slug || generateSlug(form.name, form.model_number);
+      
+      const { data: existing, error: checkError } = await supabase
+        .from('products')
+        .select('id, sku, slug')
+        .or(`sku.eq."${form.sku}",slug.eq."${currentSlug}"`);
+
+      if (checkError) console.error('Error checking uniqueness:', checkError);
+
+      if (existing && existing.length > 0) {
+        const other = existing.find(p => modal === 'new' || p.id !== modal.id);
+        if (other) {
+          if (other.sku === form.sku) {
+            setErrors(prev => ({ ...prev, sku: 'Este SKU ya está siendo usado por otro producto' }));
+            setSaving(false);
+            return;
+          }
+          if (other.slug === currentSlug) {
+            setErrors(prev => ({ ...prev, slug: 'Esta URL (slug) ya está en uso. Intenta cambiar el nombre o modelo.' }));
+            setSaving(false);
+            return;
+          }
+        }
+      }
+
+      // 2. Proceed with save
       if (modal === 'new') {
         res = await supabase.from('products').insert(payload).select().single();
       } else {

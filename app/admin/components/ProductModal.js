@@ -176,6 +176,7 @@ const ProductModal = ({
                   placeholder="url-del-producto"
                 />
               </div>
+              {errors.slug && <span className="text-[9px] text-raspberry font-bold ml-1">{errors.slug}</span>}
             </div>
 
             {/* Images Gallery */}
