@@ -140,6 +140,7 @@ export default function ProductsAdminPage() {
           onGenerateReview={handleGenerateReview}
           removeImage={productForm.removeImage}
           generateSlug={productForm.generateSlug}
+          suggestSKU={productForm.suggestSKU}
           errors={productForm.errors}
         />
       </div>

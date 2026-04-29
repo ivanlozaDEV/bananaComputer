@@ -13,29 +13,44 @@ export async function generateMetadata({ params }) {
   const isCatUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(catSlug);
   const isSubUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subSlug);
 
-  const { data: category } = await (isCatUUID 
-    ? supabase.from('categories').select('id').eq('id', catSlug)
-    : supabase.from('categories').select('id').eq('slug', catSlug)
-  ).single();
+  try {
+    const { data: category } = await (isCatUUID 
+      ? supabase.from('categories').select('id, name').eq('id', catSlug)
+      : supabase.from('categories').select('id, name').eq('slug', catSlug)
+    ).single();
 
-  if (!category) return { title: 'Categoría No Encontrada' };
+    if (!category) return { title: 'Categoría No Encontrada | Banana Computer' };
 
-  const { data: subcategory } = await (isSubUUID
-    ? supabase.from('subcategories').select('name, description').eq('id', subSlug).eq('category_id', category.id)
-    : supabase.from('subcategories').select('name, description').eq('slug', subSlug).eq('category_id', category.id)
-  ).single();
+    const { data: subcategory } = await (isSubUUID
+      ? supabase.from('subcategories').select('name, description').eq('id', subSlug).eq('category_id', category.id)
+      : supabase.from('subcategories').select('name, description').eq('slug', subSlug).eq('category_id', category.id)
+    ).single();
 
-  if (!subcategory) {
-    return { title: 'Subcategoría No Encontrada | Banana Computer' };
+    if (subcategory) {
+      return {
+        title: `${subcategory.name} | ${category.name} Banana Computer`,
+        description: subcategory.description || `Catálogo de ${subcategory.name} en Banana Computer Ecuador.`
+      };
+    }
+
+    // Fallback: Si no es subcategoría, quizás es un producto huérfano de subcategoría
+    const { data: product } = await supabase
+      .from('products')
+      .select('name, marketing_subtitle')
+      .eq('slug', subSlug)
+      .single();
+
+    if (product) {
+      return {
+        title: `${product.name} | Banana Computer`,
+        description: product.marketing_subtitle
+      };
+    }
+
+    return { title: 'Catálogo | Banana Computer' };
+  } catch (e) {
+    return { title: 'Catálogo | Banana Computer' };
   }
-
-  const title = `${subcategory.name} | Expertos en Hardware Ecuador`;
-  const description = subcategory.description || `Equipos especializados ${subcategory.name} con garantía real y soporte técnico en Ecuador.`;
-
-  return {
-    title,
-    description,
-  };
 }
 
 export default async function Page({ params }) {

@@ -24,6 +24,7 @@ const ProductModal = ({
   onGenerateReview,
   removeImage,
   generateSlug,
+  suggestSKU,
   errors = {}
 }) => {
   if (modal === null) return null;
@@ -109,7 +110,17 @@ const ProductModal = ({
 
             <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SKU Interno</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-500">SKU Interno</label>
+                  <button 
+                    type="button" 
+                    onClick={suggestSKU}
+                    className="text-[8px] font-black text-purple-brand hover:text-black uppercase tracking-tighter flex items-center gap-1 transition-colors"
+                    title="Generar SKU automático"
+                  >
+                    <Sparkles size={8} /> Auto
+                  </button>
+                </div>
                 <input className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-purple-brand/30 ${errors.sku ? 'border-raspberry/50' : 'border-black/10'}`} 
                   value={form.sku || ''} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))} placeholder="BNN-001" />
                 {errors.sku && <span className="text-[9px] text-raspberry font-bold ml-1">{errors.sku}</span>}

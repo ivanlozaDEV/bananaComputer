@@ -37,9 +37,52 @@ export function useProductForm(categories, onSaveSuccess) {
     const cat = categories.find(c => c.id === form.category_id);
     if (!cat) { setAttrDefs([]); return; }
     
+    // Auto-generate SKU if it's a new product and SKU is empty
+    if (modal === 'new' && !form.sku) {
+      suggestSKU(cat.name);
+    }
+
     // Simplificación: Cargar todos los atributos de la categoría sin distinción de subcategoría
     setAttrDefs(cat.attribute_definitions || []);
   }, [form.category_id, categories]);
+
+  const suggestSKU = async (categoryName) => {
+    let prefix = 'PROD';
+    const name = categoryName.toLowerCase();
+    if (name.includes('laptop')) prefix = 'LAP';
+    else if (name.includes('monitor')) prefix = 'MON';
+    else if (name.includes('proyect')) prefix = 'PROY';
+    else if (name.includes('accesor')) prefix = 'ACC';
+    else if (name.includes('compon')) prefix = 'COMP';
+
+    try {
+      const { data } = await supabase
+        .from('products')
+        .select('sku')
+        .ilike('sku', `${prefix}%`)
+        .order('sku', { ascending: false })
+        .limit(20); // Get a sample to find the highest number
+
+      let nextNumber = 1;
+      if (data && data.length > 0) {
+        const numbers = data
+          .map(p => {
+            const match = p.sku.match(/\d+$/);
+            return match ? parseInt(match[0]) : 0;
+          })
+          .filter(n => !isNaN(n));
+        
+        if (numbers.length > 0) {
+          nextNumber = Math.max(...numbers) + 1;
+        }
+      }
+
+      const newSku = `${prefix}${String(nextNumber).padStart(3, '0')}`;
+      setForm(f => ({ ...f, sku: newSku }));
+    } catch (err) {
+      console.error('Error suggesting SKU:', err);
+    }
+  };
 
   const openNew = useCallback(() => {
     setForm(emptyProduct);
@@ -327,6 +370,11 @@ export function useProductForm(categories, onSaveSuccess) {
     handleDatasheetFile,
     mapOllamaResult,
     generateSlug,
+    suggestSKU: () => {
+      const cat = categories.find(c => c.id === form.category_id);
+      if (cat) suggestSKU(cat.name);
+      else suggestSKU('Producto');
+    },
     errors
   };
 }
