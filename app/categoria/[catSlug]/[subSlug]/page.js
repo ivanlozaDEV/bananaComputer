@@ -10,11 +10,20 @@ import { notFound } from 'next/navigation';
 export async function generateMetadata({ params }) {
   const { catSlug, subSlug } = await params;
   
-  const { data: subcategory } = await supabase
-    .from('subcategories')
-    .select('name, description')
-    .eq('slug', subSlug)
-    .single();
+  const isCatUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(catSlug);
+  const isSubUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subSlug);
+
+  const { data: category } = await (isCatUUID 
+    ? supabase.from('categories').select('id').eq('id', catSlug)
+    : supabase.from('categories').select('id').eq('slug', catSlug)
+  ).single();
+
+  if (!category) return { title: 'Categoría No Encontrada' };
+
+  const { data: subcategory } = await (isSubUUID
+    ? supabase.from('subcategories').select('name, description').eq('id', subSlug).eq('category_id', category.id)
+    : supabase.from('subcategories').select('name, description').eq('slug', subSlug).eq('category_id', category.id)
+  ).single();
 
   if (!subcategory) {
     return { title: 'Subcategoría No Encontrada | Banana Computer' };
@@ -32,17 +41,22 @@ export async function generateMetadata({ params }) {
 export default async function Page({ params }) {
   const { catSlug, subSlug } = await params;
 
-  const [catRes, subRes] = await Promise.all([
-    supabase.from('categories').select('*').eq('slug', catSlug).single(),
-    supabase.from('subcategories').select('*').eq('slug', subSlug).single()
-  ]);
+  const isCatUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(catSlug);
+  const isSubUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subSlug);
 
-  if (!catRes.data || !subRes.data) {
-    notFound();
-  }
+  const { data: category } = await (isCatUUID 
+    ? supabase.from('categories').select('*').eq('id', catSlug)
+    : supabase.from('categories').select('*').eq('slug', catSlug)
+  ).single();
 
-  const category = catRes.data;
-  const subcategory = subRes.data;
+  if (!category) notFound();
+
+  const { data: subcategory } = await (isSubUUID
+    ? supabase.from('subcategories').select('*').eq('id', subSlug).eq('category_id', category.id)
+    : supabase.from('subcategories').select('*').eq('slug', subSlug).eq('category_id', category.id)
+  ).single();
+
+  if (!subcategory) notFound();
 
   return (
     <div className="min-h-screen bg-cream-bg">

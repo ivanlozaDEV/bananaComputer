@@ -139,6 +139,7 @@ export default function ProductsAdminPage() {
           onOllamaAnalyze={handleOllamaAnalyze}
           onGenerateReview={handleGenerateReview}
           removeImage={productForm.removeImage}
+          generateSlug={productForm.generateSlug}
           errors={productForm.errors}
         />
       </div>

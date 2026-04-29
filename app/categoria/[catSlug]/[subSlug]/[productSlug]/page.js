@@ -6,11 +6,15 @@ import { notFound } from 'next/navigation';
 export async function generateMetadata({ params }) {
   const { catSlug, subSlug, productSlug } = await params;
   
-  const { data: product } = await supabase
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug);
+  const query = supabase
     .from('products')
-    .select('name, description, image_url, images, marketing_subtitle, model_number, sku')
-    .eq('slug', productSlug)
-    .single();
+    .select('name, description, image_url, images, marketing_subtitle, model_number, sku');
+  
+  if (isUUID) query.eq('id', productSlug);
+  else query.eq('slug', productSlug);
+
+  const { data: product } = await query.single();
 
   if (!product) {
     return {
@@ -48,11 +52,15 @@ export async function generateMetadata({ params }) {
 export default async function Page({ params }) {
   const { catSlug, subSlug, productSlug } = await params;
 
-  const { data: product } = await supabase
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug);
+  const query = supabase
     .from('products')
-    .select('*, categories(id, name, slug), subcategories:subcategory_id(id, name, slug)')
-    .eq('slug', productSlug)
-    .single();
+    .select('*, categories(id, name, slug), subcategories:subcategory_id(id, name, slug)');
+
+  if (isUUID) query.eq('id', productSlug);
+  else query.eq('slug', productSlug);
+
+  const { data: product } = await query.single();
 
   if (!product) {
     notFound();

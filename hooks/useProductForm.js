@@ -4,12 +4,21 @@ import imageCompression from 'browser-image-compression';
 import { supabase } from '@/lib/supabase';
 
 const emptyProduct = {
-  sku: '', name: '', model_number: '', tagline: '', marketing_subtitle: '',
+  sku: '', name: '', slug: '', model_number: '', tagline: '', marketing_subtitle: '',
   marketing_body: '', description: '', price: '', transfer_price: '', stock: '0',
   category_id: '', subcategory_id: '', image_url: '',
   images: [], subcategory_ids: [],
   is_featured: false, is_active: true,
   banana_review: null,
+};
+
+const generateSlug = (text) => {
+  if (!text) return '';
+  return text.toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 };
 
 export function useProductForm(categories, onSaveSuccess) {
@@ -126,15 +135,24 @@ export function useProductForm(categories, onSaveSuccess) {
     const stock = parseInt(form.stock);
 
     const payload = {
-      sku: form.sku, name: form.name, model_number: form.model_number, tagline: form.tagline,
-      marketing_subtitle: form.marketing_subtitle, marketing_body: form.marketing_body,
-      description: form.description, price, transfer_price,
+      sku: form.sku, 
+      name: form.name, 
+      slug: form.slug || generateSlug(form.name),
+      model_number: form.model_number, 
+      tagline: form.tagline,
+      marketing_subtitle: form.marketing_subtitle, 
+      marketing_body: form.marketing_body,
+      description: form.description, 
+      price, 
+      transfer_price,
       stock: isNaN(stock) ? 0 : stock, 
       category_id: form.category_id || null,
       subcategory_id: form.subcategory_ids?.[0] || form.subcategory_id || null, 
       image_url: form.images?.[0] || form.image_url || null,
       images: form.images || [],
-      datasheet: datasheetParsed, is_featured: form.is_featured, is_active: form.is_active,
+      datasheet: datasheetParsed, 
+      is_featured: form.is_featured, 
+      is_active: form.is_active,
       banana_review: form.banana_review,
     };
 
@@ -262,6 +280,7 @@ export function useProductForm(categories, onSaveSuccess) {
     handleSave,
     handleDatasheetFile,
     mapOllamaResult,
+    generateSlug,
     errors
   };
 }

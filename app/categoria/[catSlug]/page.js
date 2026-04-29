@@ -6,11 +6,11 @@ import { notFound } from 'next/navigation';
 export async function generateMetadata({ params }) {
   const { catSlug } = await params;
   
-  const { data: category } = await supabase
-    .from('categories')
-    .select('name, description')
-    .eq('slug', catSlug)
-    .single();
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(catSlug);
+  const { data: category } = await (isUUID
+    ? supabase.from('categories').select('name, description').eq('id', catSlug)
+    : supabase.from('categories').select('name, description').eq('slug', catSlug)
+  ).single();
 
   if (!category) {
     return { title: 'Categoría No Encontrada | Banana Computer' };
@@ -36,11 +36,11 @@ export async function generateMetadata({ params }) {
 export default async function Page({ params }) {
   const { catSlug } = await params;
 
-  const { data: category } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('slug', catSlug)
-    .single();
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(catSlug);
+  const { data: category } = await (isUUID
+    ? supabase.from('categories').select('*').eq('id', catSlug)
+    : supabase.from('categories').select('*').eq('slug', catSlug)
+  ).single();
 
   if (!category) notFound();
 

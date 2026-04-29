@@ -23,6 +23,7 @@ const ProductModal = ({
   onOllamaAnalyze,
   onGenerateReview,
   removeImage,
+  generateSlug,
   errors = {}
 }) => {
   if (modal === null) return null;
@@ -146,8 +147,30 @@ const ProductModal = ({
             <div className="lg:col-span-12 flex flex-col gap-1.5">
               <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Nombre Comercial del Producto</label>
               <input className={`w-full bg-slate-50 border rounded-xl px-5 py-3 text-sm font-black text-gray-900 focus:outline-none focus:border-purple-brand/30 ${errors.name ? 'border-raspberry/50' : 'border-black/10'}`} 
-                value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                value={form.name} 
+                onChange={e => {
+                  const newName = e.target.value;
+                  setForm(f => ({ 
+                    ...f, 
+                    name: newName,
+                    slug: generateSlug(newName)
+                  }));
+                }} 
+              />
               {errors.name && <span className="text-[9px] text-raspberry font-bold ml-1">{errors.name}</span>}
+            </div>
+
+            <div className="lg:col-span-12 flex flex-col gap-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Slug / Ruta URL (Automático)</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 font-bold text-[10px]">/categoria/.../</span>
+                <input 
+                  className="w-full bg-slate-50 border border-black/10 rounded-xl pl-24 pr-5 py-2.5 text-[10px] font-bold text-gray-500 focus:outline-none focus:border-purple-brand/30 transition-all shadow-inner" 
+                  value={form.slug} 
+                  onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
+                  placeholder="url-del-producto"
+                />
+              </div>
             </div>
 
             {/* Images Gallery */}
