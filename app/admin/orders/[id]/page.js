@@ -230,6 +230,22 @@ export default function AdminOrderDetailPage() {
         </Section>
       </div>
 
+      {/* Sellos de Confianza Banana */}
+      <div className="bg-white border border-black/10 rounded-3xl p-8 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex items-center gap-4">
+          <span className="text-2xl">✅</span>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-900 leading-tight">Somos distribuidores oficiales en Ecuador</p>
+        </div>
+        <div className="flex items-center gap-4 border-l border-r border-black/5 px-6">
+          <span className="text-2xl">🛡️</span>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-900 leading-tight">Garantía directa de fabricante</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-2xl">🔧</span>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-900 leading-tight">Upgrade de tu equipo sin afectar la garantía</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── 3. Productos (2/3 width) ── */}
         <div className="lg:col-span-2">

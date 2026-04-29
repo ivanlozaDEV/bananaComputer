@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   ArrowLeft, CheckCircle2, Clock, RefreshCw,
-  Plus, FileText, Link, ExternalLink, Trash2, XCircle
+  Plus, FileText, Link, ExternalLink, Trash2, XCircle, Pencil
 } from 'lucide-react';
 import NextLink from 'next/link';
 import { useToast } from '@/context/ToastContext';
@@ -158,8 +158,15 @@ export default function AdminQuotesPage() {
                           <Link size={16} />
                         </button>
                         <NextLink
-                          href={`/cotizacion/${quote.slug}`}
+                          href={`/admin/quotes/${quote.id}/edit`}
+                          className="p-2 text-gray-400 hover:text-purple-brand hover:bg-purple-brand/5 rounded-xl transition-all"
+                          title="Editar Cotización"
+                        >
+                          <Pencil size={16} />
+                        </NextLink>
+                        <NextLink
                           target="_blank"
+                          href={`/cotizacion/${quote.slug}`}
                           className="p-2 text-gray-400 hover:text-purple-brand hover:bg-purple-brand/5 rounded-xl transition-all"
                           title="Ver Link Público"
                         >

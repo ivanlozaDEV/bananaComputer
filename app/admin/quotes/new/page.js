@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { 
-  ArrowLeft, Search, Plus, Trash2, Save, User, 
+import {
+  ArrowLeft, Search, Plus, Trash2, Save, User,
   ShoppingCart, Building2, MapPin, Hash, Phone, Mail
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -30,6 +30,7 @@ export default function NewQuotePage() {
   const [foundProducts, setFoundProducts] = useState([]);
   const [quoteItems, setQuoteItems] = useState([]);
   const [paymentMode, setPaymentMode] = useState('transfer'); // 'transfer' | 'card'
+  const [quoteType, setQuoteType] = useState('standard'); // 'standard' | 'options'
 
   // --- SEARCH LOGIC ---
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function NewQuotePage() {
           .or(`name.ilike.%${productSearch}%,sku.ilike.%${productSearch}%,model_number.ilike.%${productSearch}%`)
           .eq('is_active', true)
           .limit(10);
-        
+
         if (!error) setFoundProducts(data || []);
       } else {
         setFoundProducts([]);
@@ -78,7 +79,7 @@ export default function NewQuotePage() {
   const selectCustomer = (c) => {
     setSelectedCustomerId(c.isRegistered ? c.id : null);
     setSelectedProspectId(c.isRegistered ? null : c.id);
-    
+
     setCustomerData({
       full_name: c.full_name || '',
       email: c.email || '',
@@ -86,40 +87,73 @@ export default function NewQuotePage() {
       id_number: c.id_number || '',
       id_type: c.id_type || 1,
       company: c.company || '',
-      address: c.isRegistered 
+      address: c.isRegistered
         ? {
-            street_main: c.street_main || '',
-            street_secondary: c.street_secondary || '',
-            house_number: c.house_number || '',
-            city: c.city || '',
-            province: c.province || '',
-            canton: c.canton || '',
-            zip_code: c.zip_code || ''
-          }
+          street_main: c.street_main || '',
+          street_secondary: c.street_secondary || '',
+          house_number: c.house_number || '',
+          city: c.city || '',
+          province: c.province || '',
+          canton: c.canton || '',
+          zip_code: c.zip_code || ''
+        }
         : (c.address_data || { street_main: '', street_secondary: '', house_number: '', city: '', province: '', canton: '', zip_code: '' })
     });
     setCustomerSearch('');
     setFoundCustomers([]);
   };
 
-  const addProduct = (p) => {
+  const addProduct = async (p) => {
     const exists = quoteItems.find(item => item.id === p.id);
     if (exists) {
-      setQuoteItems(quoteItems.map(item => 
+      setQuoteItems(quoteItems.map(item =>
         item.id === p.id ? { ...item, quantity: item.quantity + 1 } : item
       ));
     } else {
-      setQuoteItems([...quoteItems, { 
-        id: p.id, 
-        name: p.name, 
-        price: p.price, 
+      // Fetch highlights/pills for the product
+      const { data: attrs } = await supabase
+        .from('product_attributes')
+        .select('value, attribute_definitions(name, icon)')
+        .eq('product_id', p.id);
+
+      const pills = (attrs || [])
+        .filter(a => ['RAM', 'SSD', 'Procesador', 'Disco Duro', 'Tarjeta de Video', 'Pantalla'].includes(a.attribute_definitions.name))
+        .map(a => ({
+          label: a.attribute_definitions.name,
+          value: a.value,
+          icon: a.attribute_definitions.icon
+        }));
+
+      // Fetch category slugs for the product to build the link
+      const { data: pData } = await supabase
+        .from('products')
+        .select('slug, categories(slug), subcategories(slug)')
+        .eq('id', p.id)
+        .single();
+
+      setQuoteItems([...quoteItems, {
+        id: p.id,
+        name: p.name,
+        slug: pData?.slug || p.slug,
+        category_slug: pData?.categories?.slug || 'c',
+        subcategory_slug: pData?.subcategories?.slug || 's',
+        price: p.price,
         transfer_price: p.transfer_price,
         image_url: p.image_url,
-        quantity: 1 
+        quantity: 1,
+        warranty: p.warranty || '1 Año',
+        gifts: p.gifts || '',
+        pills: pills
       }]);
     }
     setProductSearch('');
     setFoundProducts([]);
+  };
+
+  const updateItemField = (id, field, value) => {
+    setQuoteItems(quoteItems.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    ));
   };
 
   const removeProduct = (id) => {
@@ -127,7 +161,7 @@ export default function NewQuotePage() {
   };
 
   const updateQuantity = (id, delta) => {
-    setQuoteItems(quoteItems.map(item => 
+    setQuoteItems(quoteItems.map(item =>
       item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
     ));
   };
@@ -160,7 +194,7 @@ export default function NewQuotePage() {
           })
           .select()
           .single();
-        
+
         if (pError) throw pError;
         finalProspectId = newProspect.id;
       }
@@ -171,6 +205,7 @@ export default function NewQuotePage() {
         prospect_id: finalProspectId,
         customer_data: customerData,
         items: quoteItems,
+        quote_type: quoteType,
         totals: {
           subtotal: totals.baseTotalSinIva,
           tax: totals.iva,
@@ -199,8 +234,25 @@ export default function NewQuotePage() {
         <Link href="/admin/quotes" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors">
           <ArrowLeft size={12} /> Volver a Cotizaciones
         </Link>
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-black tracking-tight text-gray-900 uppercase">Nueva Cotización</h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-gray-900 uppercase">Nueva Cotización</h1>
+            {/* Quote Type Toggle */}
+            <div className="flex items-center gap-4 mt-2">
+              <button
+                onClick={() => setQuoteType('standard')}
+                className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${quoteType === 'standard' ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300'}`}
+              >
+                Estándar
+              </button>
+              <button
+                onClick={() => setQuoteType('options')}
+                className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${quoteType === 'options' ? 'bg-purple-brand text-white border-purple-brand shadow-lg shadow-purple-brand/20' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300'}`}
+              >
+                Modo Opciones (Comparativa)
+              </button>
+            </div>
+          </div>
           <button
             onClick={handleSave}
             disabled={loading}
@@ -262,7 +314,7 @@ export default function NewQuotePage() {
                 <input
                   className="bg-gray-50/50 border border-black/5 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white transition-all"
                   value={customerData.full_name}
-                  onChange={(e) => setCustomerData({...customerData, full_name: e.target.value})}
+                  onChange={(e) => setCustomerData({ ...customerData, full_name: e.target.value })}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -270,7 +322,7 @@ export default function NewQuotePage() {
                 <input
                   className="bg-gray-50/50 border border-black/5 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white transition-all"
                   value={customerData.email}
-                  onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
+                  onChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -278,7 +330,7 @@ export default function NewQuotePage() {
                 <input
                   className="bg-gray-50/50 border border-black/5 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white transition-all"
                   value={customerData.phone}
-                  onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
+                  onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -287,7 +339,7 @@ export default function NewQuotePage() {
                   <select
                     className="bg-gray-50/50 border border-black/5 rounded-xl px-2 py-3 text-xs font-black outline-none"
                     value={customerData.id_type}
-                    onChange={(e) => setCustomerData({...customerData, id_type: parseInt(e.target.value)})}
+                    onChange={(e) => setCustomerData({ ...customerData, id_type: parseInt(e.target.value) })}
                   >
                     <option value={1}>CÉD</option>
                     <option value={2}>RUC</option>
@@ -296,7 +348,7 @@ export default function NewQuotePage() {
                   <input
                     className="flex-1 bg-gray-50/50 border border-black/5 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white transition-all"
                     value={customerData.id_number}
-                    onChange={(e) => setCustomerData({...customerData, id_number: e.target.value})}
+                    onChange={(e) => setCustomerData({ ...customerData, id_number: e.target.value })}
                   />
                 </div>
               </div>
@@ -305,7 +357,7 @@ export default function NewQuotePage() {
                 <input
                   className="bg-gray-50/50 border border-black/5 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white transition-all"
                   value={customerData.company}
-                  onChange={(e) => setCustomerData({...customerData, company: e.target.value})}
+                  onChange={(e) => setCustomerData({ ...customerData, company: e.target.value })}
                 />
               </div>
             </div>
@@ -317,65 +369,65 @@ export default function NewQuotePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-[8px] font-black uppercase text-gray-300 ml-1">Provincia</label>
-                  <input 
-                    placeholder="Provincia" 
+                  <input
+                    placeholder="Provincia"
                     className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-purple-brand/30 outline-none transition-all"
                     value={customerData.address.province}
-                    onChange={(e) => setCustomerData({...customerData, address: {...customerData.address, province: e.target.value}})}
+                    onChange={(e) => setCustomerData({ ...customerData, address: { ...customerData.address, province: e.target.value } })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[8px] font-black uppercase text-gray-300 ml-1">Cantón</label>
-                  <input 
-                    placeholder="Cantón" 
+                  <input
+                    placeholder="Cantón"
                     className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-purple-brand/30 outline-none transition-all"
                     value={customerData.address.canton}
-                    onChange={(e) => setCustomerData({...customerData, address: {...customerData.address, canton: e.target.value}})}
+                    onChange={(e) => setCustomerData({ ...customerData, address: { ...customerData.address, canton: e.target.value } })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[8px] font-black uppercase text-gray-300 ml-1">Ciudad</label>
-                  <input 
-                    placeholder="Ciudad" 
+                  <input
+                    placeholder="Ciudad"
                     className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-purple-brand/30 outline-none transition-all"
                     value={customerData.address.city}
-                    onChange={(e) => setCustomerData({...customerData, address: {...customerData.address, city: e.target.value}})}
+                    onChange={(e) => setCustomerData({ ...customerData, address: { ...customerData.address, city: e.target.value } })}
                   />
                 </div>
                 <div className="flex flex-col gap-1 md:col-span-2">
                   <label className="text-[8px] font-black uppercase text-gray-300 ml-1">Calle Principal</label>
-                  <input 
-                    placeholder="Calle Principal" 
+                  <input
+                    placeholder="Calle Principal"
                     className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-purple-brand/30 outline-none transition-all"
                     value={customerData.address.street_main}
-                    onChange={(e) => setCustomerData({...customerData, address: {...customerData.address, street_main: e.target.value}})}
+                    onChange={(e) => setCustomerData({ ...customerData, address: { ...customerData.address, street_main: e.target.value } })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[8px] font-black uppercase text-gray-300 ml-1">Num. Casa / Dpto</label>
-                  <input 
-                    placeholder="N° Casa" 
+                  <input
+                    placeholder="N° Casa"
                     className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-purple-brand/30 outline-none transition-all"
                     value={customerData.address.house_number}
-                    onChange={(e) => setCustomerData({...customerData, address: {...customerData.address, house_number: e.target.value}})}
+                    onChange={(e) => setCustomerData({ ...customerData, address: { ...customerData.address, house_number: e.target.value } })}
                   />
                 </div>
                 <div className="flex flex-col gap-1 md:col-span-2">
                   <label className="text-[8px] font-black uppercase text-gray-300 ml-1">Calle Secundaria / Transversal</label>
-                  <input 
-                    placeholder="Calle Secundaria" 
+                  <input
+                    placeholder="Calle Secundaria"
                     className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-purple-brand/30 outline-none transition-all"
                     value={customerData.address.street_secondary}
-                    onChange={(e) => setCustomerData({...customerData, address: {...customerData.address, street_secondary: e.target.value}})}
+                    onChange={(e) => setCustomerData({ ...customerData, address: { ...customerData.address, street_secondary: e.target.value } })}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[8px] font-black uppercase text-gray-300 ml-1">Código Postal</label>
-                  <input 
-                    placeholder="ZIP Code" 
+                  <input
+                    placeholder="ZIP Code"
                     className="bg-gray-50 border border-black/5 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-purple-brand/30 outline-none transition-all"
                     value={customerData.address.zip_code}
-                    onChange={(e) => setCustomerData({...customerData, address: {...customerData.address, zip_code: e.target.value}})}
+                    onChange={(e) => setCustomerData({ ...customerData, address: { ...customerData.address, zip_code: e.target.value } })}
                   />
                 </div>
               </div>
@@ -452,25 +504,62 @@ export default function NewQuotePage() {
                 </div>
               ) : (
                 quoteItems.map(item => (
-                  <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-black/5 group">
-                    <div className="w-12 h-12 bg-white rounded-xl overflow-hidden border border-black/5">
-                      {item.image_url && <img src={item.image_url} alt="" className="w-full h-full object-cover" />}
+                  <div key={item.id} className="flex flex-col gap-3 p-4 bg-gray-50 rounded-2xl border border-black/5 group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white rounded-xl overflow-hidden border border-black/5 flex-shrink-0">
+                        {item.image_url && <img src={item.image_url} alt="" className="w-full h-full object-cover" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[11px] font-black line-clamp-1 uppercase">{item.name}</p>
+                        <p className="text-[10px] font-bold text-gray-400 mt-0.5">${item.price} c/u</p>
+                      </div>
+                      <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-black/5">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:text-purple-brand transition-colors"><MinusIcon size={12} /></button>
+                        <span className="text-xs font-black w-4 text-center">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:text-purple-brand transition-colors"><PlusIcon size={12} /></button>
+                      </div>
+                      <button
+                        onClick={() => removeProduct(item.id)}
+                        className="p-2 text-gray-300 hover:text-raspberry transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-[11px] font-black line-clamp-1">{item.name}</p>
-                      <p className="text-[10px] font-bold text-gray-400 mt-0.5">${item.price} c/u</p>
+
+                    {/* Campos de Garantía y Obsequios */}
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-black/[0.03]">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[7px] font-black uppercase text-gray-400 tracking-widest ml-1">Garantía</label>
+                        <input
+                          type="text"
+                          value={item.warranty || ''}
+                          onChange={(e) => updateItemField(item.id, 'warranty', e.target.value)}
+                          placeholder="Ej: 1 Año"
+                          className="w-full bg-white border border-black/5 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-purple-brand/20 transition-all"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[7px] font-black uppercase text-gray-400 tracking-widest ml-1">Obsequios / Extras</label>
+                        <input
+                          type="text"
+                          value={item.gifts || ''}
+                          onChange={(e) => updateItemField(item.id, 'gifts', e.target.value)}
+                          placeholder="Ej: Mouse + Mochila"
+                          className="w-full bg-white border border-black/5 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-purple-brand/20 transition-all"
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-black/5">
-                      <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:text-purple-brand transition-colors"><MinusIcon size={12} /></button>
-                      <span className="text-xs font-black w-4 text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:text-purple-brand transition-colors"><PlusIcon size={12} /></button>
-                    </div>
-                    <button 
-                      onClick={() => removeProduct(item.id)}
-                      className="p-2 text-gray-300 hover:text-raspberry transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+
+                    {/* Pills Visuales (Solo informativo en Admin) */}
+                    {item.pills && item.pills.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {item.pills.slice(0, 3).map((p, idx) => (
+                          <span key={idx} className="text-[7px] font-black bg-white px-1.5 py-0.5 rounded border border-black/[0.03] text-gray-400 uppercase">
+                            {p.icon} {p.value}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               )}

@@ -6,7 +6,7 @@ import Logo from '@/components/Logo';
 import {
   Printer, ArrowLeft, Download, ShieldCheck,
   MapPin, Globe, Mail, Phone, CreditCard, ShoppingBag,
-  Hash, Calendar, FileCheck
+  Hash, Calendar, FileCheck, Pencil
 } from 'lucide-react';
 
 import { useToast } from '@/context/ToastContext';
@@ -109,6 +109,13 @@ export default function QuoteViewPage() {
             )}
             {sendingEmail ? 'Enviando...' : 'Enviar por Email'}
           </button>
+
+          <button
+            onClick={() => router.push(`/admin/quotes/${id}/edit`)}
+            className="flex items-center gap-2 px-8 py-4 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-black active:scale-95 transition-all"
+          >
+            <Pencil size={18} /> Editar Proforma
+          </button>
         </div>
       </div>
 
@@ -206,91 +213,199 @@ export default function QuoteViewPage() {
             </div>
           </div>
 
-          {/* Tabla de Productos Refinada */}
-          <div className="mb-8">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-black/10">
-                  <th className="pb-2 font-black">Equipo / Descripción</th>
-                  <th className="pb-2 text-center font-black">Cant</th>
-                  <th className="pb-2 text-right font-black">P. Unitario</th>
-                  <th className="pb-2 text-right font-black">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5">
+          {/* MODO ESTÁNDAR: TABLA DE PRODUCTOS */}
+          {quote.quote_type !== 'options' && (
+            <>
+              <div className="mb-8">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-black/10">
+                      <th className="pb-2 font-black">Equipo / Descripción</th>
+                      <th className="pb-2 text-center font-black">Cant</th>
+                      <th className="pb-2 text-right font-black">P. Unitario</th>
+                      <th className="pb-2 text-right font-black">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5">
+                    {items.map((item, idx) => {
+                      const displayPrice = isTransfer ? (item.transfer_price || item.price * 0.94) : item.price;
+                      return (
+                        <tr key={idx}>
+                          <td className="py-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-lg bg-gray-50 border border-black/5 overflow-hidden flex-shrink-0 print:border-gray-100 p-1">
+                                {item.image_url && <img src={item.image_url} alt="" className="w-full h-full object-contain" />}
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-gray-900 mb-0.5">{item.name}</p>
+                                <div className="flex flex-wrap gap-2 items-center">
+                                  {item.warranty && (
+                                    <span className="px-1.5 py-0.5 bg-mint-success/10 text-mint-success rounded-[4px] text-[7px] font-black uppercase tracking-widest flex items-center gap-1">
+                                      <ShieldCheck size={8} /> Garantía {item.warranty}
+                                    </span>
+                                  )}
+                                  {item.gifts && (
+                                    <span className="px-1.5 py-0.5 bg-purple-brand/10 text-purple-brand rounded-[4px] text-[7px] font-black uppercase tracking-widest flex items-center gap-1">
+                                      <ShoppingBag size={8} /> + {item.gifts}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 text-center text-[10px] font-black text-gray-500">{item.quantity}</td>
+                          <td className="py-4 text-right text-[10px] font-bold text-gray-600">${(displayPrice / 1.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-4 text-right text-[10px] font-black text-gray-900">${((displayPrice / 1.15) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totales Estándar */}
+              <div className="grid grid-cols-12 gap-10 mt-8 items-end">
+                <div className="col-span-7">
+                  <div className="bg-gray-50 rounded-2xl p-6 border border-black/5">
+                    <h4 className="text-[8px] font-black uppercase tracking-[0.2em] text-purple-brand mb-3 flex items-center gap-2">
+                      <CreditCard size={12} /> PAGO: {isTransfer ? 'TRANSFERENCIA (-6%)' : 'TARJETA (PVP)'}
+                    </h4>
+                    {isTransfer && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-0.5">Banco Pichincha</p>
+                          <p className="text-[9px] font-bold text-gray-800 uppercase leading-none">Cta. Corriente #123456789</p>
+                        </div>
+                        <div>
+                          <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-0.5">Beneficiario</p>
+                          <p className="text-[9px] font-bold text-gray-800 uppercase leading-none">Banana Computer S.A.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="col-span-5 space-y-2">
+                  <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                    <span>Subtotal</span>
+                    <span>${Number(totals.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  {Number(totals.discount) > 0 && (
+                    <div className="flex justify-between text-[9px] font-black text-raspberry uppercase tracking-widest">
+                      <span>Descuento</span>
+                      <span>-${Number(totals.discount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                    <span>IVA (15%)</span>
+                    <span>${Number(totals.tax).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="pt-3 border-t-2 border-black mt-2 flex justify-between items-center">
+                    <span className="text-[11px] font-black uppercase tracking-tighter text-gray-900">Total Neto</span>
+                    <span className="text-3xl font-black text-gray-900 tracking-tighter">
+                      ${Number(totals.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* MODO OPCIONES: COMPARATIVA DE TARJETAS */}
+          {quote.quote_type === 'options' && (
+            <div className="space-y-6">
+              <h2 className="text-xs font-black uppercase tracking-[0.3em] text-purple-brand mb-8 flex items-center gap-3">
+                <FileCheck size={16} /> SELECCIÓN DE OPCIONES RECOMENDADAS
+              </h2>
+              <div className="grid grid-cols-1 gap-6">
                 {items.map((item, idx) => {
                   const displayPrice = isTransfer ? (item.transfer_price || item.price * 0.94) : item.price;
                   return (
-                    <tr key={idx}>
-                      <td className="py-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-gray-50 border border-black/5 overflow-hidden flex-shrink-0 print:border-gray-100 p-1">
-                            {item.image_url && <img src={item.image_url} alt="" className="w-full h-full object-contain" />}
-                          </div>
-                          <div>
-                            <p className="text-xs font-black text-gray-900 mb-0.5">{item.name}</p>
-                            <span className="px-1.5 py-0.5 bg-purple-brand/10 text-purple-brand rounded-[4px] text-[7px] font-black uppercase tracking-widest">Garantía 1 Año</span>
-                          </div>
+                    <div key={idx} className="flex bg-white border border-black/10 rounded-[1.5rem] overflow-hidden">
+                      {/* Imagen Mini */}
+                      <div className="w-32 bg-gray-50 border-r border-black/5 flex items-center justify-center p-4">
+                        {item.image_url && <img src={item.image_url} alt="" className="w-full h-full object-contain" />}
+                      </div>
+                      
+                      {/* Contenido Principal */}
+                      <div className="flex-1 p-6 flex flex-col justify-center">
+                        <div className="flex justify-between items-start mb-2">
+                           <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Opción {idx + 1}: {item.name}</h3>
                         </div>
-                      </td>
-                      <td className="py-4 text-center text-[10px] font-black text-gray-500">{item.quantity}</td>
-                      <td className="py-4 text-right text-[10px] font-bold text-gray-600">${(displayPrice / 1.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td className="py-4 text-right text-[10px] font-black text-gray-900">${((displayPrice / 1.15) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    </tr>
+
+                        {/* Pills Técnicas */}
+                        {item.pills && item.pills.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-4">
+                            {item.pills.map((p, pidx) => (
+                              <span key={pidx} className="text-[8px] font-black bg-gray-50 border border-black/[0.05] px-2 py-1 rounded text-gray-400 uppercase flex items-center gap-1">
+                                <span>{p.icon}</span> {p.value}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-4">
+                           {item.warranty && (
+                             <div className="flex items-center gap-1.5 text-[9px] font-bold text-mint-success">
+                                <ShieldCheck size={12} /> Garantía: {item.warranty}
+                             </div>
+                           )}
+                           {item.gifts && (
+                             <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-brand">
+                                <ShoppingBag size={12} /> Incluye: {item.gifts}
+                             </div>
+                           )}
+                        </div>
+                      </div>
+
+                      {/* Precio Destacado */}
+                      <div className="bg-gray-50 border-l border-black/5 p-6 flex flex-col items-center justify-center min-w-[200px]">
+                         <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Precio Final</p>
+                         <p className="text-3xl font-black text-gray-900 tracking-tighter">${Number(displayPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                         <p className="text-[7px] font-bold text-purple-brand uppercase tracking-widest mt-1">IVA INCLUIDO (15%)</p>
+                         
+                         {item.slug && (
+                           <a 
+                             href={`${window.location.origin}/categoria/${item.category_slug || 'c'}/${item.subcategory_slug || 's'}/${item.slug}`}
+                             className="mt-4 px-6 py-2 bg-purple-brand text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:scale-105 transition-all text-center"
+                           >
+                              Ver Ficha Técnica
+                           </a>
+                         )}
+                         <p className="text-[7px] font-medium text-gray-400 uppercase tracking-widest mt-2 italic md:hidden lg:block">Pago por {isTransfer ? 'Transferencia' : 'Tarjeta'}</p>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Sección de Totales Compacta */}
-          <div className="grid grid-cols-12 gap-10 mt-8 items-end">
-            <div className="col-span-7">
-              <div className="bg-gray-50 rounded-2xl p-6 border border-black/5">
-                <h4 className="text-[8px] font-black uppercase tracking-[0.2em] text-purple-brand mb-3 flex items-center gap-2">
-                  <CreditCard size={12} /> PAGO: {isTransfer ? 'TRANSFERENCIA (-6%)' : 'TARJETA (PVP)'}
-                </h4>
-                {isTransfer && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-0.5">Banco Pichincha</p>
-                      <p className="text-[9px] font-bold text-gray-800 uppercase leading-none">Cta. Corriente #123456789</p>
-                    </div>
-                    <div>
-                      <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-0.5">Beneficiario</p>
-                      <p className="text-[9px] font-bold text-gray-800 uppercase leading-none">Banana Computer S.A.</p>
-                    </div>
-                  </div>
-                )}
+              </div>
+              
+              <div className="mt-10 p-6 bg-purple-brand/5 rounded-2xl border border-purple-brand/10 text-center">
+                <p className="text-[10px] font-bold text-purple-brand uppercase tracking-widest leading-relaxed">
+                   * Los precios mostrados en esta comparativa ya incluyen el IVA del 15%. <br/>
+                   * Válido hasta agotar existencias o vencimiento de la proforma.
+                </p>
               </div>
             </div>
+          )}
 
-            <div className="col-span-5 space-y-2">
-              <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                <span>Subtotal</span>
-                <span>${Number(totals.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-              {Number(totals.discount) > 0 && (
-                <div className="flex justify-between text-[9px] font-black text-raspberry uppercase tracking-widest">
-                  <span>Descuento</span>
-                  <span>-${Number(totals.discount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              {/* Sellos de Confianza Banana */}
+              <div className="mt-12 grid grid-cols-3 gap-4 py-8 border-t border-b border-black/5">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">✅</span>
+                  <p className="text-[7px] font-black uppercase tracking-widest text-gray-900 leading-tight">Somos distribuidores oficiales en Ecuador</p>
                 </div>
-              )}
-              <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                <span>IVA (15%)</span>
-                <span>${Number(totals.tax).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <div className="flex items-center gap-3 border-l border-r border-black/5 px-4">
+                  <span className="text-xl">🛡️</span>
+                  <p className="text-[7px] font-black uppercase tracking-widest text-gray-900 leading-tight">Garantía directa de fabricante</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🔧</span>
+                  <p className="text-[7px] font-black uppercase tracking-widest text-gray-900 leading-tight">Upgrade de tu equipo sin afectar la garantía</p>
+                </div>
               </div>
-              <div className="pt-3 border-t-2 border-black mt-2 flex justify-between items-center">
-                <span className="text-[11px] font-black uppercase tracking-tighter text-gray-900">Total Neto</span>
-                <span className="text-3xl font-black text-gray-900 tracking-tighter">
-                  ${Number(totals.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-          </div>
 
-          {/* Footer Corporativo Refinado */}
-          <div className="mt-16 pt-8 border-t border-black/5 flex justify-between items-center">
+              {/* Footer Corporativo Refinado */}
+              <div className="mt-12 pt-8 flex justify-between items-center">
             <div className="flex items-center gap-3 text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">
               <span>Quito, Ecuador</span>
               <span className="w-1 h-1 rounded-full bg-gray-200" />
@@ -302,16 +417,18 @@ export default function QuoteViewPage() {
           </div>
         </div>
 
-        {/* Link de Pago Dinámico y Real */}
-        <div className="bg-purple-brand text-white px-8 py-4 flex flex-col items-center gap-0.5 text-center mt-auto">
-          <p className="text-[7px] font-black uppercase tracking-[0.3em] text-white/50">Paga esta cotización en línea:</p>
-          <a
-            href={`${window.location.origin}/cotizacion/${slug}`}
-            className="text-[10px] font-bold hover:text-banana-yellow transition-colors underline underline-offset-2"
-          >
-            {window.location.host}/cotizacion/{slug}
-          </a>
-        </div>
+        {/* Link de Pago Dinámico (Solo en Modo Estándar) */}
+        {quote.quote_type !== 'options' && (
+          <div className="bg-purple-brand text-white px-8 py-4 flex flex-col items-center gap-0.5 text-center mt-auto no-print">
+            <p className="text-[7px] font-black uppercase tracking-[0.3em] text-white/50">Paga esta cotización en línea:</p>
+            <a
+              href={`${window.location.origin}/cotizacion/${slug}`}
+              className="text-[10px] font-bold hover:text-banana-yellow transition-colors underline underline-offset-2"
+            >
+              {window.location.host}/cotizacion/{slug}
+            </a>
+          </div>
+        )}
       </main>
 
       <style jsx global>{`

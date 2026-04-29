@@ -125,6 +125,18 @@ const ProductModal = ({
                   value={form.sku || ''} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))} placeholder="BNN-001" />
                 {errors.sku && <span className="text-[9px] text-raspberry font-bold ml-1">{errors.sku}</span>}
               </div>
+
+              <div className="flex flex-col gap-1.5 md:col-span-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Garantía</label>
+                <input className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-purple-brand/30" 
+                  value={form.warranty || ''} onChange={e => setForm(f => ({ ...f, warranty: e.target.value }))} placeholder="1 Año" />
+              </div>
+
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Obsequios / Incluye</label>
+                <input className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-purple-brand/30" 
+                  value={form.gifts || ''} onChange={e => setForm(f => ({ ...f, gifts: e.target.value }))} placeholder="Ej: Mouse + Mochila" />
+              </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">N. Modelo</label>
                 <input className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-purple-brand/30" 

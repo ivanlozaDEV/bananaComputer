@@ -4,7 +4,8 @@ import Link from 'next/link';
 import {
   Cpu, MemoryStick, HardDrive, Monitor, Battery,
   Scale, Wifi, Camera, Layers, Zap, Scan, Settings,
-  Palette, Film, ChevronLeft, ChevronRight, ShoppingCart, Bell
+  Palette, Film, ChevronLeft, ChevronRight, ShoppingCart, Bell,
+  ShieldCheck, ShoppingBag
 } from 'lucide-react';
 import WaitlistModal from './WaitlistModal';
 
@@ -290,6 +291,20 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
           <p className="mt-1 text-[10px] md:text-xs text-gray-500 font-medium line-clamp-2 leading-tight md:leading-relaxed">
             {product.marketing_subtitle || product.description}
           </p>
+          
+          {/* Beneficios Banana */}
+          <div className="flex flex-col gap-1 mt-1">
+             {product.warranty && (
+               <div className="flex items-center gap-1.5 text-[8px] md:text-[9px] font-bold text-mint-success">
+                  <ShieldCheck size={10} /> {product.warranty} de Garantía
+               </div>
+             )}
+             {product.gifts && (
+               <div className="flex items-center gap-1.5 text-[8px] md:text-[9px] font-bold text-purple-brand">
+                  <ShoppingBag size={10} /> + {product.gifts}
+               </div>
+             )}
+          </div>
         </Link>
 
         {/* Specs Grid - Hidden or very compact on mobile */}

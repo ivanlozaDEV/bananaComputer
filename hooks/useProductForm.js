@@ -10,6 +10,8 @@ const emptyProduct = {
   images: [], subcategory_ids: [],
   is_featured: false, is_active: true,
   banana_review: null,
+  warranty: '1 Año',
+  gifts: '',
 };
 
 const generateSlug = (name, model) => {
@@ -197,6 +199,8 @@ export function useProductForm(categories, onSaveSuccess) {
       is_featured: form.is_featured, 
       is_active: form.is_active,
       banana_review: form.banana_review,
+      warranty: form.warranty,
+      gifts: form.gifts,
     };
 
     try {
