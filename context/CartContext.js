@@ -24,8 +24,12 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('banana_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product) => {
-    setCartItems((prev) => [...prev, { ...product, cartId: Date.now() + Math.random() }]);
+  const addToCart = (product, quantity = 1) => {
+    const itemsToAdd = Array.from({ length: quantity }, () => ({
+      ...product,
+      cartId: Date.now() + Math.random()
+    }));
+    setCartItems((prev) => [...prev, ...itemsToAdd]);
     setIsCartOpen(true); // auto-open sidebar on add
   };
 

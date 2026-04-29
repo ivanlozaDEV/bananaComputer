@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { 
-  LayoutDashboard, Image, Tag, Package, LogOut, ExternalLink, Users, ShoppingBag
+  LayoutDashboard, Image, Tag, Package, LogOut, ExternalLink, Users, ShoppingBag,
+  FileText
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/admin/categories', icon: Tag,          label: 'Categorías' },
   { href: '/admin/products',   icon: Package,      label: 'Productos' },
   { href: '/admin/orders',     icon: ShoppingBag,  label: 'Pedidos' },
+  { href: '/admin/quotes',     icon: FileText,     label: 'Cotizaciones' },
   { href: '/admin/waitlist',   icon: Users,        label: 'Lista de Espera' },
 ];
 

@@ -87,6 +87,37 @@ function CheckoutContent() {
       fetchProfileAndAddresses();
     }
   }, [user]);
+  
+  // ── QUOTE AUTO-FILL LOGIC ──
+  useEffect(() => {
+    const quoteId = searchParams?.get('quote_id');
+    if (quoteId) {
+      const fetchQuoteData = async () => {
+        const { data, error } = await supabase.from('quotes').select('*').eq('id', quoteId).single();
+        if (data && !error) {
+          const cd = data.customer_data;
+          const billingData = {
+            full_name: cd.full_name || '',
+            email: cd.email || '',
+            phone: cd.phone || '',
+            street_main: cd.address?.street_main || '',
+            street_secondary: cd.address?.street_secondary || '',
+            house_number: cd.address?.house_number || '',
+            city: cd.address?.city || '',
+            province: cd.address?.province || '',
+            canton: cd.address?.canton || '',
+            zip_code: cd.address?.zip_code || '',
+            id_number: cd.id_number || '',
+            id_type: cd.id_type || 1
+          };
+          setBillingInfo(billingData);
+          if (sameAsBilling) setShippingInfo(billingData);
+          showToast('Datos de cotización cargados', 'success');
+        }
+      };
+      fetchQuoteData();
+    }
+  }, [searchParams, sameAsBilling]);
 
   // PayPhone redirect confirmation is handled by /checkout/resultado page
 
