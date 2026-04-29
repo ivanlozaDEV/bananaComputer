@@ -9,11 +9,15 @@ import {
   Hash, Calendar, FileCheck
 } from 'lucide-react';
 
+import { useToast } from '@/context/ToastContext';
+
 export default function QuoteViewPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { showToast } = useToast();
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -35,6 +39,35 @@ export default function QuoteViewPage() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleSendEmail = async () => {
+    if (!quote?.customer_data?.email) {
+      showToast('El cliente no tiene correo registrado', 'error');
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const response = await fetch('/api/email/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quote,
+          customerEmail: quote.customer_data.email,
+          quoteUrl: `${window.location.origin}/cotizacion/${quote.slug}`
+        })
+      });
+
+      if (!response.ok) throw new Error('Error al enviar email');
+      
+      showToast('Proforma enviada con éxito al cliente', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Error al enviar la proforma', 'error');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   if (loading) return (
@@ -62,6 +95,19 @@ export default function QuoteViewPage() {
             className="flex items-center gap-2 px-8 py-4 bg-purple-brand text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-purple-brand/20 hover:scale-105 active:scale-95 transition-all"
           >
             <Printer size={18} /> Imprimir / Guardar PDF
+          </button>
+
+          <button
+            onClick={handleSendEmail}
+            disabled={sendingEmail}
+            className="flex items-center gap-2 px-8 py-4 bg-white border-2 border-purple-brand/10 text-purple-brand rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-purple-brand/5 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {sendingEmail ? (
+              <div className="w-4 h-4 border-2 border-purple-brand/20 border-t-purple-brand rounded-full animate-spin" />
+            ) : (
+              <Mail size={18} />
+            )}
+            {sendingEmail ? 'Enviando...' : 'Enviar por Email'}
           </button>
         </div>
       </div>
