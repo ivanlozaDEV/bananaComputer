@@ -350,28 +350,63 @@ const ProductModal = ({
 
           {/* Footer Actions */}
           <div className="sticky bottom-0 bg-white pt-4 pb-1 flex flex-col sm:flex-row items-center justify-between border-t border-black/10 gap-4 z-20">
-             <div className="flex items-center gap-4">
-               <label className="flex items-center gap-2.5 cursor-pointer group">
+           <div className="flex items-center gap-4 flex-wrap">
+               {/* Badge Type Selector */}
+               <div className="flex flex-col gap-1.5">
+                 <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">
+                   Etiqueta del Producto
+                 </span>
+                 <div className="flex items-center gap-2 flex-wrap">
+                   {[
+                     { value: 'new',         label: '🆕 NUEVO',         bg: 'bg-banana-yellow text-black' },
+                     { value: 'featured',    label: '🏆 DESTACADO',     bg: 'bg-purple-brand text-white' },
+                     { value: 'sale',        label: '🔥 OFERTA',        bg: 'bg-orange-500 text-white' },
+                     { value: 'unavailable', label: '🚫 NO DISPONIBLE', bg: 'bg-raspberry text-white' },
+                   ].map(opt => (
+                     <button
+                       key={opt.value}
+                       type="button"
+                       onClick={() => setForm(f => ({ ...f, badge_type: opt.value }))}
+                       className={`
+                         px-3 py-1.5 rounded-xl font-black text-[8px] uppercase tracking-widest border-2 transition-all
+                         ${form.badge_type === opt.value
+                           ? `${opt.bg} border-transparent scale-105 shadow-lg`
+                           : 'bg-gray-50 text-gray-400 border-black/10 hover:border-black/20'}
+                       `}
+                     >
+                       {opt.label}
+                     </button>
+                   ))}
+                 </div>
+                 {form.badge_type === 'unavailable' && (
+                   <span className="text-[8px] font-bold text-raspberry flex items-center gap-1 mt-0.5">
+                     ⚠️ Este producto NO aparecerá en el catálogo público
+                   </span>
+                 )}
+               </div>
+
+               {/* Activo Toggle */}
+               <label className="flex items-start gap-2.5 cursor-pointer group">
                   <div className={`
-                    w-8 h-4 rounded-full transition-all relative
+                    w-8 h-4 rounded-full transition-all relative shrink-0 mt-0.5
                     ${form.is_active ? 'bg-mint-success shadow-lg shadow-mint-success/20' : 'bg-gray-300'}
                   `}>
                     <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${form.is_active ? 'right-0.5' : 'left-0.5'}`}></div>
                   </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-black transition-colors">Activo</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-black transition-colors leading-none">
+                      {form.is_active ? 'Activo en el sistema' : 'Desactivado del sistema'}
+                    </span>
+                    <span className={`text-[7px] font-bold leading-tight max-w-[160px] transition-colors ${form.is_active ? 'text-gray-400' : 'text-raspberry'}`}>
+                      {form.is_active
+                        ? 'Visible para cotizaciones, búsquedas y catálogo.'
+                        : 'Oculto en todo el sistema. Úsalo solo si retiras el producto definitivamente.'}
+                    </span>
+                  </div>
                   <input type="checkbox" className="hidden" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
                </label>
-               <label className="flex items-center gap-2.5 cursor-pointer group">
-                  <div className={`
-                    w-8 h-4 rounded-full transition-all relative
-                    ${form.is_featured ? 'bg-banana-yellow shadow-lg shadow-banana-yellow/20' : 'bg-gray-300'}
-                  `}>
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${form.is_featured ? 'right-0.5' : 'left-0.5'}`}></div>
-                  </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 group-hover:text-black transition-colors">Destacado</span>
-                  <input type="checkbox" className="hidden" checked={form.is_featured} onChange={e => setForm(f => ({ ...f, is_featured: e.target.checked }))} />
-               </label>
              </div>
+
 
              <div className="flex items-center gap-2.5">
                 <button 

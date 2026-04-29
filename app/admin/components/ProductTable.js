@@ -13,6 +13,7 @@ const ProductTable = ({ products, onEdit, onDelete }) => {
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">SKU</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Categoría</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Subcategoría</th>
+            <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Etiqueta</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Precio</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 text-center">Stock</th>
             <th className="px-8 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 text-center">Estado</th>
@@ -55,10 +56,28 @@ const ProductTable = ({ products, onEdit, onDelete }) => {
               <td className="px-8 py-5">
                 <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
                   <Layers size={12} className="text-gray-300" />
-                  {p.product_subcategories?.length > 0 
-                    ? p.product_subcategories.map(ps => ps.subcategories?.name).filter(Boolean).join(', ') 
+                  {p.product_subcategories?.length > 0
+                    ? p.product_subcategories.map(ps => ps.subcategories?.name).filter(Boolean).join(', ')
                     : (p.subcategory?.name || '—')}
                 </div>
+              </td>
+              {/* Badge type */}
+              <td className="px-8 py-5">
+                {(() => {
+                  const badge = p.badge_type || 'new';
+                  const map = {
+                    new:         { label: 'NUEVO',          cls: 'bg-banana-yellow text-black' },
+                    featured:    { label: 'DESTACADO',      cls: 'bg-purple-brand text-white' },
+                    sale:        { label: 'OFERTA',         cls: 'bg-orange-500 text-white' },
+                    unavailable: { label: 'NO DISPONIBLE',  cls: 'bg-raspberry text-white' },
+                  };
+                  const { label, cls } = map[badge] || map.new;
+                  return (
+                    <span className={`px-2 py-0.5 rounded-full text-[7px] font-black tracking-widest uppercase ${cls}`}>
+                      {label}
+                    </span>
+                  );
+                })()}
               </td>
               <td className="px-8 py-5">
                 <div className="flex items-center gap-1 font-black text-sm text-gray-900">

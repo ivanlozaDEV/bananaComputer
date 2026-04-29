@@ -114,13 +114,17 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
           {/* Badge */}
           <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
-            {product.stock === 0 ? (
+            {product.badge_type === 'unavailable' || product.stock === 0 ? (
               <span className="px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md bg-raspberry text-white">
                 AGOTADA
               </span>
-            ) : product.badgeType === 'featured' || product.is_featured ? (
+            ) : product.badge_type === 'featured' || product.is_featured ? (
               <span className="px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md bg-purple-brand text-white flex items-center gap-1">
                 🏆 MÁS VENDIDA
+              </span>
+            ) : product.badge_type === 'sale' ? (
+              <span className="px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md bg-orange-500 text-white">
+                🔥 OFERTA
               </span>
             ) : (
               <span className="px-2 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-full shadow-md bg-banana-yellow text-black">
@@ -224,13 +228,17 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
     <article className="group relative bg-white rounded-2xl border border-black/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] flex flex-col h-full">
       {/* Badge */}
       <div className="absolute top-2 left-2 md:top-4 md:left-4 z-10 flex flex-col gap-1">
-        {product.stock === 0 ? (
+        {product.badge_type === 'unavailable' || product.stock === 0 ? (
           <span className="px-2 py-0.5 md:px-3 md:py-1 bg-raspberry text-white text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
             AGOTADA
           </span>
-        ) : product.badgeType === 'featured' || product.is_featured ? (
+        ) : product.badge_type === 'featured' || product.is_featured ? (
           <span className="px-2 py-0.5 md:px-3 md:py-1 bg-purple-brand text-white text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg flex items-center gap-1">
             🏆 MÁS VENDIDA
+          </span>
+        ) : product.badge_type === 'sale' ? (
+          <span className="px-2 py-0.5 md:px-3 md:py-1 bg-orange-500 text-white text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
+            🔥 OFERTA
           </span>
         ) : (
           <span className="px-2 py-0.5 md:px-3 md:py-1 bg-banana-yellow text-black text-[8px] md:text-[10px] font-black tracking-widest uppercase rounded-full shadow-lg">
