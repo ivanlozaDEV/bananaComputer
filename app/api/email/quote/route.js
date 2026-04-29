@@ -25,7 +25,8 @@ function getBaseTemplate(content) {
 
 export async function POST(req) {
   if (!SMTP_USER || !SMTP_PASS) {
-    return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
+    console.error("[Quote Email API] Missing SMTP Credentials:", { SMTP_USER: !!SMTP_USER, SMTP_PASS: !!SMTP_PASS });
+    return NextResponse.json({ error: 'Email service not configured. Check your environment variables.' }, { status: 500 });
   }
 
   try {
@@ -34,11 +35,25 @@ export async function POST(req) {
 
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: false,
+      port: 587,
+      secure: false, // true for 465, false for 587
       requireTLS: true,
       auth: { user: SMTP_USER, pass: SMTP_PASS },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
     });
+
+    // Verify connection configuration
+    try {
+      await transporter.verify();
+      console.log("[Quote Email API] SMTP connection verified");
+    } catch (verifyError) {
+      console.error("[Quote Email API] SMTP Verification Failed:", verifyError);
+      return NextResponse.json({ 
+        error: 'SMTP Connection Failed', 
+        details: verifyError.message 
+      }, { status: 500 });
+    }
 
     const isOptions = quote.quote_type === 'options';
     const subject = isOptions 
