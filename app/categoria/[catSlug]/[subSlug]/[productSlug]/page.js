@@ -4,12 +4,12 @@ import ProductDetailView from '@/components/ProductDetailView';
 import { notFound } from 'next/navigation';
 
 export async function generateMetadata({ params }) {
-  const { id } = await params;
+  const { catSlug, subSlug, productSlug } = await params;
   
   const { data: product } = await supabase
     .from('products')
     .select('name, description, image_url, images, marketing_subtitle, model_number, sku')
-    .eq('id', id)
+    .eq('slug', productSlug)
     .single();
 
   if (!product) {
@@ -26,11 +26,15 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
-    keywords: [product.name, product.model_number, 'ecuador', 'laptop', 'computadora'].filter(Boolean),
+    keywords: [product.name, product.model_number, 'ecuador', 'laptop', 'computadora', 'gamer', 'gaming', 'guayaquil', 'quito'].filter(Boolean),
+    alternates: {
+      canonical: `https://bananacomputer.store/categoria/${catSlug}/${subSlug}/${productSlug}`,
+    },
     openGraph: {
       title,
       description,
-      images: image ? [{ url: image }] : [],
+      url: `https://bananacomputer.store/categoria/${catSlug}/${subSlug}/${productSlug}`,
+      images: image ? [{ url: image, width: 800, height: 800, alt: product.name }] : [],
     },
     twitter: {
       card: 'summary_large_image',
@@ -42,12 +46,12 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
-  const { id } = await params;
+  const { catSlug, subSlug, productSlug } = await params;
 
   const { data: product } = await supabase
     .from('products')
-    .select('*, categories(id, name), subcategories:subcategory_id(id, name)')
-    .eq('id', id)
+    .select('*, categories(id, name, slug), subcategories:subcategory_id(id, name, slug)')
+    .eq('slug', productSlug)
     .single();
 
   if (!product) {
@@ -57,7 +61,7 @@ export default async function Page({ params }) {
   const { data: prodAttrs } = await supabase
     .from('product_attributes')
     .select('value, attribute_definitions(name, unit, icon, display_order)')
-    .eq('product_id', id)
+    .eq('product_id', product.id)
     .order('attribute_definitions(display_order)');
 
   return <ProductDetailView product={product} initialAttrs={prodAttrs || []} />;

@@ -8,12 +8,12 @@ import { ChevronRight, Home } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
 export async function generateMetadata({ params }) {
-  const { subId } = await params;
+  const { catSlug, subSlug } = await params;
   
   const { data: subcategory } = await supabase
     .from('subcategories')
     .select('name, description')
-    .eq('id', subId)
+    .eq('slug', subSlug)
     .single();
 
   if (!subcategory) {
@@ -30,11 +30,11 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
-  const { catId, subId } = await params;
+  const { catSlug, subSlug } = await params;
 
   const [catRes, subRes] = await Promise.all([
-    supabase.from('categories').select('*').eq('id', catId).single(),
-    supabase.from('subcategories').select('*').eq('id', subId).single()
+    supabase.from('categories').select('*').eq('slug', catSlug).single(),
+    supabase.from('subcategories').select('*').eq('slug', subSlug).single()
   ]);
 
   if (!catRes.data || !subRes.data) {
@@ -53,7 +53,7 @@ export default async function Page({ params }) {
         <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40 mb-12">
           <Link href="/" className="hover:text-purple-brand"><Home size={12} /></Link>
           <ChevronRight size={10} />
-          <Link href={`/categoria/${catId}`} className="hover:text-purple-brand">{category.name}</Link>
+          <Link href={`/categoria/${catSlug}`} className="hover:text-purple-brand">{category.name}</Link>
           <ChevronRight size={10} />
           <span className="text-purple-brand opacity-100">{subcategory.name}</span>
         </nav>
@@ -67,7 +67,7 @@ export default async function Page({ params }) {
         </header>
 
         {/* Filtered Product Grid */}
-        <ProductGrid subcategoryId={subId} />
+        <ProductGrid subcategoryId={subcategory.id} />
       </main>
 
       <Footer />

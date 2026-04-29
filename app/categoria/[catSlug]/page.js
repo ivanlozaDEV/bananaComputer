@@ -4,12 +4,12 @@ import CategoryDetailView from '@/components/CategoryDetailView';
 import { notFound } from 'next/navigation';
 
 export async function generateMetadata({ params }) {
-  const { catId } = await params;
+  const { catSlug } = await params;
   
   const { data: category } = await supabase
     .from('categories')
     .select('name, description')
-    .eq('id', catId)
+    .eq('slug', catSlug)
     .single();
 
   if (!category) {
@@ -22,20 +22,24 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://bananacomputer.store/categoria/${catSlug}`,
+    },
     openGraph: {
       title,
       description,
+      url: `https://bananacomputer.store/categoria/${catSlug}`,
     },
   };
 }
 
 export default async function Page({ params }) {
-  const { catId } = await params;
+  const { catSlug } = await params;
 
   const { data: category } = await supabase
     .from('categories')
     .select('*')
-    .eq('id', catId)
+    .eq('slug', catSlug)
     .single();
 
   if (!category) notFound();
@@ -43,7 +47,7 @@ export default async function Page({ params }) {
   const { data: subcategories } = await supabase
     .from('subcategories')
     .select('*')
-    .eq('category_id', catId)
+    .eq('category_id', category.id)
     .order('name');
 
   return <CategoryDetailView category={category} subcategories={subcategories || []} />;

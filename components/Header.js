@@ -30,7 +30,7 @@ const Header = () => {
 
   useEffect(() => {
     const fetchCats = async () => {
-      const { data } = await supabase.from('categories').select('id, name').order('name');
+      const { data } = await supabase.from('categories').select('id, name, slug').order('name');
       setCategories(data || []);
     };
     fetchCats();
@@ -69,7 +69,7 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6 text-[11px]">
             {categories.map(cat => (
-              <Link key={cat.id} href={`/categoria/${cat.id}`} className="font-bold uppercase tracking-widest hover:text-banana-yellow transition-colors opacity-80 hover:opacity-100">
+              <Link key={cat.id} href={`/categoria/${cat.slug}`} className="font-bold uppercase tracking-widest hover:text-banana-yellow transition-colors opacity-80 hover:opacity-100">
                 {cat.name}
               </Link>
             ))}
@@ -166,7 +166,7 @@ const Header = () => {
         `}>
           <div className="flex flex-col gap-1">
             {categories.map(cat => (
-              <Link key={cat.id} href={`/categoria/${cat.id}`} className="flex items-center justify-between py-3 border-b border-black/5 text-sm font-bold uppercase tracking-widest text-gray-700 hover:text-purple-brand transition-colors" onClick={() => setMenuOpen(false)}>
+              <Link key={cat.id} href={`/categoria/${cat.slug}`} className="flex items-center justify-between py-3 border-b border-black/5 text-sm font-bold uppercase tracking-widest text-gray-700 hover:text-purple-brand transition-colors" onClick={() => setMenuOpen(false)}>
                 {cat.name}
                 <ChevronRight size={14} className="text-purple-brand opacity-40" />
               </Link>

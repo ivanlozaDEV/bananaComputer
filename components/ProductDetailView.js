@@ -83,7 +83,7 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
     },
     "offers": {
       "@type": "Offer",
-      "url": `https://bananacomputer.store/producto/${product?.id}`,
+      "url": `https://bananacomputer.store/producto/${product?.slug || product?.id}`,
       "priceCurrency": "USD",
       "price": product?.price,
       "itemCondition": "https://schema.org/NewCondition",
@@ -109,19 +109,19 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
         "@type": "ListItem",
         "position": 2,
         "name": product?.categories?.name,
-        "item": `https://bananacomputer.store/categoria/${product?.category_id}`
+        "item": `https://bananacomputer.store/categoria/${product?.categories?.slug || product?.category_id}`
       },
       product?.subcategories?.name ? {
         "@type": "ListItem",
         "position": 3,
         "name": product?.subcategories?.name,
-        "item": `https://bananacomputer.store/categoria/${product?.category_id}/${product?.subcategory_id}`
+        "item": `https://bananacomputer.store/categoria/${product?.categories?.slug || product?.category_id}/${product?.subcategories?.slug || product?.subcategory_id}`
       } : null,
       {
         "@type": "ListItem",
         "position": product?.subcategories?.name ? 4 : 3,
         "name": product?.name,
-        "item": `https://bananacomputer.store/producto/${product?.id}`
+        "item": `https://bananacomputer.store/producto/${product?.slug || product?.id}`
       }
     ].filter(Boolean)
   };
@@ -150,11 +150,16 @@ export default function ProductDetailView({ product, initialAttrs = [] }) {
       <nav className="max-w-7xl mx-auto px-4 pt-28 pb-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40">
         <Link href="/" className="hover:text-purple-brand"><Home size={12} /></Link>
         <ChevronRight size={10} />
-        <Link href={`/categoria/${product?.category_id}`} className="hover:text-purple-brand">{product?.categories?.name}</Link>
+        <Link href={`/categoria/${product?.categories?.slug || product?.category_id}`} className="hover:text-purple-brand">{product?.categories?.name}</Link>
         {product?.subcategories?.name && (
           <>
             <ChevronRight size={10} />
-            <span>{product.subcategories.name}</span>
+            <Link 
+              href={`/categoria/${product?.categories?.slug || product?.category_id}/${product?.subcategories?.slug || product?.subcategory_id}`} 
+              className="hover:text-purple-brand"
+            >
+              {product.subcategories.name}
+            </Link>
           </>
         )}
         <ChevronRight size={10} />

@@ -32,7 +32,7 @@ export default function CategoryDetailView({ category, subcategories }) {
           {subcategories.map(sub => (
             <Link 
               key={sub.id} 
-              href={`/categoria/${category.id}/${sub.id}`} 
+              href={`/categoria/${category.slug || category.id}/${sub.slug || sub.id}`} 
               className="group bg-white rounded-[2.5rem] p-8 border border-black/5 hover:border-purple-brand/20 transition-all hover:shadow-2xl hover:-translate-y-2 flex flex-col gap-6"
             >
               <div className="aspect-video bg-gray-50 rounded-3xl flex items-center justify-center p-6 transition-colors group-hover:bg-purple-brand/5 overflow-hidden">

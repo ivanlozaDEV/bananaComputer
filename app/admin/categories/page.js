@@ -32,7 +32,7 @@ export default function CategoriesAdminPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
-  
+  const [editingSub, setEditingSub] = useState(null);
   const [newCat, setNewCat] = useState({ name: '', slug: '' });
   const [newSub, setNewSub] = useState({});
   const [attrForms, setAttrForms] = useState({});
@@ -41,8 +41,8 @@ export default function CategoriesAdminPage() {
     fetchCategories();
   }, []);
 
-  const fetchCategories = async () => {
-    setLoading(true);
+  const fetchCategories = async (silent = false) => {
+    if (!silent) setLoading(true);
     const { data, error } = await supabase
       .from('categories')
       .select(`
@@ -64,7 +64,7 @@ export default function CategoriesAdminPage() {
     else {
       showToast('Categoría creada', 'success');
       setNewCat({ name: '', slug: '' });
-      fetchCategories();
+      fetchCategories(true);
     }
   };
 
@@ -74,7 +74,7 @@ export default function CategoriesAdminPage() {
     if (error) showToast('Error al eliminar', 'error');
     else {
       showToast('Categoría eliminada', 'success');
-      fetchCategories();
+      fetchCategories(true);
     }
   };
 
@@ -98,7 +98,7 @@ export default function CategoriesAdminPage() {
     else {
       showToast('Subcategoría creada', 'success');
       setNewSub(s => ({ ...s, [catId]: { name: '' } }));
-      fetchCategories();
+      fetchCategories(true);
     }
   };
 
@@ -121,7 +121,8 @@ export default function CategoriesAdminPage() {
     if (error) showToast('Error al actualizar', 'error');
     else {
       showToast('Subcategoría actualizada', 'success');
-      fetchCategories();
+      setEditingSub(null);
+      fetchCategories(true);
     }
   };
 
@@ -131,7 +132,7 @@ export default function CategoriesAdminPage() {
     if (error) showToast('Error al eliminar', 'error');
     else {
       showToast('Subcategoría eliminada', 'success');
-      fetchCategories();
+      fetchCategories(true);
     }
   };
 
@@ -154,7 +155,7 @@ export default function CategoriesAdminPage() {
     else {
       showToast('Atributo añadido', 'success');
       setAttrForms(prev => ({ ...prev, [catId]: {} }));
-      fetchCategories();
+      fetchCategories(true);
     }
   };
 
@@ -163,7 +164,7 @@ export default function CategoriesAdminPage() {
     if (error) showToast('Error al eliminar', 'error');
     else {
       showToast('Atributo eliminado', 'success');
-      fetchCategories();
+      fetchCategories(true);
     }
   };
 
@@ -259,12 +260,7 @@ export default function CategoriesAdminPage() {
                       <div key={sub.id} className="bg-slate-50 border border-black/10 rounded-3xl p-4 flex flex-col gap-3 relative group/sub hover:bg-white hover:shadow-md transition-all">
                         <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover/sub:opacity-100 transition-opacity z-20">
                           <button 
-                            onClick={() => {
-                              const newName = prompt('Nuevo nombre para la subcategoría:', sub.name);
-                              if (newName && newName !== sub.name) {
-                                updateSub(sub.id, newName);
-                              }
-                            }}
+                            onClick={() => setEditingSub({ id: sub.id, name: sub.name })}
                             className="p-1.5 bg-white/90 backdrop-blur-md text-gray-500 hover:text-purple-brand rounded-lg shadow-sm transition-all"
                             title="Renombrar"
                           >
@@ -446,6 +442,47 @@ export default function CategoriesAdminPage() {
           </div>
         ))}
       </div>
+
+      {/* Rename Subcategory Modal */}
+      {editingSub && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+            <h3 className="text-xl font-black mb-2 tracking-tight">Renombrar Subcategoría</h3>
+            <p className="text-gray-500 text-xs font-medium mb-8 uppercase tracking-widest">Afectará las URLs de los productos vinculados.</p>
+            
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nuevo Nombre</label>
+                <input 
+                  autoFocus
+                  className="w-full bg-slate-50 border border-black/10 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:border-purple-brand/30 transition-all text-gray-900 shadow-inner"
+                  value={editingSub.name}
+                  onChange={e => setEditingSub(s => ({ ...s, name: e.target.value }))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') updateSub(editingSub.id, editingSub.name);
+                    if (e.key === 'Escape') setEditingSub(null);
+                  }}
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setEditingSub(null)}
+                  className="flex-1 py-4 border border-black/10 rounded-2xl font-black text-[10px] uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-all"
+                >
+                  CANCELAR
+                </button>
+                <button 
+                  onClick={() => updateSub(editingSub.id, editingSub.name)}
+                  className="flex-1 py-4 bg-purple-brand text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-purple-brand/20"
+                >
+                  GUARDAR CAMBIOS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

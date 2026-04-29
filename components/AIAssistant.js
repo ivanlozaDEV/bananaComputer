@@ -120,21 +120,32 @@ const AIAssistant = ({ onClose }) => {
 
       try {
         // --- Selection Call: Select Top 3 products to optimize tokens ---
-        const selectionPrompt = `SISTEMA: Basado en el catálogo, selecciona los IDs de los 3 productos que mejor se ajusten a: Uso ${userPrefs.useCase}, Presupuesto ${budget}. Retorna SOLO los IDs separados por comas.`;
+        // --- Selection Call: Select Top 3 products to optimize tokens ---
+        const selectionPrompt = `SISTEMA: Basado en el catálogo, selecciona los SLUGS de los 3 productos que mejor se ajusten a:
+Uso: ${userPrefs.useCase}
+Presupuesto: ${budget}
+
+REGLAS DE SELECCIÓN:
+1. Prioriza productos que estén DENTRO del rango de presupuesto indicado.
+2. Solo recomienda productos de menor precio si NO hay opciones suficientes en el rango solicitado.
+3. Elige los equipos con mejores especificaciones (RAM/CPU) para el uso solicitado.
+
+Retorna SOLO los SLUGS separados por comas, sin explicaciones.`;
         
         const selectionResponse = await chatWithOllama(
           [{ role: 'user', content: selectionPrompt }],
           inventoryContext || baselineKnowledge
         );
         
-        const selectedIds = selectionResponse.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || [];
+        // Matches slugs (alphanumeric and hyphens, at least 3 chars)
+        const selectedIds = selectionResponse.match(/[a-z0-9-]{3,100}/gi) || [];
         
         const optimizedContext = filterInventoryByIds(inventoryContext || baselineKnowledge, selectedIds);
         setInventoryContext(optimizedContext);
 
         const promptContext = `[SISTEMA]: El usuario busca un equipo principalmente para ${userPrefs.useCase} con un presupuesto de ${budget}. Por favor, ofrece estas 3 opciones que seleccionaste y explica brevemente por qué son las mejores. 
 
-⚠️ IMPORTANTE: Debes incluir los 3 tags [RECOMENDACION: UUID] al final de tu mensaje, uno por cada producto mencionado.`;
+⚠️ IMPORTANTE: Debes incluir los 3 tags [RECOMENDACION: product-slug] al final de tu mensaje, uno por cada producto mencionado.`;
         
         const aiResponseText = await chatWithOllama(
           [...messages, userMessage, { role: 'user', content: promptContext }],
@@ -174,7 +185,7 @@ const AIAssistant = ({ onClose }) => {
         const retry = await chatWithOllama(
           [...messages, userMessage,
             { role: 'assistant', content: aiResponseText },
-            { role: 'user', content: '⚠️ SISTEMA: Olvidaste agregar los tags [RECOMENDACION: UUID]. Repite tu respuesta anterior EXACTAMENTE igual pero añade los tags al final con los UUIDs del inventario.' }
+            { role: 'user', content: '⚠️ SISTEMA: Olvidaste agregar los tags [RECOMENDACION: product-slug]. Repite tu respuesta anterior EXACTAMENTE igual pero añade los tags al final con los SLUGS del inventario.' }
           ],
           inventoryContext || baselineKnowledge,
           controller.signal
@@ -359,8 +370,14 @@ const ChatInput = ({ onSend, disabled, quickReplies }) => {
 const RecommendedProduct = memo(({ id }) => {
   const [prod, setProd] = useState(null);
   useEffect(() => {
-    if (!id || id === 'undefined' || !UUID_RE.test(id)) return;
-    supabase.from('products').select('*, product_attributes(value, attribute_definitions(name, unit))').eq('id', id).single().then(({ data }) => setProd(data));
+    if (!id || id === 'undefined') return;
+    // Try UUID first for legacy, then slug
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const query = isUuid 
+      ? supabase.from('products').select('*, categories(slug), subcategories:subcategory_id(slug), product_attributes(value, attribute_definitions(name, unit))').eq('id', id)
+      : supabase.from('products').select('*, categories(slug), subcategories:subcategory_id(slug), product_attributes(value, attribute_definitions(name, unit))').eq('slug', id);
+      
+    query.single().then(({ data }) => setProd(data));
   }, [id]);
 
   if (!prod) return null;
@@ -370,8 +387,12 @@ const RecommendedProduct = memo(({ id }) => {
     value: `${a.value} ${a.attribute_definitions.unit || ''}`.trim()
   })) || [];
 
+  const catSlug = prod.categories?.slug || 'c';
+  const subSlug = prod.subcategories?.slug || 's';
+  const prodSlug = prod.slug || prod.id;
+
   return (
-    <Link href={`/producto/${prod.id}`} className="flex flex-col gap-3 p-4 bg-white hover:bg-gray-50 rounded-[1.5rem] border border-black/5 transition-all group shadow-sm text-black">
+    <Link href={`/categoria/${catSlug}/${subSlug}/${prodSlug}`} className="flex flex-col gap-3 p-4 bg-white hover:bg-gray-50 rounded-[1.5rem] border border-black/5 transition-all group shadow-sm text-black">
       <div className="flex gap-4">
         <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center p-2 border border-black/5 shrink-0">
           {/* Fix #8: fallback image on broken URL */}
@@ -412,16 +433,15 @@ const ComparisonTable = memo(({ ids }) => {
 
   useEffect(() => {
     if (idArray.length === 0) return;
-    const validIds = idArray.filter(id => UUID_RE.test(id));
-    if (validIds.length === 0) return;
-
+    
     Promise.all(
-      validIds.map(id => 
-        supabase.from('products')
-          .select('*, product_attributes(value, attribute_definitions(name, unit))')
-          .eq('id', id)
-          .single()
-      )
+      idArray.map(id => {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        const query = isUuid 
+          ? supabase.from('products').select('*, product_attributes(value, attribute_definitions(name, unit))').eq('id', id)
+          : supabase.from('products').select('*, product_attributes(value, attribute_definitions(name, unit))').eq('slug', id);
+        return query.single();
+      })
     ).then(results => {
       setProducts(results.map(r => r.data).filter(Boolean));
     });
@@ -496,7 +516,7 @@ const MessageContent = memo(({ content, gadgetTags = [], showGadgets = true }) =
       
       if (recMatch) {
         const id = recMatch[1].trim();
-        if (!UUID_RE.test(id) || seenIds.has(id)) return false;
+        if (!id || seenIds.has(id)) return false;
         seenIds.add(id);
       }
       
@@ -514,8 +534,12 @@ const MessageContent = memo(({ content, gadgetTags = [], showGadgets = true }) =
         <div className="mt-4 pt-4 border-t border-black/5 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
           {gadgets.map((gadget, i) => {
             const inner = gadget.replace(/[\[\]]/g, '');
-            const [type, value] = inner.split(/[:\s]+/).map(s => s.trim());
-            const ids = value ? value.split(/,\s*/).map(s => s.trim()) : [];
+            const typeMatch = inner.match(/^(RECOMENDACI[OÓ]N|WAITLIST_PROMPT|COMPARE|SEARCH)[:\s]*(.*)$/i);
+            if (!typeMatch) return null;
+            
+            const type = typeMatch[1];
+            const value = typeMatch[2];
+            const ids = value ? value.split(/[\s,]+/).map(s => s.trim()).filter(Boolean) : [];
 
             // Fix #3: normalize accented Ó before comparing
             const normalizedType = type.toUpperCase()

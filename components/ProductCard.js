@@ -99,7 +99,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
       <article className="group relative bg-white rounded-2xl border border-black/5 overflow-hidden transition-all duration-500 hover:shadow-xl flex flex-col sm:flex-row h-full sm:min-h-[220px]">
         {/* Image - Left */}
         <div className="relative w-full sm:w-[200px] min-h-[180px] sm:min-h-0 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border-b sm:border-b-0 sm:border-r border-black/5">
-          <Link href={`/producto/${product.id}`} className="w-full h-full flex items-center justify-center">
+          <Link href={`/categoria/${product.categories?.slug || 'c'}/${product.subcategories?.slug || 's'}/${product.slug || product.id}`} className="w-full h-full flex items-center justify-center">
             {images.length > 0 ? (
               <img
                 src={images[imgIndex]}
@@ -132,7 +132,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
         {/* Info - Middle */}
         <div className="flex-1 p-5 flex flex-col gap-3 min-w-0">
           <div className="flex-1">
-            <Link href={`/producto/${product.id}`} className="block">
+            <Link href={`/categoria/${product.categories?.slug || 'c'}/${product.subcategories?.slug || 's'}/${product.slug || product.id}`} className="block">
               <div className="flex justify-between items-start gap-2 mb-1">
                 <h3 className="text-base font-black leading-tight group-hover:text-purple-brand transition-colors line-clamp-2">{product.name}</h3>
                 <span className="text-[9px] font-bold py-0.5 px-2 bg-black/5 rounded-full">{product.year}</span>
@@ -207,7 +207,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
               )}
             </button>
             <Link
-              href={`/producto/${product.id}`}
+              href={`/categoria/${product.categories?.slug || 'c'}/${product.subcategories?.slug || 's'}/${product.slug || product.id}`}
               className="w-full py-2.5 bg-white border border-black/5 text-center rounded-xl font-black text-[10px] uppercase tracking-widest text-gray-400 hover:text-purple-brand transition-all hover:bg-white"
             >
               VER DETALLES
@@ -240,7 +240,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
       {/* Image Carousel */}
       <div className="relative aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden">
-        <Link href={`/producto/${product.id}`} className="absolute inset-0 flex items-center justify-center z-0">
+        <Link href={`/categoria/${product.categories?.slug || 'c'}/${product.subcategories?.slug || 's'}/${product.slug || product.id}`} className="absolute inset-0 flex items-center justify-center z-0">
           {images.length > 0 ? (
             <img
               src={images[imgIndex]}
@@ -277,7 +277,7 @@ const ProductCard = ({ product, addedIds, handleAddToCart, variant = 'grid' }) =
 
       {/* Info Container */}
       <div className="p-3 md:p-6 flex flex-col flex-1 gap-2 md:gap-4">
-        <Link href={`/producto/${product.id}`} className="block">
+        <Link href={`/categoria/${product.categories?.slug || 'c'}/${product.subcategories?.slug || 's'}/${product.slug || product.id}`} className="block">
           <div className="flex justify-between items-start gap-1 mb-0.5">
             <h3 className="text-[13px] md:text-base font-black leading-tight group-hover:text-purple-brand transition-colors line-clamp-2">{product.name}</h3>
             <span className="text-[8px] md:text-[9px] font-bold py-0.5 px-1.5 bg-black/5 rounded-full whitespace-nowrap lg:shrink-0">{product.year}</span>

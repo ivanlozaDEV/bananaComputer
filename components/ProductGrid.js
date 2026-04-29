@@ -33,7 +33,7 @@ const ProductGrid = ({ subcategoryId }) => {
       try {
         let query = supabase
           .from('products')
-          .select('*, categories(name, id), product_attributes(value, attribute_definitions(name, unit, icon, show_in_card, display_order))')
+          .select('*, slug, categories(name, id, slug), subcategories:subcategory_id(name, id, slug), product_attributes(value, attribute_definitions(name, unit, icon, show_in_card, display_order))')
           .eq('is_active', true);
 
         if (subcategoryId) {
@@ -46,7 +46,7 @@ const ProductGrid = ({ subcategoryId }) => {
           // Fallback if array contains operator fails (older supabase versions or schema mismatch)
           const fallbackQuery = supabase
             .from('products')
-            .select('*, categories(name, id), product_attributes(value, attribute_definitions(name, unit, icon, show_in_card, display_order))')
+            .select('*, slug, categories(name, id, slug), subcategories:subcategory_id(name, id, slug), product_attributes(value, attribute_definitions(name, unit, icon, show_in_card, display_order))')
             .eq('is_active', true);
           const finalQuery = subcategoryId ? fallbackQuery.eq('subcategory_id', subcategoryId) : fallbackQuery;
           const { data: fbData, error: fbError } = await finalQuery.order('created_at', { ascending: false });
