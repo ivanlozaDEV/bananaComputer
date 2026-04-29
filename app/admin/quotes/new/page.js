@@ -110,17 +110,18 @@ export default function NewQuotePage() {
         item.id === p.id ? { ...item, quantity: item.quantity + 1 } : item
       ));
     } else {
-      // Fetch highlights/pills for the product
+      // Fetch highlights/pills for the product — same filter as ProductCard in home
       const { data: attrs } = await supabase
         .from('product_attributes')
-        .select('value, attribute_definitions(name, icon)')
+        .select('value, attribute_definitions(name, icon, unit, show_in_card, display_order)')
         .eq('product_id', p.id);
 
       const pills = (attrs || [])
-        .filter(a => ['RAM', 'SSD', 'Procesador', 'Disco Duro', 'Tarjeta de Video', 'Pantalla'].includes(a.attribute_definitions.name))
+        .filter(a => a.attribute_definitions?.show_in_card && a.value && String(a.value).trim() !== '')
+        .sort((a, b) => (a.attribute_definitions?.display_order || 0) - (b.attribute_definitions?.display_order || 0))
         .map(a => ({
           label: a.attribute_definitions.name,
-          value: a.value,
+          value: `${a.value}${a.attribute_definitions.unit || ''}`,
           icon: a.attribute_definitions.icon
         }));
 

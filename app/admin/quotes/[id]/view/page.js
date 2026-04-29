@@ -122,52 +122,51 @@ export default function QuoteViewPage() {
       {/* DOCUMENTO PRINCIPAL (Diseño de Alta Densidad) */}
       <main className="max-w-[850px] mx-auto bg-white shadow-2xl print:shadow-none print:max-w-full relative flex flex-col overflow-visible">
 
-        {/* Encabezado con Logo y Marca */}
-        <div className="p-10 md:p-16">
-          <header className="flex justify-between items-start mb-16">
-            <div className="flex items-center gap-4">
-              <Logo size="medium" />
+        {/* Encabezado con Logo y Marca — compacto */}
+        <div className="px-8 pt-8 pb-4">
+          <header className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-sm font-black tracking-tighter leading-none mb-1 font-pixel-legacy">
+                <h1 className="text-[6px] font-black tracking-tighter leading-tight font-pixel-legacy">
                   <span className="text-purple-brand">BANANA</span><br />
                   <span className="text-gray-900 uppercase">COMPUTER</span>
                 </h1>
-                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-purple-brand italic">
+                <p className="text-[5px] font-black uppercase tracking-[0.2em] text-purple-brand italic mt-0.5">
                   Peeling into the future
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <div className="inline-block bg-white border border-black/5 rounded-xl px-4 py-3 text-right print:border-gray-200">
-                <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-0.5">Cotización</p>
-                <p className="text-lg font-black text-purple-brand tracking-tight">#{slug}</p>
-                <div className="mt-1 flex items-center justify-end gap-1.5 text-[9px] font-bold text-gray-400">
-                  <Calendar size={10} /> {new Date(created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}
+              <div className="inline-block bg-white border border-black/5 rounded-lg px-3 py-2 text-right print:border-gray-200">
+                <p className="text-[7px] font-black text-gray-300 uppercase tracking-widest mb-0.5">Cotización</p>
+                <p className="text-base font-black text-purple-brand tracking-tight">#{slug}</p>
+                <div className="mt-0.5 flex items-center justify-end gap-1 text-[8px] font-bold text-gray-400">
+                  <Calendar size={9} /> {new Date(created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </div>
               </div>
             </div>
           </header>
 
           {/* Grid de Información Compacto */}
-          <div className="grid grid-cols-2 gap-8 mb-10 border-t border-b border-black/5 py-8 print:border-gray-100">
+          <div className="grid grid-cols-2 gap-6 mb-6 border-t border-b border-black/5 py-4 print:border-gray-100">
             {/* Sección Cliente */}
             <div>
-              <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 flex items-center gap-2">
+              <h3 className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 flex items-center gap-2">
                 <div className="w-1 h-1 rounded-full bg-purple-brand" /> CLIENTE
               </h3>
-              <div className="space-y-1">
-                <p className="text-lg font-black text-gray-900 leading-tight">{customer_data.full_name?.toUpperCase()}</p>
-                <p className="text-[10px] font-black text-purple-brand opacity-60 uppercase tracking-widest">ID: {customer_data.id_number || 'Consumidor Final'}</p>
-                <div className="pt-2 flex flex-col gap-1 text-[10px] font-bold text-gray-500">
-                  <span className="flex items-center gap-2"><Mail size={12} className="text-purple-brand opacity-40" /> {customer_data.email || 'N/A'}</span>
-                  <span className="flex items-center gap-2"><Phone size={12} className="text-purple-brand opacity-40" /> {customer_data.phone || 'N/A'}</span>
+              <div className="space-y-0.5">
+                <p className="text-base font-black text-gray-900 leading-tight">{customer_data.full_name?.toUpperCase()}</p>
+                <p className="text-[9px] font-black text-purple-brand opacity-60 uppercase tracking-widest">ID: {customer_data.id_number || 'Consumidor Final'}</p>
+                <div className="pt-1 flex flex-col gap-0.5 text-[9px] font-bold text-gray-500">
+                  <span className="flex items-center gap-1.5"><Mail size={10} className="text-purple-brand opacity-40" /> {customer_data.email || 'N/A'}</span>
+                  <span className="flex items-center gap-1.5"><Phone size={10} className="text-purple-brand opacity-40" /> {customer_data.phone || 'N/A'}</span>
                 </div>
               </div>
             </div>
 
             {/* Dirección de Entrega Completa */}
             <div>
-              <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 flex items-center gap-2">
+              <h3 className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 flex items-center gap-2">
                 <div className="w-1 h-1 rounded-full bg-banana-yellow" /> DIRECCIÓN
               </h3>
               {customer_data.address?.street_main ? (
@@ -333,13 +332,17 @@ export default function QuoteViewPage() {
                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Opción {idx + 1}: {item.name}</h3>
                         </div>
 
-                        {/* Pills Técnicas */}
+                        {/* Pills Técnicas — Grid 2 col con label */}
                         {item.pills && item.pills.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mb-4">
+                          <div className="grid grid-cols-3 gap-1.5 mb-4">
                             {item.pills.map((p, pidx) => (
-                              <span key={pidx} className="text-[8px] font-black bg-gray-50 border border-black/[0.05] px-2 py-1 rounded text-gray-400 uppercase flex items-center gap-1">
-                                <span>{p.icon}</span> {p.value}
-                              </span>
+                              <div key={pidx} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-gray-50 border border-black/[0.05]">
+                                {p.icon && <span className="text-[11px] shrink-0 opacity-70">{p.icon}</span>}
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-[8px] font-black text-gray-900 leading-none truncate">{p.value}</span>
+                                  {p.label && <span className="text-[6px] font-bold text-gray-400 uppercase tracking-tighter truncate">{p.label}</span>}
+                                </div>
+                              </div>
                             ))}
                           </div>
                         )}
@@ -389,27 +392,27 @@ export default function QuoteViewPage() {
           )}
 
               {/* Sellos de Confianza Banana */}
-              <div className="mt-12 grid grid-cols-3 gap-4 py-8 border-t border-b border-black/5">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">✅</span>
+              <div className="mt-8 grid grid-cols-3 gap-4 py-5 border-t border-b border-black/5">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">✅</span>
                   <p className="text-[7px] font-black uppercase tracking-widest text-gray-900 leading-tight">Somos distribuidores oficiales en Ecuador</p>
                 </div>
-                <div className="flex items-center gap-3 border-l border-r border-black/5 px-4">
-                  <span className="text-xl">🛡️</span>
+                <div className="flex items-center gap-2 border-l border-r border-black/5 px-4">
+                  <span className="text-base">🛡️</span>
                   <p className="text-[7px] font-black uppercase tracking-widest text-gray-900 leading-tight">Garantía directa de fabricante</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">🔧</span>
-                  <p className="text-[7px] font-black uppercase tracking-widest text-gray-900 leading-tight">Upgrade de tu equipo sin afectar la garantía</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🔧</span>
+                  <p className="text-[7px] font-black uppercase tracking-widest text-gray-900 leading-tight">Upgrade gratis de tu equipo sin afectar la garantía</p>
                 </div>
               </div>
 
               {/* Footer Corporativo Refinado */}
-              <div className="mt-12 pt-8 flex justify-between items-center">
-            <div className="flex items-center gap-3 text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">
-              <span>Quito, Ecuador</span>
+              <div className="mt-6 pt-4 flex justify-between items-center">
+            <div className="flex items-center gap-3 text-[7px] font-black uppercase tracking-[0.2em] text-gray-300">
+              <span>Guayaquil, Ecuador</span>
               <span className="w-1 h-1 rounded-full bg-gray-200" />
-              <span>bananacomputer.com</span>
+              <span>banana-computer.com</span>
             </div>
             <div className="text-[7px] font-bold text-gray-300 uppercase tracking-widest">
               ID: {quote.id.substring(0, 8).toUpperCase()}

@@ -137,15 +137,16 @@ export default function EditQuotePage() {
       try {
         const { data: attrs } = await supabase
           .from('product_attributes')
-          .select('value, attribute_definitions(name, icon)')
+          .select('value, attribute_definitions(name, icon, unit, show_in_card, display_order)')
           .eq('product_id', p.id);
         
         if (attrs) {
           pills = attrs
-            .filter(a => a.attribute_definitions && ['RAM', 'SSD', 'Procesador', 'Disco Duro', 'Tarjeta de Video', 'Pantalla'].includes(a.attribute_definitions.name))
+            .filter(a => a.attribute_definitions?.show_in_card && a.value && String(a.value).trim() !== '')
+            .sort((a, b) => (a.attribute_definitions?.display_order || 0) - (b.attribute_definitions?.display_order || 0))
             .map(a => ({
               label: a.attribute_definitions.name,
-              value: a.value,
+              value: `${a.value}${a.attribute_definitions.unit || ''}`,
               icon: a.attribute_definitions.icon
             }));
         }
@@ -516,12 +517,16 @@ export default function EditQuotePage() {
                              </div>
                           </div>
 
-                          {/* Pills Técnicas */}
+                          {/* Pills Técnicas con label */}
                           {item.pills && item.pills.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-4">
+                            <div className="flex flex-wrap gap-1.5 mt-4">
                                {item.pills.map((pill, pidx) => (
-                                 <span key={pidx} className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-black/5 rounded-lg text-[8px] font-black text-gray-400 uppercase tracking-tighter">
-                                    <span>{pill.icon}</span> {pill.value}
+                                 <span key={pidx} className="flex items-center gap-1.5 px-2 py-1.5 bg-slate-50 border border-black/5 rounded-lg">
+                                    {pill.icon && <span className="text-[11px]">{pill.icon}</span>}
+                                    <span className="flex flex-col">
+                                      <span className="text-[8px] font-black text-gray-700 leading-none">{pill.value}</span>
+                                      {pill.label && <span className="text-[6px] font-bold text-gray-400 uppercase tracking-tighter">{pill.label}</span>}
+                                    </span>
                                  </span>
                                ))}
                             </div>
