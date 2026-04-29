@@ -12,10 +12,10 @@ const emptyProduct = {
   banana_review: null,
 };
 
-const generateSlug = (text) => {
-  if (!text) return '';
-  return text.toLowerCase()
-    .trim()
+const generateSlug = (name, model) => {
+  const base = `${name || ''} ${model || ''}`.trim();
+  if (!base) return '';
+  return base.toLowerCase()
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
@@ -137,7 +137,7 @@ export function useProductForm(categories, onSaveSuccess) {
     const payload = {
       sku: form.sku, 
       name: form.name, 
-      slug: form.slug || generateSlug(form.name),
+      slug: form.slug || generateSlug(form.name, form.model_number),
       model_number: form.model_number, 
       tagline: form.tagline,
       marketing_subtitle: form.marketing_subtitle, 
@@ -156,16 +156,33 @@ export function useProductForm(categories, onSaveSuccess) {
       banana_review: form.banana_review,
     };
 
-    let productId;
     try {
+      let res;
       if (modal === 'new') {
-        const { data, error } = await supabase.from('products').insert(payload).select().single();
-        if (error) throw error;
-        productId = data?.id;
+        res = await supabase.from('products').insert(payload).select().single();
       } else {
-        const { error } = await supabase.from('products').update(payload).eq('id', modal.id);
-        if (error) throw error;
-        productId = modal.id;
+        res = await supabase.from('products').update(payload).eq('id', modal.id).select().single();
+      }
+
+      if (res.error) {
+        if (res.error.code === '23505') {
+          const detail = res.error.details?.toLowerCase() || '';
+          if (detail.includes('sku')) {
+            setErrors(prev => ({ ...prev, sku: 'Este SKU ya existe' }));
+          } else if (detail.includes('slug')) {
+            setErrors(prev => ({ ...prev, slug: 'Esta URL/Slug ya está en uso' }));
+          } else {
+            setErrors(prev => ({ ...prev, form: 'Ya existe un registro con estos datos únicos' }));
+          }
+          setSaving(false);
+          return;
+        }
+        throw res.error;
+      }
+
+      productId = modal === 'new' ? res.data?.id : modal.id;
+
+      if (modal !== 'new') {
         await Promise.all([
           supabase.from('product_attributes').delete().eq('product_id', productId),
           supabase.from('product_subcategories').delete().eq('product_id', productId)

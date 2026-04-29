@@ -117,7 +117,12 @@ const ProductModal = ({
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">N. Modelo</label>
                 <input className="w-full bg-slate-50 border border-black/10 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-purple-brand/30" 
-                  value={form.model_number || ''} onChange={e => setForm(f => ({ ...f, model_number: e.target.value }))} placeholder="M1502F" />
+                  value={form.model_number || ''} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    setForm(f => ({ ...f, model_number: val, slug: generateSlug(f.name, val) }));
+                  }} 
+                  placeholder="M1502F" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Normal (USD)</label>
@@ -149,11 +154,11 @@ const ProductModal = ({
               <input className={`w-full bg-slate-50 border rounded-xl px-5 py-3 text-sm font-black text-gray-900 focus:outline-none focus:border-purple-brand/30 ${errors.name ? 'border-raspberry/50' : 'border-black/10'}`} 
                 value={form.name} 
                 onChange={e => {
-                  const newName = e.target.value;
+                  const val = e.target.value;
                   setForm(f => ({ 
                     ...f, 
-                    name: newName,
-                    slug: generateSlug(newName)
+                    name: val,
+                    slug: generateSlug(val, f.model_number)
                   }));
                 }} 
               />
