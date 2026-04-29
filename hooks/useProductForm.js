@@ -157,6 +157,7 @@ export function useProductForm(categories, onSaveSuccess) {
     };
 
     try {
+      let productId;
       let res;
       if (modal === 'new') {
         res = await supabase.from('products').insert(payload).select().single();
