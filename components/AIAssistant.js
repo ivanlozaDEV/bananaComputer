@@ -3,83 +3,94 @@ import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from '
 import Link from 'next/link';
 import { Bot, User, Send, X, Terminal, Cpu, Sparkles, AlertTriangle, Package, RefreshCw, ArrowRight } from 'lucide-react';
 import { chatWithOllama, pingOllama } from '@/lib/ollama';
-import { searchInventoryForAI, formatInventoryForAI, fetchAIBaseline, filterInventoryByIds } from '@/lib/inventory';
+import { searchInventoryForAI, formatInventoryForAI, generateAIBaseline, filterInventoryByIds, fetchProductDetailsBySlug } from '@/lib/inventory';
 import WaitlistForm from '@/components/WaitlistForm';
 import { supabase } from '@/lib/supabase';
 import { productUrl } from '@/lib/productUrl';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const TAG_REGEX = /\[(RECOMENDACI[OÓ]N|COMPARE|WAITLIST_PROMPT|SEARCH):?\s*(.*?)\]/gi;
-const getTagRegex = () => new RegExp(TAG_REGEX.source, TAG_REGEX.flags);
+const TAG_REGEX_SRC = '\\[(RECOMENDACI[OÓ]N|COMPARE|WAITLIST_PROMPT|SEARCH):?\\s*(.*?)\\]';
+const getTagRegex = () => new RegExp(TAG_REGEX_SRC, 'gi');
 
 const AIAssistant = ({ onClose }) => {
+  // ── Onboarding: step 0=category, 1=budget, 2=done ──
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [categories, setCategories] = useState([]);
+  const [userPrefs, setUserPrefs] = useState({ category: '', budget: '' });
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: '¡Hola! Soy Banana AI. Para recomendarte la mejor opción, primero cuéntame: **¿Para qué planeas usar tu nuevo equipo?**' }
+    { role: 'assistant', content: '¡Hola! Soy Banana AI 🍌 ¿Qué tipo de producto estás buscando hoy?' }
   ]);
-  const [onboardingStep, setOnboardingStep] = useState(1);
-  const [userPrefs, setUserPrefs] = useState({ useCase: '', budget: '' });
   const [loading, setLoading] = useState(false);
   const [inventoryContext, setInventoryContext] = useState('');
   const [baselineKnowledge, setBaselineKnowledge] = useState('');
   const [ollamaReady, setOllamaReady] = useState(true);
   const endOfMessagesRef = useRef(null);
 
-  const onboardingOptions = {
-    1: ['Para Gaming', 'Para Trabajo / Oficina', 'Para Diseño / Edición', 'Para Estudios'],
-    2: ['Menos de $600', '$600 - $1000', '$1000 - $1500', 'Más de $1500']
-  };
+  const BUDGET_OPTIONS = ['Menos de $600', '$600 - $1000', '$1000 - $1500', 'Más de $1500'];
 
   const retryPing = useCallback(() => {
-    setOllamaReady(true); // optimistic — clear error banner
+    setOllamaReady(true);
     pingOllama().then(setOllamaReady);
   }, []);
 
   useEffect(() => {
     pingOllama().then(setOllamaReady);
-    fetchAIBaseline().then(setBaselineKnowledge);
+    // Always generate fresh baseline — never use cached version which may include unavailable products
+    generateAIBaseline().then(setBaselineKnowledge);
+    supabase.from('categories').select('name').order('name')
+      .then(({ data }) => setCategories((data || []).map(c => c.name)));
   }, []);
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const processAndAddResponse = useCallback((responseText, results = null) => {
-    // Fix #7: store tags separately, never re-inject into content string
-    const rawTags = (responseText.match(getTagRegex()) || []);
-    
+  // Only attach gadgetTags to fresh recommendations (not follow-ups)
+  const isFollowUpQuestion = (text) => {
+    const followUpKeywords = [
+      'tiene', 'cuánto', 'cuanto', 'pesa', 'mide', 'cuál', 'cual', 'es', 'son',
+      'sirve', 'puedo', 'funciona', 'incluye', 'viene', 'viene con', 'garantía',
+      'garantia', 'envío', 'envio', 'precio', 'y la', 'y el', 'y ese', 'y esa',
+    ];
+    const lc = text.toLowerCase();
+    return followUpKeywords.some(kw => lc.startsWith(kw)) || lc.includes('?');
+  };
+
+  const processAndAddResponse = useCallback((responseText) => {
+    // Always create a fresh regex instance — the /g flag is stateful
+    const rawTags = [...responseText.matchAll(new RegExp(TAG_REGEX_SRC, 'gi'))].map(m => m[0]);
+    console.log('[BananaAI] rawTags found:', rawTags);
+
     const stripTags = (text) => text
-      .replace(/\*\*\[.*?\]\*\*/gi, '') 
+      .replace(/\*\*\[.*?\]\*\*/gi, '')
       .replace(getTagRegex(), '')
       .replace(/(RECOMENDACI[OÓ]N|COMPARE|WAITLIST_PROMPT|SEARCH):/gi, '')
       .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
       .replace(/ID:\s*/gi, '')
-      .replace(/\| \$.*?\|.*?\|.*?\|.*?\|/g, '')
       .replace(/\[\s*\]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 
     if (responseText.toLowerCase().includes('cvv') || responseText.toLowerCase().includes('numero de tarjeta')) {
-      const safetyWarning = "⚠️ **Aviso de Seguridad**: No compartas datos de pago. Por favor, usa el carrito de compras oficial. 🍌🛡️";
-      setMessages(prev => [...prev, { role: 'assistant', content: safetyWarning }]);
-      return; 
+      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ No compartas datos de pago. Usa el carrito oficial. 🍌🛡️' }]);
+      return;
     }
 
-    // Fix #7: content is clean text only; gadgetTags holds the raw tag strings
     const cleanResponse = stripTags(responseText);
-
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
+    setMessages(prev => [...prev, {
+      role: 'assistant',
       content: cleanResponse,
-      gadgetTags: rawTags,  // separated from visible content
-      results,
-      showGadgets: false
+      gadgetTags: rawTags,
+      showGadgets: rawTags.length === 0,
     }]);
 
-    setTimeout(() => {
-      setMessages(prev => prev.map((m, i) => 
-        i === prev.length - 1 ? { ...m, showGadgets: true } : m
-      ));
-    }, 1000);
+    if (rawTags.length > 0) {
+      setTimeout(() => {
+        setMessages(prev => prev.map((m, i) =>
+          i === prev.length - 1 ? { ...m, showGadgets: true } : m
+        ));
+      }, 800);
+    }
   }, []);
 
   const handleSend = async (text) => {
@@ -88,74 +99,65 @@ const AIAssistant = ({ onClose }) => {
     const userMessage = { role: 'user', content: text };
     setMessages(prev => [...prev, userMessage]);
 
-    // --- Onboarding Flow ---
-    if (onboardingStep === 1) {
-      const options = onboardingOptions[1];
-      const isDirectMatch = options.includes(text) || options.some(opt => text.toLowerCase().includes(opt.toLowerCase().replace('para ', '').trim()));
-      
-      if (!isDirectMatch) {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Para asesorarte correctamente, por favor indícame primero el uso que le darás al equipo seleccionando una de las opciones. 🍌' }]);
-        return;
-      }
-
-      setUserPrefs(prev => ({ ...prev, useCase: text }));
-      setOnboardingStep(2);
-      setMessages(prev => [...prev, { role: 'assistant', content: '¡Excelente! ¿Y cuál es tu presupuesto aproximado para esta inversión?' }]);
+    // ── STEP 0: Pick category ──
+    if (onboardingStep === 0) {
+      setUserPrefs(prev => ({ ...prev, category: text }));
+      setOnboardingStep(1);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Perfecto, te ayudo con ${text}. ¿Cuál es tu presupuesto aproximado?`
+      }]);
       return;
     }
 
-    if (onboardingStep === 2) {
-      const options = onboardingOptions[2];
-      const isDirectMatch = options.includes(text) || options.some(opt => text.toLowerCase().includes(opt.replace('$', '').trim()));
-
-      if (!isDirectMatch) {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Para acotar la búsqueda, por favor selecciona uno de los rangos de presupuesto sugeridos. 🍌' }]);
-        return;
-      }
-
+    // ── STEP 1: Pick budget → trigger recommendation ──
+    if (onboardingStep === 1) {
       const budget = text;
-      const updatedPrefs = { ...userPrefs, budget };
-      setUserPrefs(updatedPrefs);
-      setOnboardingStep(0); // Finished onboarding
+      const category = userPrefs.category;
+      setUserPrefs(prev => ({ ...prev, budget }));
+      setOnboardingStep(2);
       setLoading(true);
 
       try {
-        // --- Selection Call: Select Top 3 products to optimize tokens ---
-        // --- Selection Call: Select Top 3 products to optimize tokens ---
-        const selectionPrompt = `SISTEMA: Basado en el catálogo, selecciona los SLUGS de los 3 productos que mejor se ajusten a:
-Uso: ${userPrefs.useCase}
-Presupuesto: ${budget}
+        // Phase 1: Selection — compact index, cheap tokens
+        const selectionPrompt = [
+          `SISTEMA: Eres un asesor de ventas. Elige los SLUGS de los 3 mejores productos de la categoría "${category}" para un cliente con presupuesto ${budget}.`,
+          `REGLAS: 1) Prioriza productos dentro del rango de precio. 2) Elige los de mejores especificaciones. 3) Devuelve SOLO los 3 slugs separados por comas, sin texto adicional.`,
+        ].join('\n');
 
-REGLAS DE SELECCIÓN:
-1. Prioriza productos que estén DENTRO del rango de presupuesto indicado.
-2. Solo recomienda productos de menor precio si NO hay opciones suficientes en el rango solicitado.
-3. Elige los equipos con mejores especificaciones (RAM/CPU) para el uso solicitado.
-
-Retorna SOLO los SLUGS separados por comas, sin explicaciones.`;
-        
         const selectionResponse = await chatWithOllama(
           [{ role: 'user', content: selectionPrompt }],
           inventoryContext || baselineKnowledge
         );
-        
-        // Matches slugs (alphanumeric and hyphens, at least 3 chars)
-        const selectedIds = selectionResponse.match(/[a-z0-9-]{3,100}/gi) || [];
-        
-        const optimizedContext = filterInventoryByIds(inventoryContext || baselineKnowledge, selectedIds);
-        setInventoryContext(optimizedContext);
 
-        const promptContext = `[SISTEMA]: El usuario busca un equipo principalmente para ${userPrefs.useCase} con un presupuesto de ${budget}. Por favor, ofrece estas 3 opciones que seleccionaste y explica brevemente por qué son las mejores. 
+        const selectedSlugs = (selectionResponse.match(/[a-z0-9][a-z0-9-]{4,99}/g) || [])
+          .filter(s => !s.includes(' '))
+          .slice(0, 3);
 
-⚠️ IMPORTANTE: Debes incluir los 3 tags [RECOMENDACION: product-slug] al final de tu mensaje, uno por cada producto mencionado.`;
-        
+        // Phase 2: Enrich — full specs only for the 3 selected
+        let detailContext = selectedSlugs.length > 0
+          ? await fetchProductDetailsBySlug(selectedSlugs)
+          : '';
+        if (!detailContext) {
+          detailContext = filterInventoryByIds(inventoryContext || baselineKnowledge, selectedSlugs);
+        }
+        setInventoryContext(detailContext);
+
+        // Phase 3: Answer — concise, datasheet-backed explanation
+        const answerPrompt = [
+          `[SISTEMA]: El cliente busca ${category} con presupuesto ${budget}.`,
+          `Explica en máximo 1 oración por producto por qué cada uno es la mejor opción para ese uso y presupuesto, usando solo los datos de la ficha técnica.`,
+          `Incluye al final exactamente un [RECOMENDACION: slug] por producto.`,
+        ].join('\n');
+
         const aiResponseText = await chatWithOllama(
-          [...messages, userMessage, { role: 'user', content: promptContext }],
-          optimizedContext
+          [...messages, userMessage, { role: 'user', content: answerPrompt }],
+          detailContext
         );
         processAndAddResponse(aiResponseText);
       } catch (err) {
-        console.error("Selection/Chat Error:", err);
-        processAndAddResponse('Lo siento, tuve un problema al procesar tu solicitud. ¿Podrías intentar de nuevo? 🍌');
+        console.error('Selection/Chat Error:', err);
+        processAndAddResponse('Lo siento, tuve un problema. ¿Podrías intentar de nuevo? 🍌');
       } finally {
         setLoading(false);
       }
@@ -177,21 +179,25 @@ Retorna SOLO los SLUGS separados por comas, sin explicaciones.`;
       // ── Auto-retry si el AI olvidó los tags ──────────────────────
       // Si la respuesta hace referencia a nombres de productos del inventario
       // pero no incluye ningún [RECOMENDACION: UUID], reenviamos con recordatorio.
-      const hasTags = /\[RECOMENDACI[OÓ]N\s*:/i.test(aiResponseText);
-      const mentionsProduct = /\b(ASUS|Lenovo|HP|Dell|MSI|ROG|TUF|Vivobook|Acer|Samsung)\b/i.test(aiResponseText);
+      const followUp = isFollowUpQuestion(text);
 
-      if (mentionsProduct && !hasTags) {
-        // 1.5s pause to avoid Groq 429 rate-limit on back-to-back calls
-        await new Promise(res => setTimeout(res, 1500));
-        const retry = await chatWithOllama(
-          [...messages, userMessage,
-            { role: 'assistant', content: aiResponseText },
-            { role: 'user', content: '⚠️ SISTEMA: Olvidaste agregar los tags [RECOMENDACION: product-slug]. Repite tu respuesta anterior EXACTAMENTE igual pero añade los tags al final con los SLUGS del inventario.' }
-          ],
-          inventoryContext || baselineKnowledge,
-          controller.signal
-        );
-        aiResponseText = retry;
+      // Only retry tag injection for fresh recommendations, not follow-ups
+      if (!followUp) {
+        const hasTags = /\[RECOMENDACI[OÓ]N\s*:/i.test(aiResponseText);
+        const mentionsProduct = /\b(ASUS|Lenovo|HP|Dell|MSI|ROG|TUF|Vivobook|Acer|Samsung|ViewSonic|Epson|BenQ)\b/i.test(aiResponseText);
+
+        if (mentionsProduct && !hasTags) {
+          await new Promise(res => setTimeout(res, 1500));
+          const retry = await chatWithOllama(
+            [...messages, userMessage,
+              { role: 'assistant', content: aiResponseText },
+              { role: 'user', content: '⚠️ SISTEMA: Olvidaste los tags [RECOMENDACION: slug]. Añádelos al final con los slugs exactos del inventario.' }
+            ],
+            inventoryContext || baselineKnowledge,
+            controller.signal
+          );
+          aiResponseText = retry;
+        }
       }
 
       const searchMatch = aiResponseText.match(/\[SEARCH:\s*(.*?)\]/i);
@@ -200,23 +206,19 @@ Retorna SOLO los SLUGS separados por comas, sin explicaciones.`;
         const params = searchMatch[1];
         const categoryMatch = params.match(/category=([^ \s,\]]+)/i);
         const priceMatch = params.match(/max_price=(\d+)/i);
-
         const filters = {
           category: categoryMatch ? categoryMatch[1].trim() : null,
           maxPrice: priceMatch ? parseInt(priceMatch[1]) : null
         };
-
         const results = await searchInventoryForAI(filters);
         const context = formatInventoryForAI(results);
         setInventoryContext(context);
-
         const finalResponse = await chatWithOllama(
-          [...messages, userMessage, { role: 'assistant', content: 'Buscando en el catálogo de Banana Computer...' }],
+          [...messages, userMessage, { role: 'assistant', content: 'Buscando en el catálogo...' }],
           context || baselineKnowledge,
           controller.signal
         );
-
-        processAndAddResponse(finalResponse, results);
+        processAndAddResponse(finalResponse);
       } else {
         processAndAddResponse(aiResponseText);
       }
@@ -275,10 +277,14 @@ Retorna SOLO los SLUGS separados por comas, sin explicaciones.`;
         </div>
 
         {/* Fix #2: don't hard-disable input when offline — user can still try */}
-        <ChatInput 
-          onSend={handleSend} 
-          disabled={loading} 
-          quickReplies={onboardingOptions[onboardingStep] || []} 
+        <ChatInput
+          onSend={handleSend}
+          disabled={loading}
+          quickReplies={
+            onboardingStep === 0 ? categories :
+            onboardingStep === 1 ? BUDGET_OPTIONS :
+            []
+          }
         />
       </div>
     </div>
@@ -368,17 +374,36 @@ const ChatInput = ({ onSend, disabled, quickReplies }) => {
   );
 };
 
+const PROD_SELECT = '*, categories(slug, name), subcategories:subcategory_id(slug, name), product_attributes(value, attribute_definitions(name, unit))';
+
 const RecommendedProduct = memo(({ id }) => {
   const [prod, setProd] = useState(null);
   useEffect(() => {
     if (!id || id === 'undefined') return;
-    // Try UUID first for legacy, then slug
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    const query = isUuid 
-      ? supabase.from('products').select('*, categories(slug), subcategories:subcategory_id(slug), product_attributes(value, attribute_definitions(name, unit))').eq('id', id)
-      : supabase.from('products').select('*, categories(slug), subcategories:subcategory_id(slug), product_attributes(value, attribute_definitions(name, unit))').eq('slug', id);
-      
-    query.single().then(({ data }) => setProd(data));
+
+    const fetchProduct = async () => {
+      // 1. Exact match by UUID or slug
+      const { data: exact } = await (isUuid
+        ? supabase.from('products').select(PROD_SELECT).eq('id', id).neq('badge_type', 'unavailable').maybeSingle()
+        : supabase.from('products').select(PROD_SELECT).eq('slug', id).neq('badge_type', 'unavailable').maybeSingle()
+      );
+      if (exact) { setProd(exact); return; }
+
+      // 2. Fuzzy fallback — slug contains the AI token (handles truncated slugs)
+      if (!isUuid) {
+        const { data: fuzzy } = await supabase
+          .from('products')
+          .select(PROD_SELECT)
+          .ilike('slug', `%${id}%`)
+          .neq('badge_type', 'unavailable')
+          .limit(1)
+          .maybeSingle();
+        if (fuzzy) { setProd(fuzzy); return; }
+      }
+    };
+
+    fetchProduct();
   }, [id]);
 
   if (!prod) return null;
@@ -503,10 +528,9 @@ const ComparisonTable = memo(({ ids }) => {
 
 const MessageContent = memo(({ content, gadgetTags = [], showGadgets = true }) => {
   // Fix #7: content is already clean; use gadgetTags for widgets
-  const cleanText = useMemo(() => content
-    .replace(getTagRegex(), '')
-    .replace(/\[TAGS\]/gi, '')
-    .trim(), [content]);
+  const cleanText = useMemo(() => {
+    return content.replace(new RegExp(TAG_REGEX_SRC, 'gi'), '').replace(/\[TAGS\]/gi, '').trim();
+  }, [content]);
 
   // Fix #7: use gadgetTags prop (separated from content) instead of re-parsing content
   const gadgets = useMemo(() => {

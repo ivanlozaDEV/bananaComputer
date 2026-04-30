@@ -10,6 +10,7 @@ import ProductTable from '../components/ProductTable';
 import ProductModal from '../components/ProductModal';
 import { useToast } from '@/context/ToastContext';
 import BulkBadgeEditor from '../components/BulkBadgeEditor';
+import { updateAIBaselineInDB } from '@/lib/inventory';
 
 const BADGE_OPTIONS = [
   { value: '',             label: 'Todas las etiquetas' },
@@ -36,6 +37,19 @@ export default function ProductsAdminPage() {
   // ── Filter state ──
   const [showFilters, setShowFilters] = useState(false);
   const [showBulkEditor, setShowBulkEditor] = useState(false);
+  const [regeneratingAI, setRegeneratingAI] = useState(false);
+
+  const handleRegenerateAI = async () => {
+    setRegeneratingAI(true);
+    try {
+      await updateAIBaselineInDB();
+      toast?.({ message: '✅ Catálogo AI actualizado — el asistente ya excluye los no disponibles', type: 'success' });
+    } catch (e) {
+      toast?.({ message: 'Error al regenerar: ' + e.message, type: 'error' });
+    } finally {
+      setRegeneratingAI(false);
+    }
+  };
   const [filterCat, setFilterCat] = useState('');
   const [filterSub, setFilterSub] = useState('');
   const [filterBadge, setFilterBadge] = useState('');
@@ -214,6 +228,15 @@ export default function ProductsAdminPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleRegenerateAI}
+              disabled={regeneratingAI}
+              title="Actualiza el catálogo del Banana AI excluó los no disponibles"
+              className="px-4 py-3.5 bg-white border border-black/10 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center gap-2 hover:border-purple-brand/30 hover:text-purple-brand shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <RefreshCw size={13} className={regeneratingAI ? 'animate-spin' : ''} />
+              {regeneratingAI ? 'Actualizando...' : 'Regenerar AI'}
+            </button>
             <button
               onClick={() => setShowBulkEditor(true)}
               className="px-5 py-3.5 bg-white border border-black/10 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center gap-2 hover:border-purple-brand/30 hover:text-purple-brand shadow-sm"
