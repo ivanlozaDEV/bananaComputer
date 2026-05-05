@@ -17,7 +17,19 @@ const INITIAL_HERO = {
 export const StoreProvider = ({ children }) => {
   const [heroContent, setHeroContentState] = useState(INITIAL_HERO);
   const [brandLogos, setBrandLogos] = useState([]);
+  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('site_settings').select('key, value');
+    if (data) {
+      const settingsMap = data.reduce((acc, curr) => {
+        acc[curr.key] = curr.value;
+        return acc;
+      }, {});
+      setSettings(settingsMap);
+    }
+  };
 
   const fetchBrandLogos = async () => {
     const { data } = await supabase.from('brand_logos').select('*').order('created_at', { ascending: true });
@@ -30,6 +42,7 @@ export const StoreProvider = ({ children }) => {
       const { data: heroData } = await supabase.from('hero_content').select('*').single();
       if (heroData) setHeroContentState(heroData);
       
+      await fetchSettings();
       await fetchBrandLogos();
       setLoading(false);
     };
@@ -44,6 +57,18 @@ export const StoreProvider = ({ children }) => {
       .select()
       .single();
     if (data) setHeroContentState(data);
+  };
+
+  const updateSetting = async (key, value) => {
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert({ key, value }, { onConflict: 'key' });
+    if (error) {
+      console.error('Error updating site setting:', error);
+      return false;
+    }
+    setSettings(prev => ({ ...prev, [key]: value }));
+    return true;
   };
 
   const updateBrandLogos = async (logos) => {
@@ -74,6 +99,7 @@ export const StoreProvider = ({ children }) => {
     <StoreContext.Provider value={{
       heroContent, setHeroContent,
       brandLogos, addBrandLogo, deleteBrandLogo, fetchBrandLogos,
+      settings, updateSetting,
       loading,
     }}>
       {children}

@@ -7,7 +7,8 @@ import ProductCard from './ProductCard';
 import ProductFilters from './ProductFilters';
 import Fuse from 'fuse.js';
 import { useSearch } from '@/context/SearchContext';
-import { SlidersHorizontal, ArrowRight, X } from 'lucide-react';
+import { useStore } from '@/context/StoreContext';
+import { SlidersHorizontal, ArrowRight, X, LayoutGrid, List } from 'lucide-react';
 
 const PREVIEW_LIMIT = 3; // cards shown per subcategory in default view
 
@@ -17,6 +18,7 @@ const ProductGrid = ({ subcategoryId }) => {
   const [loading, setLoading] = useState(true);
   const { searchQuery } = useSearch();
   const { addToCart } = useCart();
+  const { settings } = useStore();
   const [addedIds, setAddedIds] = useState(new Set());
 
   // ── Filters state ──
@@ -300,47 +302,71 @@ const ProductGrid = ({ subcategoryId }) => {
         <div className="flex-1 min-w-0 pl-4 lg:pl-6">
 
           {/* ════════════════════════════════════════════
-              DEFAULT VIEW — subcategory preview strips
+              DEFAULT VIEW — category strips or compact grid
               ════════════════════════════════════════════ */}
           {!isFilteredMode && (
-            <div className="flex flex-col gap-16">
-              {subcategoryGroups.map(group => (
-                <section key={group.id} className="animate-in fade-in duration-500">
-                  {/* Section header */}
-                  <div className="flex items-end justify-between mb-6">
-                    <div className="flex flex-col gap-1">
-                      <h2 className="text-xl md:text-2xl font-black tracking-tight">
-                        {group.name}
-                      </h2>
-                      <div className="h-0.5 bg-banana-yellow w-10" />
-                    </div>
-
-                    {group.total > PREVIEW_LIMIT && group.subSlug && (
-                      <Link
-                        href={`/categoria/${group.catSlug}/${group.subSlug}`}
-                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-brand hover:text-black transition-colors group/link"
-                      >
-                        Ver todos ({group.total})
-                        <ArrowRight size={12} className="group-hover/link:translate-x-1 transition-transform" />
-                      </Link>
-                    )}
+            <div className="flex flex-col gap-12">
+              {settings?.home_layout_mode === 'compact' ? (
+                /* COMPACT GRID VIEW */
+                <section className="animate-in fade-in duration-700">
+                  <div className="flex flex-col gap-1 mb-8">
+                    <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase">
+                      Nuestro <span className="text-purple-brand">Catálogo</span>
+                    </h2>
+                    <div className="h-0.5 bg-banana-yellow w-12" />
                   </div>
-
-                  {/* 3-card preview grid */}
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-                    {group.preview.map(product => (
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+                    {allProducts.map(p => (
                       <ProductCard
-                        key={product.id}
-                        product={product}
+                        key={p.id}
+                        product={processProduct(p)}
                         addedIds={addedIds}
                         handleAddToCart={handleAddToCart}
                       />
                     ))}
                   </div>
                 </section>
-              ))}
+              ) : (
+                /* CATEGORY STRIPS VIEW (Default) */
+                subcategoryGroups.map(group => (
+                  <section key={group.id} className="animate-in fade-in duration-500">
+                    {/* Section header */}
+                    <div className="flex items-end justify-between mb-6">
+                      <div className="flex flex-col gap-1">
+                        <h2 className="text-xl md:text-2xl font-black tracking-tight">
+                          {group.name}
+                        </h2>
+                        <div className="h-0.5 bg-banana-yellow w-10" />
+                      </div>
 
-              {subcategoryGroups.length === 0 && (
+                      {group.total > PREVIEW_LIMIT && group.subSlug && (
+                        <Link
+                          href={`/categoria/${group.catSlug}/${group.subSlug}`}
+                          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-brand hover:text-black transition-colors group/link"
+                        >
+                          Ver todos ({group.total})
+                          <ArrowRight size={12} className="group-hover/link:translate-x-1 transition-transform" />
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* 3-card preview grid */}
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                      {group.preview.map(product => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          addedIds={addedIds}
+                          handleAddToCart={handleAddToCart}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))
+              )}
+
+              {allProducts.length === 0 && (
                 <div className="py-20 flex flex-col items-center opacity-30">
                   <p className="font-black uppercase tracking-widest text-sm">Sin productos en el catálogo</p>
                 </div>

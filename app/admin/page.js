@@ -4,11 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { updateAIBaselineInDB } from '@/lib/inventory';
 import { useToast } from '@/context/ToastContext';
-import { Package, Star, Tag, Users, Image, Sparkles, RefreshCw, CheckCircle2, ArrowRight, LayoutDashboard, ShoppingBag } from 'lucide-react';
+import { useStore } from '@/context/StoreContext';
+import { Package, Star, Tag, Users, Image, Sparkles, RefreshCw, CheckCircle2, ArrowRight, LayoutDashboard, ShoppingBag, LayoutGrid, List } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
   const { showToast } = useToast();
+  const { settings, updateSetting } = useStore();
   const [stats, setStats] = useState({ products: 0, categories: 0, customers: 0, featured: 0, orders: 0 });
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -79,6 +81,15 @@ export default function AdminDashboardPage() {
       showToast('Error en la sincronización de IA', 'error');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleLayoutChange = async (mode) => {
+    const success = await updateSetting('home_layout_mode', mode);
+    if (success) {
+      showToast(`Diseño cambiado a ${mode === 'categories' ? 'Tiras' : 'Grilla'}`, 'success');
+    } else {
+      showToast('Error al cambiar el diseño', 'error');
     }
   };
 
@@ -162,6 +173,52 @@ export default function AdminDashboardPage() {
             >
               {syncing ? <RefreshCw size={16} className="animate-spin" /> : syncDone ? <CheckCircle2 size={16} /> : <Sparkles size={16} />}
               {syncing ? 'Sincronizando Cerebro...' : syncDone ? 'Sincronización Exitosa' : 'Actualizar Conocimiento IA'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Visual Preferences Section */}
+      <div className="bg-white border border-black/10 rounded-3xl p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2 bg-purple-brand/10 rounded-xl text-purple-brand border border-purple-brand/20">
+            <LayoutGrid size={24} />
+          </div>
+          <h2 className="text-lg font-black text-gray-900">Preferencias Visuales (Home)</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-500">Modo de Diseño del Catálogo</h3>
+            <p className="text-xs text-gray-500 font-medium leading-relaxed max-w-sm">
+              Elige cómo se muestran los productos en la página de inicio. El modo compacto es ideal si tienes pocos productos.
+            </p>
+          </div>
+
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full max-w-md">
+            <button
+              onClick={() => handleLayoutChange('categories')}
+              className={`
+                flex-1 flex items-center justify-center gap-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                ${(settings?.home_layout_mode || 'categories') === 'categories' 
+                  ? 'bg-white text-purple-brand shadow-sm border border-black/5' 
+                  : 'text-gray-400 hover:text-gray-600'}
+              `}
+            >
+              <List size={14} />
+              Tiras por Categoría
+            </button>
+            <button
+              onClick={() => handleLayoutChange('compact')}
+              className={`
+                flex-1 flex items-center justify-center gap-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                ${settings?.home_layout_mode === 'compact' 
+                  ? 'bg-white text-purple-brand shadow-sm border border-black/5' 
+                  : 'text-gray-400 hover:text-gray-600'}
+              `}
+            >
+              <LayoutGrid size={14} />
+              Grilla Compacta
             </button>
           </div>
         </div>
